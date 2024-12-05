@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTribe } from '../../redux/slices/applicationSlice';
 import { RootState, AppDispatch } from '../../redux/store';
+import { Tribe } from '../../types/Board';
 
 
 export default function TribeList() {
   const tribes = useSelector((state: RootState) => state.application.availableTribes);
   const dispatch: AppDispatch = useDispatch();
 
-  const handleSelectTribe = (tribe: string) => {
+  const handleSelectTribe = (tribe: Tribe) => {
     console.log(`Selected tribe: ${tribe}`);
     dispatch(selectTribe(tribe));
   };
@@ -20,13 +21,13 @@ export default function TribeList() {
         <div>Loading tribes...</div>
       ) : (
         <ul>
-          {tribes.map((tribe: string) => (
+          {tribes.map((tribe: Tribe) => (
             <li className="mb-2">
               <button
                 onClick={() => handleSelectTribe(tribe)}
                 className="bg-blue-500 text-white py-2 px-4 rounded"
               >
-                {tribe}
+                  {tribe.trait} {tribe.race}
               </button>
             </li>
           ))}

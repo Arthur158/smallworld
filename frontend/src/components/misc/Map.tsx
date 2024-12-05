@@ -1,31 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { setError } from '../../redux/slices/applicationSlice';
 import mapImage from '../../images/mapsw.jpg';
-import { parseAreaFile } from '../../utility/MapParser';
-import { Polygon } from '../../types/Board';
+import { Tile } from '../../types/Board';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../../redux/store';
 
 export default function Map() {
-  const [areas, setAreas] = useState<Polygon[]>([]);
+  const tiles: Record<string, Tile> = useSelector((state: RootState) => state.application.tiles);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const dispatch = useDispatch();
 
   // Load the map areas from the external file
-  useEffect(() => {
-    const loadAreas = async () => {
-      try {
-        const response = await fetch('/maps/map.txt');
-        const text = await response.text();
-        console.log(text);
-        setAreas(parseAreaFile(text));
-      } catch (error) {
-        console.error('Error loading file:', error);
-      }
-    };
-
-    loadAreas();
-  }, []);
-
   // Load the image and get its dimensions
   useEffect(() => {
     const image = new Image();
@@ -38,7 +23,7 @@ export default function Map() {
     };
   }, []);
 
-  if (imageDimensions.width === 0 || areas.length === 0) {
+  if (imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
     return <div>Loading...</div>;
   }
 
@@ -56,8 +41,8 @@ export default function Map() {
       >
         <image x="0" y="0" width={imageDimensions.width} height={imageDimensions.height} href={mapImage} />
 
-        {areas.map((area, index) => {
-          const scaledCoords = area.coords.map((coord) => coord * scaleFactor);
+        {Object.values(tiles).map((tile => {
+          const scaledCoords = tile.polygon.coords.map((coord: number) => coord * scaleFactor);
           const points = [];
           for (let i = 0; i < scaledCoords.length; i += 2) {
             points.push(`${scaledCoords[i]},${scaledCoords[i + 1]}`);
@@ -65,17 +50,17 @@ export default function Map() {
           const pointsString = points.join(' ');
           return (
             <polygon
-              key={index}
+              key={tile.id}
               points={pointsString}
               fill="rgba(255, 0, 0, 0.5)"
               stroke="black"
               onClick={() => {
-                console.log(`Polygon ${index + 1} clicked`);
-                dispatch(setError(`Polygon ${index + 1} clicked`)); // Optional Redux action
+                console.log(`Polygon ${tile.id} clicked`);
+                dispatch(setError(`Polygon ${tile.id} clicked`)); // Optional Redux action
               }}
             />
           );
-        })}
+        }))}
       </svg>
     </div>
   );

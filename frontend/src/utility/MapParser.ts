@@ -10,8 +10,7 @@ export function parseAreaFile(text: string): Polygon[] {
   while ((match = areaRegex.exec(text)) !== null) {
     const coords = match[1].split(',').map(Number); // Convert coords to numbers
     const shape = match[2]; // Extract the shape
-    console.log(coords)
-    polygons.push({ coords, shape });
+    polygons.push({ coords });
   }
 
   return polygons;
