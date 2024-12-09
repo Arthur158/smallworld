@@ -10,7 +10,7 @@ const initialState: ApplicationState = {
     activeTribe: null,
     passiveTribes: [],
     isPlaying: false,
-    pieceStacks: [],
+    pieceStacks: [{type:"elves", amount:3}, {type:"show", amount:1}],
   },
   availableTribes: [{race: "elves", trait: "merchant"}, {race: "giants", trait:"fortunate"}], //dummy for now
   tiles: {},
@@ -36,6 +36,22 @@ const applicationSlice = createSlice({
     setTiles(state, action) {
       state.tiles = action.payload
     },
+    setPlaying(state, action) {
+      state.player.isPlaying = action.payload
+    },
+    setPlayerStacks(state, action) {
+    state.player.pieceStacks = action.payload
+    },
+    updateTileStack(state, action) {
+        const { tile_id, new_stacks } = action.payload
+        const tile = state.tiles[tile_id];
+
+        if (!tile) {
+          throw new Error(`Tile with ID ${tile_id} does not exist.`);
+        }
+
+        tile.pieceStack = new_stacks; // Update the pieceStack for the tile
+    },
     setOpponents(state, action) {
       state.opponents = action.payload
     },
@@ -48,13 +64,7 @@ const applicationSlice = createSlice({
           break
 
         case 'tilePieceStackChange':
-          const tile = state.tiles[payload.tile_id];
-
-          if (!tile) {
-            throw new Error(`Tile with ID ${payload.tile_id} does not exist.`);
-          }
-
-          tile.pieceStack = payload.pieceStack; // Update the pieceStack for the tile
+          this.updateTileStack(state, action)
           break;
         case 'OpponentUpdate':
           state.opponents = payload.opponents
@@ -72,6 +82,6 @@ const applicationSlice = createSlice({
 
 const applicationReducer = applicationSlice.reducer;
 
-export const { setLanguage, setTiles, clearError, setError, selectTribe, setOpponents, websocketMessageReceived } = applicationSlice.actions;
+export const { setLanguage, setTiles, setPlaying, setPlayerStacks, clearError, setError, selectTribe, setOpponents, websocketMessageReceived, updateTileStack } = applicationSlice.actions;
 
 export default applicationReducer;

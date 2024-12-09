@@ -1,0 +1,11 @@
+next thing to work on: displaying piles of powers and race, make tiles clickable and make it send a message to the backend to try and conquer that region. Make sure to have in the player info all usable stacks, display their number as well.
+
+i am realize that we can actually wait a while before actually starting to work on sending pictures from the server to the client, since right now most things can be done by text, and it might take a while to actually get the pictures mechanics, i would rather work on the game mechanics and being able to have a first game already
+
+Then, we can start working on backend.
+	- first thing will be to try and define clearly how to handle players coming in and joining a game, and clearly isolate the game mechanics part from the session handling part.
+	- Then can start working on the game mechanics part finally. I envision it as being a huge game model with every rule encoded, and then a very small set of function which will be used to react to user's actions and to determine information to send to player. Would only really need: 
+	- a function that receives information about a conquest and determine whether it is okay or not, 
+	- a function that determines whether it's fair for the player to choose the tribe they're trying to choose at that moment.
+	- a point counter which determines how much the player made in that turn and adds it to their total.
+	- 

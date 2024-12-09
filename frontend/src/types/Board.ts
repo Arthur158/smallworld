@@ -7,10 +7,12 @@ export interface Tile {
 export interface Polygon {
   // id: number
   coords: number[];
+  stackX: number, 
+  stackY: number, 
 }
 
 export interface PieceStack {
-  tribe: Tribe;
+  type: string; // Not a race or tribe, since player will dispose of other type of stacks from powers, such as heroes or behemoths
   amount: number;
 }
 

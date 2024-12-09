@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTribe } from '../../redux/slices/applicationSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { Tribe } from '../../types/Board';
-
 
 export default function TribeList() {
   const tribes = useSelector((state: RootState) => state.application.availableTribes);
@@ -15,19 +14,19 @@ export default function TribeList() {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Choose Your Tribe</h2>
+    <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6]">
+      <h2 className="text-xl font-bold mb-4 underline">Choisissez votre tribu</h2>
       {tribes.length === 0 ? (
-        <div>Loading tribes...</div>
+        <div className="italic">Chargement des tribus...</div>
       ) : (
-        <ul>
-          {tribes.map((tribe: Tribe) => (
-            <li className="mb-2">
+        <ul className="space-y-2">
+          {tribes.map((tribe: Tribe, i) => (
+            <li key={i}>
               <button
                 onClick={() => handleSelectTribe(tribe)}
-                className="bg-blue-500 text-white py-2 px-4 rounded"
+                className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
               >
-                  {tribe.trait} {tribe.race}
+                {tribe.trait} {tribe.race}
               </button>
             </li>
           ))}
