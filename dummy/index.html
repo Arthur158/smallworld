@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #chat-container {
+            width: 90%;
+            max-width: 500px;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #chat-box {
+            height: 300px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        #message-input {
+            width: calc(100% - 80px);
+            padding: 10px;
+            border: none;
+            border-top: 1px solid #ddd;
+            border-radius: 0 0 0 8px;
+        }
+
+        #send-btn {
+            width: 80px;
+            padding: 10px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+            border-radius: 0 0 8px 0;
+            cursor: pointer;
+        }
+
+        #send-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            margin: 5px 0;
+        }
+
+        .message.received {
+            color: green;
+        }
+
+        .message.sent {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Chat Client</h1>
+    <div id="chat-container">
+        <div id="chat-box"></div>
+        <div>
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+        const messageInput = document.getElementById("message-input");
+        const sendButton = document.getElementById("send-btn");
+
+        // Connect to WebSocket server
+        const socket = new WebSocket("wss://571d-188-91-57-106.ngrok-free.app/ws"); // Use ws:// or wss:// as appropriate
+
+        // When the connection opens
+        socket.onopen = () => {
+            console.log("Connected to WebSocket server.");
+            displayMessage("info", "Connected to server.");
+        };
+
+        // When a message is received
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === "state") {
+                displayMessage("received", `Game State: ${data.data}`);
+            } else if (data.type === "info") {
+                displayMessage("info", data.data);
+            } else {
+                displayMessage("received", `Server: ${data.data}`);
+            }
+        };
+
+        // When the connection closes
+        socket.onclose = () => {
+            console.log("Disconnected from server.");
+            displayMessage("info", "Disconnected from server.");
+        };
+
+        // When an error occurs
+        socket.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            displayMessage("error", "WebSocket error occurred.");
+        };
+
+        // Send a message when the button is clicked
+        sendButton.addEventListener("click", () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                const jsonMessage = JSON.stringify({ type: "action", data: message });
+                socket.send(jsonMessage);
+                displayMessage("sent", `You: ${message}`);
+                messageInput.value = "";
+            }
+        });
+
+        // Helper function to display messages
+        function displayMessage(type, message) {
+            const messageDiv = document.createElement("div");
+            messageDiv.textContent = message;
+            messageDiv.classList.add("message");
+
+            if (type === "received") {
+                messageDiv.classList.add("received");
+            } else if (type === "sent") {
+                messageDiv.classList.add("sent");
+            } else {
+                messageDiv.style.color = "gray";
+            }
+
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the bottom
+        }
+    </script>
+</body>
+</html>
