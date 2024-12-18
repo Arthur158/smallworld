@@ -6,12 +6,18 @@ type Trait string;
 type Tribe struct {
 	Race Race;
 	Trait Trait;
-	DeclineBehaviour func(int) int;
+	IsStackValid func(string) bool;
+	IsTileUnTakeable func(Tile) bool;
+	countDefense func(Tile) int;
+	countAttack func(Tile, int, string) []PieceStack;
+	countReturningStacks func(Tile) []PieceStack;
+	countNewTileStacks func([]PieceStack) []PieceStack;
 }
 
 type TribeEntry struct {
-	Tribe Tribe;
-	CoinsPile int;
+	Tribe *Tribe;
+	CoinPile int;
+	PiecePile int;
 }
 
 type Biome int
@@ -72,7 +78,7 @@ type Tile struct {
 	AdjacentTiles []*Tile;
 	PieceStacks []PieceStack;
 	OwningPlayer *Player;
-	OwningRace *Tribe;
+	OwningTribe *Tribe;
 	Biome Biome;
 	Attributes []Attribute;
 }
@@ -86,11 +92,40 @@ type Player struct {
 	// Name string;
 	ActiveTribe *Tribe;
 	PassiveTribes []*Tribe;
-	OwnedTiles []*Tile
 	CoinPile int
+	PieceStacks []PieceStack
+	HasActiveTribe bool
 }
 
+type Phase int
+
+const (
+	TribeChoice Phase = iota
+	TileAbandonment
+	Conquest
+	Redeployment
+)
+
+func (b Phase) String() string {
+	switch b {
+	case TribeChoice:
+		return "TribeChoice"
+	case TileAbandonment:
+		return "TileAbandonment"
+	case Conquest:
+		return "Conquest"
+	case Redeployment:
+		return "Redeployment"
+	default:
+		return "Unknown"
+	}
+}
+
+
 type TurnInfo struct {
+	TurnIndex int;
+	PlayerIndex int;
+	Phase Phase;
 	ConqueredPassive int;
 	ConqueredActive int
 }

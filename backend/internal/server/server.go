@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"encoding/json"
 
 	"github.com/gorilla/websocket"
 	"backend/internal/gamestate"
@@ -56,6 +57,8 @@ func startGame(c1, c2 *websocket.Conn) {
 
 	players := []*websocket.Conn{c1, c2}
 
+	var mu sync.Mutex
+
 	// Send a message to all players
 	sendToAll := func(msg messages.Message) {
 		for _, conn := range players {
@@ -70,17 +73,26 @@ func startGame(c1, c2 *websocket.Conn) {
 		// sendToAll(messages.Message{Type: "error", Data: "Could not create game"})
 	}
 
-
 	// Notify players that the game has started
+	jsonData, err := json.MarshalIndent(state.GetPlayers(), "", "  ")
+	for index, conn := range players {
+		conn.WriteJSON(messages.Message{Type: "index", Data: string(index)})
+	}
 	sendToAll(messages.Message{Type: "info", Data: "Game has started!"})
+	if err != nil {
+		log.Fatal("Error marshaling players:", err)
+	}
+	sendToAll(messages.Message{Type: "playerupdate", Data: string(jsonData)})
+	players[state.TurnInfo.PlayerIndex].WriteJSON(messages.Message{Type: "tribechoice"})
 
 	var wg sync.WaitGroup
 
-	for _, conn := range players {
+	for index, conn := range players {
 		wg.Add(1)
 
 		go func(player *websocket.Conn) {
 			defer wg.Done()
+
 
 			for {
 				var msg messages.Message
@@ -90,14 +102,46 @@ func startGame(c1, c2 *websocket.Conn) {
 					return
 				}
 
-				if msg.Type == "action" {
-
-					// here i believe we should have something like response = state.ApplyAction(msg.Data), then a 
-
+				mu.Lock()
+				switch msg.Type {
+				case "action":
 					state.ApplyAction(msg.Data)
 					actions := state.GetActions()
 					sendToAll(messages.Message{Type: "state", Data: "Actions: " + actions[len(actions)-1]})
+				case "conquest":
+					var conquestData struct {
+						TileID            string `json:"tileId"`
+						AttackingStackType string `json:"attackingStackType"`
+					    }
+
+					// Parse the JSON data into conquestData
+					if err := json.Unmarshal([]byte(msg.Data), &conquestData); err != nil {
+						log.Println("Error parsing conquest message:", err)
+						conn.WriteJSON(messages.Message{Type: "error", Data: "Invalid conquest data"})
+						return
+					}
+
+					// Call the HandleConquest method with parsed parameters
+					if err := state.HandleConquest(conquestData.TileID, index, conquestData.AttackingStackType); err != nil {
+						log.Println("Error handling conquest:", err)
+						conn.WriteJSON(messages.Message{Type: "error", Data: err.Error()})
+					} else {
+						jsonData, err := json.MarshalIndent(state.GetPlayers(), "", "  ")
+						if err != nil {
+							log.Fatal("Error marshaling players:", err)
+						}
+						sendToAll(messages.Message{Type: "playerupdate", Data: string(jsonData)})
+
+						jsonData, err = json.MarshalIndent(state.GetTileStacks(conquestData.TileID), "", "  ")
+						if err != nil {
+							log.Fatal("Error marshaling players:", err)
+						}
+						sendToAll(messages.Message{Type: "tileupdate", Data: string(jsonData)})
+						log.Println("conquest successful!:")
+					}
 				}
+				mu.Unlock()
+
 			}
 		}(conn)
 	}

@@ -6,25 +6,32 @@ import (
 	"time"
 )
 
-func createTribe(race Race, trait Trait) (Tribe, error) {
+func createTribe(race Race, trait Trait) (TribeEntry, error) {
     tribe := Tribe{
         Race:  race,
         Trait: trait,
     }
+    pieceCount := 0
 
-    raceFunc, raceExists := RaceMap[race]
+    raceVal, raceExists := RaceMap[race]
     if !raceExists {
-        return Tribe{}, fmt.Errorf("race '%s' not found in RaceMap", race)
+        return TribeEntry{}, fmt.Errorf("race '%s' not found in RaceMap", race)
     }
-    tribe = raceFunc(tribe)
+    tribe = raceVal.Transform(tribe)
+    pieceCount += raceVal.Count
 
-    traitFunc, traitExists := TraitMap[trait]
+    traitVal, traitExists := TraitMap[trait]
     if !traitExists {
-        return Tribe{}, fmt.Errorf("trait '%s' not found in TraitMap", trait)
+        return TribeEntry{}, fmt.Errorf("trait '%s' not found in TraitMap", trait)
     }
-    tribe = traitFunc(tribe)
+    tribe = traitVal.Transform(tribe)
+    pieceCount += traitVal.Count
 
-    return tribe, nil
+    return TribeEntry{
+        Tribe: &tribe,
+        CoinPile: 0,
+        PiecePile: pieceCount,
+    }, nil
 }
 
 func createTribeList() ([]TribeEntry, error) {
@@ -47,15 +54,12 @@ func createTribeList() ([]TribeEntry, error) {
     pairCount := min(len(raceKeys), len(traitKeys)) 
 
     for i := 0; i < pairCount; i++ {
-        tribe, err := createTribe(raceKeys[i], traitKeys[i])
+        tribeEntry, err := createTribe(raceKeys[i], traitKeys[i])
         if err != nil {
             return nil, fmt.Errorf("failed to create tribe with race '%s' and trait '%s': %w", raceKeys[i], traitKeys[i], err)
         }
 
-        tribeEntries = append(tribeEntries, TribeEntry{
-            Tribe:     tribe,
-            CoinsPile: 0,
-        })
+        tribeEntries = append(tribeEntries, tribeEntry)
     }
 
     return tribeEntries, nil

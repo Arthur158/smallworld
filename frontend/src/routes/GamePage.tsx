@@ -52,7 +52,7 @@ export default function GamePage() {
         name: "Cristian",
         activeTribe: {race: "amazons", trait: "armed"},
         passiveTribes: [{race: "ghouls", trait:"dragon-riding"}],
-        isPlaying: true,
+        isPlaying: false,
         pieceStacks: [{type:"dwarves", amount:3}, {type:"dragon", amount:1}],
       }
     ]))
