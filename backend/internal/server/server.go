@@ -108,6 +108,35 @@ func startGame(c1, c2 *websocket.Conn) {
 					state.ApplyAction(msg.Data)
 					actions := state.GetActions()
 					sendToAll(messages.Message{Type: "state", Data: "Actions: " + actions[len(actions)-1]})
+				case "tribepick":
+					var pickData struct {
+						pickIndex	int `json:"pickIndex"`
+					}
+
+					if err := json.Unmarshal([]byte(msg.Data), &pickData); err != nil {
+						log.Println("Error parsing conquest message:", err)
+						conn.WriteJSON(messages.Message{Type: "error", Data: "Invalid choice data"})
+						return
+					}
+
+					if err := state.HandleTribeChoice(index, pickData.pickIndex);
+					err != nil {
+						log.Println("Error choosing tribe", err)
+						conn.WriteJSON(messages.Message{Type: "error", Data: err.Error()})
+					} else {
+						jsonData, err := json.MarshalIndent(state.GetPlayers(), "", "  ")
+						if err != nil {
+							log.Fatal("Error marshaling players:", err)
+						}
+						sendToAll(messages.Message{Type: "playerupdate", Data: string(jsonData)})
+
+						jsonData, err = json.MarshalIndent(state.TurnInfo, "", "  ")
+						if err != nil {
+							log.Fatal("Error marshaling players:", err)
+						}
+						sendToAll(messages.Message{Type: "turnupdate", Data: string(jsonData)})
+					}
+
 				case "conquest":
 					var conquestData struct {
 						TileID            string `json:"tileId"`

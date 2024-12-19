@@ -9,3 +9,10 @@ Then, we can start working on backend.
 	- a function that determines whether it's fair for the player to choose the tribe they're trying to choose at that moment.
 	- a point counter which determines how much the player made in that turn and adds it to their total.
 	- 
+
+-----------
+
+Now how am I gonna handle fucking zombies? they modify the whole game, like they add another full turn, they need to modify what stacks are handed to the player at the start of their turn. 
+
+Maybe it should be as my dad said, the entire game should be like a tribe, where it is a series of functions to handle switching the turn switching this and that, and a tribe, when picked, could change that entire flow. For example, zombies would change the game mechanics by making it so that when it is the turn of the player that has them, at the start of their turn, there is another turn inserted where the zombie tribe is used as the active tribe. There is a problem however. Once the zombies disappear, the mechanic has to disappear, so the state before that has to be saved. The problem comes when other tribes come in and alter the game in different ways. Then the state with zombies and that new one has to be saved, as well as the one with only zombies and only that one. It is exponential how many new mechanics there could be. It might not have to however if the new one does not change the same functions, then maybe only conflicting functions might have to have their intermediate results remembered.
+I believe the case of the zombie can be solved by having a principle of "playing tribe", where each player's turn a function is run which analyzes their active then passive tribes for how which will "start", normally the active will be the only one that wants to start, but in the case of the zombie, the zombie will start. Then each tribe will have a function for finishing turn, in which case the passive zombie, instead of modifying the state by giving it to the next player, will give it to the next tribe.

@@ -1,7 +1,7 @@
 package gamestate
 
 // Map1 defines tiles and their adjacency relationships
-func Map1() map[string]Tile {
+func Map1() map[string]*Tile {
     // Step 1: Create tiles without adjacency
     tileMap := map[string]*Tile{
         "0":  {Id: "0", Biome: Swamp, Attributes: []Attribute{}},
@@ -27,9 +27,9 @@ func Map1() map[string]Tile {
     tileMap["9"].AdjacentTiles = []*Tile{tileMap["8"], tileMap["10"]}
 
     // Step 3: Convert the map of pointers to a map of values
-    result := make(map[string]Tile, len(tileMap))
+    result := make(map[string]*Tile, len(tileMap))
     for id, tile := range tileMap {
-        result[id] = *tile // Dereference pointer to get a Tile value
+        result[id] = tile // Dereference pointer to get a Tile value
     }
 
     return result
@@ -37,6 +37,6 @@ func Map1() map[string]Tile {
 
 
 // MapRegistry stores map definitions for dynamic loading
-var MapRegistry = map[string]func() map[string]Tile{
+var MapRegistry = map[string]func() map[string]*Tile{
 	"Map1": Map1,
 }

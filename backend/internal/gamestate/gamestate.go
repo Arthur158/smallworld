@@ -8,7 +8,7 @@ type GameState struct {
 	Actions []string
 	Players []Player
 	TribeList []TribeEntry
-	TileList map[string]Tile
+	TileList map[string]*Tile
 	TurnInfo TurnInfo
 
 }
@@ -87,14 +87,47 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 	chooser.ActiveTribe = gs.TribeList[entryIndex].Tribe
 	chooser.CoinPile += gs.TribeList[entryIndex].CoinPile - entryIndex 
 	gs.TribeList = append(gs.TribeList[:entryIndex], gs.TribeList[entryIndex+1])
+	gs.TurnInfo.Phase = Conquest
 
 	// Error handling too small a list to do here.
 
 	return nil;
 }
 
-func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
+func (gs *GameState) HandleAbandonment(playerIndex int, tileId string, stack string) error {
+	if gs.TurnInfo.PlayerIndex != playerIndex {
+		return fmt.Errorf("It is not this player's turn!")
+	}
+
+	if gs.TurnInfo.Phase != TileAbandonment {
+		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
+	}
+
+	player := &gs.Players[playerIndex]
+
+	tile, ok := gs.TileList[tileId]
+	if !ok {
+		return fmt.Errorf("No tile with this id!")
+	}
+
+	if player != tile.OwningPlayer {
+		return fmt.Errorf("Player can only abandon their own region!")
+	}
+
+	// maybe do the necessary in cantilebeabandoned for now, meaning checking if the zone only contains the piecestack with 1, this function is necessary to keep the functionality for zombies anyways, so we might as well use it for checking if there is only 1 stack on there.
+	if !tile.OwningTribe.CanTileBeAbandoned(tile, stack) {
+		return fmt.Errorf("Stack cannot be removed!")
+	}
+
+	stacks := tile.OwningTribe.ReceiveAbandonment(tile, stack)
+
+	tile.OwningPlayer.addReserves(stacks)
+	tile.OwningTribe = nil
+	tile.OwningPlayer = nil
+	tile.Presence = None
+
 	return nil
+	
 }
 
 func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingStackType string) error {
@@ -118,6 +151,10 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return fmt.Errorf("No tile with this id!")
 	}
 
+	if tile.OwningPlayer == attacker {
+		return fmt.Errorf("player cannot attack themselves")
+	}
+
 	defendingTribe := tile.OwningTribe
 	attackingTribe, err := GetPlayerTribe(attackingStackType, attacker)
 
@@ -125,14 +162,18 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return fmt.Errorf("Could not create retrieve attacker's tribe", err)
 	}
 
-	if defendingTribe.IsTileUnTakeable(tile) {
-		return fmt.Errorf("The attacked tile is untakeable")
+
+	var tileCost int
+	if tile.Presence == Passive || tile.Presence == Active {
+		tileCost, err = defendingTribe.countDefense(tile)
+		if err != nil {
+			fmt.Errorf("Impossible to attack", err)
+		}
+	} else {
+		tileCost = CountDefense(tile)
 	}
 
-	tileCost := defendingTribe.countDefense(tile)
 	attackCostStacks := attackingTribe.countAttack(tile, tileCost, attackingStackType)
-		
-	defenderReturningStacks := defendingTribe.countReturningStacks(tile)
 	newTileStacks := attackingTribe.countNewTileStacks(attackCostStacks)
 	newStacks, ok := SubtractPieceStacks(attacker.PieceStacks, attackCostStacks)
 	if !ok {
@@ -140,25 +181,106 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	// Enact changes
+	if tile.Presence == Passive || tile.Presence == Active {
+		defenderReturningStacks := defendingTribe.countReturningStacks(tile)
+		tile.OwningPlayer.addReserves(defenderReturningStacks)
+	}
 	attacker.PieceStacks = newStacks
-	tile.OwningPlayer.addReserves(defenderReturningStacks)
 	tile.PieceStacks = newTileStacks
 	tile.OwningTribe = attackingTribe
 	tile.OwningPlayer = attacker
+	tile.Presence = Active; // fucking zombies here
 	gs.TurnInfo.Phase = Conquest
 
 	return nil
 }
 
 func (gs *GameState) HandleStartRedeployment(playerIndex int) error {
+	if gs.TurnInfo.PlayerIndex != playerIndex {
+		return fmt.Errorf("It is not this player's turn!")
+	}
+
+	if gs.TurnInfo.Phase != Conquest {
+		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
+	}
+
+	player := &gs.Players[playerIndex]
+	newStacks := player.ActiveTribe.startRedeployment()
+	player.addReserves(newStacks)
+
+	gs.TurnInfo.Phase = Redeployment
+
+	return nil
+	
+}
+
+func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stackType string) error {
+	if gs.TurnInfo.PlayerIndex != playerIndex {
+		return fmt.Errorf("It is not this player's turn!")
+	}
+
+	if gs.TurnInfo.Phase != Redeployment {
+		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
+	}
+
+	player := &gs.Players[playerIndex]
+
+	tile, ok := gs.TileList[tileId]
+	if !ok {
+		return fmt.Errorf("No tile with this id!")
+	}
+
+	if tile.OwningPlayer != player {
+		return fmt.Errorf("This tile does not belong to the player!")
+	}
+
+	stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
+	if err != nil {
+		return fmt.Errorf("Unable to redeploy", err)
+	}
+
+	player.addReserves(stacks)
+
 	return nil
 }
 
-func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileIndex string, stack PieceStack) error {
+func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackType string) error {
+	if gs.TurnInfo.PlayerIndex != playerIndex {
+		return fmt.Errorf("It is not this player's turn!")
+	}
+
+	if gs.TurnInfo.Phase != Redeployment {
+		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
+	}
+
+	player := &gs.Players[playerIndex]
+
+	tile, ok := gs.TileList[tileId]
+	if !ok {
+		return fmt.Errorf("No tile with this id!")
+	}
+
+	if tile.OwningPlayer != player {
+		return fmt.Errorf("This tile does not belong to the player!")
+	}
+
+	newStacks, ok := SubtractPieceStacks(player.PieceStacks, []PieceStack{{Type: stackType, Amount: 1}})
+	if !ok {
+		return fmt.Errorf("Cannot redeploy pieces you don't have")
+	}
+	player.PieceStacks = newStacks
+
+	stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
+	if err != nil {
+		return fmt.Errorf("Unable to redeploy", err)
+	}
+
+	player.addReserves(stacks)
+
 	return nil
 }
 
-func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileIndex string, stack PieceStack) error {
+func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 	return nil
 }
 

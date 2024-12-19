@@ -7,11 +7,14 @@ type Tribe struct {
 	Race Race;
 	Trait Trait;
 	IsStackValid func(string) bool;
-	IsTileUnTakeable func(Tile) bool;
-	countDefense func(Tile) int;
-	countAttack func(Tile, int, string) []PieceStack;
-	countReturningStacks func(Tile) []PieceStack;
+	countDefense func(*Tile) (int, error);
+	countAttack func(*Tile, int, string) []PieceStack;
+	countReturningStacks func(*Tile) []PieceStack;
 	countNewTileStacks func([]PieceStack) []PieceStack;
+	CanTileBeAbandoned func(*Tile, string) bool;
+	ReceiveAbandonment func(*Tile, string) []PieceStack;
+	startRedeployment func() []PieceStack;
+	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
 }
 
 type TribeEntry struct {
@@ -72,6 +75,26 @@ func (b Attribute) String() string {
 	}
 }
 
+type Presence int;
+
+const (
+	None Presencce = iota
+	Active
+	Passive
+)
+
+func (b Presence) String() string {
+	switch b {
+	case None:
+		return "None"
+	case Active:
+		return "Active"
+	case Passive:
+		return "Passive"
+	default:
+		return "Unknown"
+	}
+}
 
 type Tile struct {
 	Id string;
@@ -81,6 +104,7 @@ type Tile struct {
 	OwningTribe *Tribe;
 	Biome Biome;
 	Attributes []Attribute;
+	Presence Presence;
 }
 
 type PieceStack struct {
