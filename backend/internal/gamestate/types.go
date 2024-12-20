@@ -11,10 +11,14 @@ type Tribe struct {
 	countAttack func(*Tile, int, string) []PieceStack;
 	countReturningStacks func(*Tile) []PieceStack;
 	countNewTileStacks func([]PieceStack) []PieceStack;
-	CanTileBeAbandoned func(*Tile, string) bool;
-	ReceiveAbandonment func(*Tile, string) []PieceStack;
+	CanTileBeAbandoned func(*Tile) bool;
+	ReceiveAbandonment func(*Tile) []PieceStack;
 	startRedeployment func() []PieceStack;
 	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
+	checkZoneAccess func(*Tile) error;
+	checkAdjacency func(*Tile, *GameState) error;
+	GetStacksForConquest func(*Tile) []PieceStack;
+	CountPoints func(*Tile) int;
 }
 
 type TribeEntry struct {
@@ -78,7 +82,7 @@ func (b Attribute) String() string {
 type Presence int;
 
 const (
-	None Presencce = iota
+	None Presence = iota
 	Active
 	Passive
 )
@@ -105,6 +109,7 @@ type Tile struct {
 	Biome Biome;
 	Attributes []Attribute;
 	Presence Presence;
+	IsEdge bool;
 }
 
 type PieceStack struct {
@@ -128,6 +133,7 @@ const (
 	TileAbandonment
 	Conquest
 	Redeployment
+	GameFinished
 )
 
 func (b Phase) String() string {
@@ -140,6 +146,8 @@ func (b Phase) String() string {
 		return "Conquest"
 	case Redeployment:
 		return "Redeployment"
+	case GameFinished:
+		return "GameFinished"
 	default:
 		return "Unknown"
 	}
@@ -151,6 +159,7 @@ type TurnInfo struct {
 	PlayerIndex int;
 	Phase Phase;
 	ConqueredPassive int;
-	ConqueredActive int
+	ConqueredActive int;
+	Conquered int;
 }
 

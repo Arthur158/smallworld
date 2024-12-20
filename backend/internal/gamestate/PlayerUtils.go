@@ -15,14 +15,15 @@ func DoesPlayerHaveStack(stackType string, player *Player) bool {
 }
 
 func GetPlayerTribe(stackType string, player *Player) (*Tribe, error) {
+	print(stackType)
     if player.ActiveTribe.IsStackValid(stackType) {
-        return player.ActiveTribe, nil;
+	return player.ActiveTribe, nil;
     }
     // Thinking of zombie-like tribes here
     for _, tribe := range player.PassiveTribes{
-        if tribe.IsStackValid(stackType) {
-            return tribe, nil;
-        }
+	if tribe.IsStackValid(stackType) {
+	    return tribe, nil;
+	}
     }
 
     return nil, fmt.Errorf("Player did not have valid tribe for piecestack")
@@ -46,6 +47,30 @@ func (player *Player) addReserves(stacks []PieceStack) {
             player.PieceStacks = append(player.PieceStacks, stack)
         }
     }
+}
+func AddPieceStacks(first, second []PieceStack) []PieceStack {
+    result := make([]PieceStack, 0)
+    pieceMap := make(map[string]int)
+
+    // Combine amounts from the first slice
+    for _, stack := range first {
+        pieceMap[stack.Type] += stack.Amount
+    }
+
+    // Combine amounts from the second slice
+    for _, stack := range second {
+        pieceMap[stack.Type] += stack.Amount
+    }
+
+    // Construct the result slice
+    for pieceType, totalAmount := range pieceMap {
+        result = append(result, PieceStack{
+            Type:   pieceType,
+            Amount: totalAmount,
+        })
+    }
+
+    return result
 }
 
 func SubtractPieceStacks(reserves, expanses []PieceStack) ([]PieceStack, bool) {

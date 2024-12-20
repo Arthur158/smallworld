@@ -70,11 +70,11 @@ func startGame(c1, c2 *websocket.Conn) {
 
 	if err != nil {
 		log.Println("Error creating game", err)
-		// sendToAll(messages.Message{Type: "error", Data: "Could not create game"})
+		sendToAll(messages.Message{Type: "error", Data: "Could not create game"})
 	}
 
 	// Notify players that the game has started
-	jsonData, err := json.MarshalIndent(state.GetPlayers(), "", "  ")
+	jsonData, err := json.MarshalIndent(state.Players, "", "  ")
 	for index, conn := range players {
 		conn.WriteJSON(messages.Message{Type: "index", Data: string(index)})
 	}
@@ -89,94 +89,205 @@ func startGame(c1, c2 *websocket.Conn) {
 
 	for index, conn := range players {
 		wg.Add(1)
-
-		go func(player *websocket.Conn) {
-			defer wg.Done()
-
-
-			for {
-				var msg messages.Message
-				if err := player.ReadJSON(&msg); err != nil {
-					log.Println("Player disconnected:", err)
-					sendToAll(messages.Message{Type: "state", Data: "Other player disconnected"})
-					return
-				}
-
-				mu.Lock()
-				switch msg.Type {
-				case "action":
-					state.ApplyAction(msg.Data)
-					actions := state.GetActions()
-					sendToAll(messages.Message{Type: "state", Data: "Actions: " + actions[len(actions)-1]})
-				case "tribepick":
-					var pickData struct {
-						pickIndex	int `json:"pickIndex"`
-					}
-
-					if err := json.Unmarshal([]byte(msg.Data), &pickData); err != nil {
-						log.Println("Error parsing conquest message:", err)
-						conn.WriteJSON(messages.Message{Type: "error", Data: "Invalid choice data"})
-						return
-					}
-
-					if err := state.HandleTribeChoice(index, pickData.pickIndex);
-					err != nil {
-						log.Println("Error choosing tribe", err)
-						conn.WriteJSON(messages.Message{Type: "error", Data: err.Error()})
-					} else {
-						jsonData, err := json.MarshalIndent(state.GetPlayers(), "", "  ")
-						if err != nil {
-							log.Fatal("Error marshaling players:", err)
-						}
-						sendToAll(messages.Message{Type: "playerupdate", Data: string(jsonData)})
-
-						jsonData, err = json.MarshalIndent(state.TurnInfo, "", "  ")
-						if err != nil {
-							log.Fatal("Error marshaling players:", err)
-						}
-						sendToAll(messages.Message{Type: "turnupdate", Data: string(jsonData)})
-					}
-
-				case "conquest":
-					var conquestData struct {
-						TileID            string `json:"tileId"`
-						AttackingStackType string `json:"attackingStackType"`
-					    }
-
-					// Parse the JSON data into conquestData
-					if err := json.Unmarshal([]byte(msg.Data), &conquestData); err != nil {
-						log.Println("Error parsing conquest message:", err)
-						conn.WriteJSON(messages.Message{Type: "error", Data: "Invalid conquest data"})
-						return
-					}
-
-					// Call the HandleConquest method with parsed parameters
-					if err := state.HandleConquest(conquestData.TileID, index, conquestData.AttackingStackType); err != nil {
-						log.Println("Error handling conquest:", err)
-						conn.WriteJSON(messages.Message{Type: "error", Data: err.Error()})
-					} else {
-						jsonData, err := json.MarshalIndent(state.GetPlayers(), "", "  ")
-						if err != nil {
-							log.Fatal("Error marshaling players:", err)
-						}
-						sendToAll(messages.Message{Type: "playerupdate", Data: string(jsonData)})
-
-						jsonData, err = json.MarshalIndent(state.GetTileStacks(conquestData.TileID), "", "  ")
-						if err != nil {
-							log.Fatal("Error marshaling players:", err)
-						}
-						sendToAll(messages.Message{Type: "tileupdate", Data: string(jsonData)})
-						log.Println("conquest successful!:")
-					}
-				}
-				mu.Unlock()
-
-			}
-		}(conn)
+		go handlePlayerConnection(conn, state, index, &wg, &mu, sendToAll)
 	}
-
 
 	// Block until all player goroutines have finished
 	wg.Wait()
 	log.Println("Game ended: All players disconnected.")
 }
+
+func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, index int, wg *sync.WaitGroup, mu *sync.Mutex, sendToAll func(msg messages.Message)) {
+	defer wg.Done()
+
+	// Helper functions
+	sendError := func(message string) {
+		conn.WriteJSON(messages.Message{Type: "error", Data: message})
+	}
+
+	sendStateMessage := func(message string) {
+		sendToAll(messages.Message{Type: "state", Data: message})
+	}
+
+	sendPlayerUpdate := func() {
+		jsonData, err := json.MarshalIndent(state.Players, "", "  ")
+		if err != nil {
+			log.Fatal("Error marshaling players:", err)
+		}
+		sendToAll(messages.Message{Type: "playerupdate", Data: string(jsonData)})
+	}
+
+	sendTileUpdate := func(tileID string) {
+		jsonData, err := json.MarshalIndent(state.GetTileStacks(tileID), "", "  ")
+		if err != nil {
+			log.Fatal("Error marshaling tile stacks:", err)
+		}
+		sendToAll(messages.Message{Type: "tileupdate", Data: string(jsonData)})
+	}
+
+	sendTurnUpdate := func() {
+		jsonData, err := json.MarshalIndent(state.TurnInfo, "", "  ")
+		if err != nil {
+			log.Fatal("Error marshaling turn info:", err)
+		}
+		sendToAll(messages.Message{Type: "turnupdate", Data: string(jsonData)})
+	}
+
+
+	//Handling functions
+	handleTribePick := func(msg messages.Message) {
+		var pickData struct {
+			PickIndex int `json:"pickIndex"`
+		}
+		if err := json.Unmarshal([]byte(msg.Data), &pickData); err != nil {
+			sendError("Invalid choice data")
+			return
+		}
+
+		if err := state.HandleTribeChoice(index, pickData.PickIndex); err != nil {
+			sendError(err.Error())
+		} else {
+			sendPlayerUpdate()
+			sendTurnUpdate()
+		}
+	}
+
+	handleAbandonment := func(msg messages.Message) {
+		var abandonmentData struct {
+			TileID string `json:"tileId"`
+		}
+		if err := json.Unmarshal([]byte(msg.Data), &abandonmentData); err != nil {
+			sendError("Invalid abandon data")
+			return
+		}
+
+		if err := state.HandleAbandonment(index, abandonmentData.TileID); err != nil {
+			sendError(err.Error())
+		} else {
+			sendPlayerUpdate()
+			sendTileUpdate(abandonmentData.TileID)
+		}
+	}
+
+	handleConquest := func(msg messages.Message) {
+		var conquestData struct {
+			TileID             string `json:"tileId"`
+			AttackingStackType string `json:"attackingStackType"`
+		}
+
+		if err := json.Unmarshal([]byte(msg.Data), &conquestData); err != nil {
+			sendError("Invalid conquest data")
+			return
+		}
+
+		if err := state.HandleConquest(conquestData.TileID, index, conquestData.AttackingStackType); err != nil {
+			sendError(err.Error())
+		} else {
+			sendPlayerUpdate()
+			sendTileUpdate(conquestData.TileID)
+			sendTurnUpdate()
+		}
+	}
+
+	handleStartRedeployment := func() {
+		if err := state.HandleStartRedeployment(index); err != nil {
+			sendError(err.Error())
+		} else {
+			sendPlayerUpdate()
+		}
+	}
+
+	handleRedeploymentIn := func (msg messages.Message) {
+		var deployData struct {
+			TileID          string `json:"tileId"`
+			stackType	string `json:"stackType"`
+		}
+
+		if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
+			sendError("Invalid deploy data")
+			return
+		}
+
+		if err := state.HandleRedeploymentIn(index, deployData.TileID, deployData.stackType); err != nil {
+			sendError(err.Error())
+		} else {
+			sendPlayerUpdate()
+			sendTileUpdate(deployData.TileID)
+			sendTurnUpdate()
+		}
+	}
+
+	handleRedeploymentOut := func (msg messages.Message) {
+		var deployData struct {
+			TileID          string `json:"tileId"`
+			stackType	string `json:"stackType"`
+		}
+
+		if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
+			sendError("Invalid deploy data")
+			return
+		}
+
+		if err := state.HandleRedeploymentOut(index, deployData.TileID, deployData.stackType); err != nil {
+			sendError(err.Error())
+		} else {
+			sendPlayerUpdate()
+			sendTileUpdate(deployData.TileID)
+			sendTurnUpdate()
+		}
+	}
+
+	handleRedeploymentThrough := func (msg messages.Message) {
+		var deployData struct {
+			TileFromID          string `json:"tileFromId"`
+			TileToID          string `json:"tileToId"`
+			stackType	string `json:"stackType"`
+		}
+
+		if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
+			sendError("Invalid deploy data")
+			return
+		}
+
+		if err := state.HandleRedeploymentOut(index, deployData.TileFromID, deployData.stackType); err != nil {
+			sendError(err.Error())
+		} else if err := state.HandleRedeploymentIn(index, deployData.TileToID, deployData.stackType); err != nil {
+			sendPlayerUpdate()
+			sendTileUpdate(deployData.TileFromID)
+			sendTileUpdate(deployData.TileToID)
+			sendTurnUpdate()
+		}
+	}
+
+	// Main loop
+	for {
+		var msg messages.Message
+		if err := conn.ReadJSON(&msg); err != nil {
+			log.Println("Player disconnected:", err)
+			sendStateMessage("Other player disconnected")
+			return
+		}
+
+		mu.Lock()
+		switch msg.Type {
+		case "tribepick":
+			handleTribePick(msg)
+		case "abandonment":
+			handleAbandonment(msg)
+		case "conquest":
+			handleConquest(msg)
+		case "startredeployment":
+			handleStartRedeployment()
+		case "deploymentin":
+			handleRedeploymentIn(msg)
+		case "deploymentout":
+			handleRedeploymentOut(msg)
+		case "deploymentthrough":
+			handleRedeploymentThrough(msg)
+		default:
+			sendError("Unknown message type")
+		}
+		mu.Unlock()
+	}
+}
+

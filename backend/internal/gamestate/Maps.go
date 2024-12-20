@@ -4,8 +4,8 @@ package gamestate
 func Map1() map[string]*Tile {
     // Step 1: Create tiles without adjacency
     tileMap := map[string]*Tile{
-        "0":  {Id: "0", Biome: Swamp, Attributes: []Attribute{}},
-        "1":  {Id: "1", Biome: Forest, Attributes: []Attribute{Cave}},
+        "0":  {Id: "0", Biome: Swamp, Attributes: []Attribute{}, IsEdge: true},
+        "1":  {Id: "1", Biome: Forest, Attributes: []Attribute{Cave}, IsEdge: true},
         "2":  {Id: "2", Biome: Hill, Attributes: []Attribute{}},
         "3":  {Id: "3", Biome: Swamp, Attributes: []Attribute{Magic}},
         "4":  {Id: "4", Biome: Field, Attributes: []Attribute{}},

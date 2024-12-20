@@ -1,27 +1,21 @@
 package gamestate
 
 type RaceValue struct {
-    Transform func(Tribe) Tribe 
+    Transform func(*Tribe)
     Count     int
 }
 
 var RaceMap = map[Race]RaceValue {
-	"Orc": {Transform: func(t Tribe) Tribe {
-			return t
+	"Orc": {Transform: func(t *Tribe) {
 		}, Count: 5},
-	"Gypsies": {Transform: func(t Tribe) Tribe {
-			return t
+	"Gypsies": {Transform: func(t *Tribe) {
 		}, Count: 6},
-	"Humans": {Transform: func(t Tribe) Tribe {
-			return t
+	"Humans": {Transform: func(t *Tribe) {
 		}, Count: 5},
-	"Elves": {Transform: func(t Tribe) Tribe {
-			return t
+	"Elves": {Transform: func(t *Tribe) {
 		}, Count: 6},
-	"Dwarves": {Transform: func(t Tribe) Tribe {
-			return t
+	"Dwarves": {Transform: func(t *Tribe) {
 		}, Count: 3},
-	"Giants": {Transform: func(t Tribe) Tribe {
-			return t
+	"Giants": {Transform: func(t *Tribe) {
 		}, Count: 6},
 }

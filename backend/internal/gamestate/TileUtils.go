@@ -1,5 +1,37 @@
 package gamestate;
 
 func CountDefense(tile *Tile) int {
-    return 0
+    price := 2
+    if tile.Biome == Mountain {
+        price += 1
+    }
+    return price
+}
+
+func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
+    for _, tile := range gs.TileList {
+        if tile.Presence != None && tile.OwningTribe.Race == race {
+            return true
+        }
+    }
+    return false
+}
+
+func (gs *GameState) GetPieceStackForConquest(player *Player) {
+    for _, tile := range gs.TileList {
+        if tile.OwningPlayer == player {
+            player.addReserves(tile.OwningTribe.GetStacksForConquest(tile))
+        }
+    }
+}
+
+func (gs *GameState) CountPoints(player *Player) int {
+    total := 0
+    for _, tile := range gs.TileList {
+        if tile.OwningPlayer == player {
+            total += tile.OwningTribe.CountPoints(tile)
+        }
+    }
+
+    return total
 }
