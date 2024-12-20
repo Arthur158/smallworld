@@ -19,6 +19,9 @@ type Tribe struct {
 	checkAdjacency func(*Tile, *GameState) error;
 	GetStacksForConquest func(*Tile) []PieceStack;
 	CountPoints func(*Tile) int;
+	prepareDecline func(*GameState);
+	prepareRemoval func(*GameState) bool;
+	CanGoIntoDecline func(*GameState) bool
 }
 
 type TribeEntry struct {
@@ -130,6 +133,7 @@ type Phase int
 
 const (
 	TribeChoice Phase = iota
+	DeclineChoice
 	TileAbandonment
 	Conquest
 	Redeployment
@@ -140,6 +144,8 @@ func (b Phase) String() string {
 	switch b {
 	case TribeChoice:
 		return "TribeChoice"
+	case DeclineChoice:
+		return "DeclineChoice"
 	case TileAbandonment:
 		return "TileAbandonment"
 	case Conquest:

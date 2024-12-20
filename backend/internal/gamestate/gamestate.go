@@ -93,7 +93,7 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
 		return fmt.Errorf("It is not this player's turn!")
 	}
 
-	if gs.TurnInfo.Phase != TileAbandonment {
+	if gs.TurnInfo.Phase != TileAbandonment  && gs.TurnInfo.Phase != DeclineChoice {
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
@@ -120,6 +120,7 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
 	tile.OwningPlayer = nil
 	tile.PieceStacks = []PieceStack{}
 	tile.Presence = None
+	gs.TurnInfo.Phase = TileAbandonment
 
 	return nil
 	
@@ -300,6 +301,31 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 	return nil
 }
 
+func (gs *GameState) HandleDecline(playerIndex int) error {
+	if gs.TurnInfo.PlayerIndex != playerIndex {
+		return fmt.Errorf("It is not this player's turn!")
+	}
+
+	player := gs.Players[playerIndex];
+
+	if player.ActiveTribe.CanGoIntoDecline(gs){
+		return fmt.Errorf("You cannot go into decline now!")
+	}
+
+	for i, tribe := range player.PassiveTribes {
+		if (tribe.prepareRemoval(gs)) {
+			player.PassiveTribes = append(player.PassiveTribes[:i], player.PassiveTribes[i+1:]...)
+		}
+	}
+
+	player.ActiveTribe.prepareDecline(gs)
+	player.ActiveTribe = nil
+
+	gs.handleNextPlayerTurn()
+
+	return nil
+}
+
 func (gs *GameState) handleNextPlayerTurn() {
 	if gs.TurnInfo.PlayerIndex == len(gs.Players) - 1 {
 		if gs.TurnInfo.TurnIndex == 10 {
@@ -324,6 +350,3 @@ func (gs *GameState) ChoosePlayerStart() {
 	}
 }
 
-func (gs *GameState) HandleDecline(playerIndex int) error {
-	return nil
-}

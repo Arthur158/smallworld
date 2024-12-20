@@ -169,6 +169,29 @@ func createBaseTribe() *Tribe {
         return 1
     }
 
+    tribe.prepareDecline = func(gs *GameState) {
+        for _, tile := range gs.TileList {
+            if tile.OwningTribe.Race == tribe.Race {
+                tile.PieceStacks = []PieceStack{{Type: string(tribe.Race), Amount: 1}}
+                tile.Presence = Passive
+            }
+        }
+    }
+
+    tribe.prepareRemoval = func(gs *GameState) bool {
+        for _, tile := range gs.TileList {
+            if tile.OwningTribe.Race == tribe.Race {
+                tile.PieceStacks = []PieceStack{}
+                tile.Presence = None
+            }
+        }
+        return true
+    }
+
+    tribe.CanGoIntoDecline = func(gs *GameState) bool {
+        return gs.TurnInfo.Phase == DeclineChoice
+    }
+
     return &tribe
 }
 

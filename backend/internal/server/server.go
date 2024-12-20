@@ -252,9 +252,30 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 		if err := state.HandleRedeploymentOut(index, deployData.TileFromID, deployData.stackType); err != nil {
 			sendError(err.Error())
 		} else if err := state.HandleRedeploymentIn(index, deployData.TileToID, deployData.stackType); err != nil {
+			sendError(err.Error())
+		} else {
 			sendPlayerUpdate()
 			sendTileUpdate(deployData.TileFromID)
 			sendTileUpdate(deployData.TileToID)
+			sendTurnUpdate()
+		}
+	}
+
+
+	handleFinishTurn := func () {
+		if err := state.HandleFinishTurn(index); err != nil {
+			sendError(err.Error())
+		} else {
+			sendPlayerUpdate()
+			sendTurnUpdate()
+		}
+	}
+
+	handleDecline := func () {
+		if err := state.HandleDecline(index); err != nil {
+			sendError(err.Error())
+		} else {
+			sendPlayerUpdate()
 			sendTurnUpdate()
 		}
 	}
@@ -284,6 +305,10 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 			handleRedeploymentOut(msg)
 		case "deploymentthrough":
 			handleRedeploymentThrough(msg)
+		case "finishturn":
+			handleFinishTurn()
+		case "decline":
+			handleDecline()
 		default:
 			sendError("Unknown message type")
 		}
