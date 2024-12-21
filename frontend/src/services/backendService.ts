@@ -1,12 +1,15 @@
 import { Polygon } from '../types/Board';
 import { websocketMessageReceived } from '../redux/slices/applicationSlice';
 import { store } from '../redux/store'; // Import the Redux store
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../redux/store';
 
 let socket: WebSocket | null = null;
 
+
 // Connect WebSocket
-export const connectWebSocket = (url: string) => {
-  socket = new WebSocket(url);
+export const connectWebSocket = () => {
+  socket = new WebSocket('ws://localhost:8080/ws');
 
   socket.onopen = () => console.log('WebSocket connected');
   socket.onclose = () => console.log('WebSocket disconnected');
@@ -14,20 +17,33 @@ export const connectWebSocket = (url: string) => {
 
   // Single onmessage handler
   socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
+    const message = event.data
+    console.log(message)
     store.dispatch(websocketMessageReceived(message));
   };
 };
 
 
-export const sendRequest = (message: Record<string, any>) => {
+export const sendMessageToBackend = (type: string, data: Record<string, any>) => {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     console.error('WebSocket is not open.');
     return;
   }
 
+
   try {
-    const payload = JSON.stringify(message); // Convert object to JSON string
+    // Construct the message with Type and Data fields
+    const message = {
+      type: type,
+      data: data,
+    };
+
+    // Convert the message to a JSON string
+    const payload = JSON.stringify(message);
+
+    // Send the message to the backend
+    console.log("abt to send...")
+    console.log(payload)
     socket.send(payload);
   } catch (err) {
     console.error('Failed to send WebSocket message:', err);

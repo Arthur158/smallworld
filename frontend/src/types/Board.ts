@@ -21,11 +21,17 @@ export interface Tribe {
   trait: string;
 }
 
+export interface TribeEntry {
+  race: string;
+  trait: string;
+  pieceCount: number;
+  coinCount: number;
+}
+
+
 export interface Player {
   name: string;
   activeTribe: Tribe | null;
   passiveTribes: Tribe[];
-  isPlaying: boolean;
   pieceStacks: PieceStack[]
 }
-

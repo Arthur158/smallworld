@@ -1,6 +1,8 @@
 package messages
 
+import "encoding/json"
+
 type Message struct {
 	Type string `json:"type"`
-	Data string `json:"data"`
+	Data json.RawMessage `json:"data"`
 }

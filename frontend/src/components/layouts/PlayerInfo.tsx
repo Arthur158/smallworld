@@ -1,27 +1,47 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { Player, PieceStack } from '../../types/Board';
+import { setIsStackFromBank, setSelectedStack } from '../../redux/slices/applicationSlice'
+import { useSelector, useDispatch } from 'react-redux';
 
 export default function PlayerInfo() {
-  const player: Player = useSelector((state: RootState) => state.application.player);
+  const dispatch = useDispatch();
+  const allPlayers: Player[] = useSelector((state: RootState) => state.application.players);
+  const playerIndex: number = useSelector((state: RootState) => state.application.playerIndex);
+  const ActiveIndex: number = useSelector((state: RootState) => state.application.playerNumber);
+  const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
+  const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
 
-  const allPlayers = [player, ...useSelector((state: RootState) => state.application.opponents)];
-  const activePlayers = allPlayers.filter((p) => p.isPlaying);
-  if (activePlayers.length !== 1) {
-    console.warn('There should be exactly one active player at a time.');
-  }
-  const activePlayer = activePlayers[0];
-
-  const isPlayerActive = player.isPlaying;
+  const player = allPlayers[playerIndex];
+  const activePlayer = allPlayers[ActiveIndex];
 
   const baseSize = 45;
+
+  const handlePieceStackClick = (stackType: string) => {
+    if (isStackFromBank && selectedStack == stackType) {
+      dispatch(setIsStackFromBank(false))
+      dispatch(setSelectedStack(null))
+    } else {
+    dispatch(setIsStackFromBank(true))
+    dispatch(setSelectedStack(stackType))
+    }
+  }
+
+  const handlePlayerClick = () => {
+    console.log('Hello');
+  };
+
   const renderPieceStacks = (pieceStacks: PieceStack[], isActive: boolean) => {
     return (
-      <div className="flex space-x-2 mt-2">
+      <div className="flex space-x-2 mt-2 relative z-10">
         {pieceStacks.map((stack, index) => {
           const imageSrc = `/stacks/${stack.type}.png`;
           const isClickable = isActive;
+
+          // Determine if the stack should be flashy
+          const isFlashy =
+            isStackFromBank && selectedStack === stack.type;
+
           return (
             <div
               key={index}
@@ -31,8 +51,15 @@ export default function PlayerInfo() {
                 height: baseSize,
                 cursor: isClickable ? 'pointer' : 'default',
                 opacity: isActive ? 1 : 0.5,
+                border: isFlashy ? '3px solid blue' : '1px solid black',
+                animation: isFlashy ? 'flash 1s infinite' : undefined,
               }}
-              onClick={isClickable ? () => console.log(`Stack ${stack.type} clicked`) : undefined}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevents the click event from bubbling up
+                if (isClickable) {
+                  handlePieceStackClick(stack.type);
+                }
+              }}
             >
               <div
                 style={{
@@ -40,7 +67,6 @@ export default function PlayerInfo() {
                   width: baseSize,
                   height: baseSize,
                   backgroundColor: 'blue',
-                  border: '1px solid black',
                 }}
               />
               <img
@@ -92,7 +118,11 @@ export default function PlayerInfo() {
   };
 
   return (
-    <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6]">
+    <div
+      className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative"
+      onClick={handlePlayerClick}
+      style={{ cursor: 'pointer' }}
+    >
       <h3 className="text-lg font-bold">{player.name}</h3>
       {player.activeTribe && (
         <p className="text-base mt-1 italic">
@@ -108,7 +138,18 @@ export default function PlayerInfo() {
           ))}
         </div>
       )}
-      {renderPieceStacks(player.pieceStacks, isPlayerActive)}
+      {renderPieceStacks(player.pieceStacks, playerIndex === ActiveIndex)}
     </div>
   );
 }
+
+// CSS for the flashing animation
+const styles = document.createElement('style');
+styles.innerHTML = `
+  @keyframes flash {
+    0% { border-color: blue; }
+    50% { border-color: lightblue; }
+    100% { border-color: blue; }
+  }
+`;
+document.head.appendChild(styles);

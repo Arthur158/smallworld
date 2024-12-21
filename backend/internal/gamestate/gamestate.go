@@ -19,12 +19,13 @@ func New(playerCount int) (*GameState, error) {
 			ActiveTribe:    nil,
 			PassiveTribes:  []*Tribe{}, // Initialize as empty slice
 			CoinPile: 5,
+			PieceStacks: []PieceStack{},
 			HasActiveTribe: false,
 		}
 	}
 
 	turnInfo := TurnInfo{
-		TurnIndex: 0,
+		TurnIndex: 1,
 		PlayerIndex: 0,
 		Phase: TribeChoice,
 		ConqueredPassive: 0,
@@ -79,7 +80,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 	// Enact changes
 	chooser.ActiveTribe = entry.Tribe
 	chooser.CoinPile += entry.CoinPile - entryIndex 
-	gs.TribeList = append(gs.TribeList[:entryIndex], gs.TribeList[entryIndex+1])
+	gs.TribeList = append(gs.TribeList[:entryIndex], gs.TribeList[entryIndex+1:]...)
 	chooser.addReserves([]PieceStack{{Type: string(entry.Tribe.Race), Amount: entry.PiecePile}})
 	gs.TurnInfo.Phase = Conquest
 

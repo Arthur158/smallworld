@@ -1,14 +1,20 @@
 import { Language } from './misc';
-import { Tribe, Tile, Player } from './Board'
+import { TribeEntry, Tile, Player } from './Board'
 
 
 export interface ApplicationState {
   language: Language;
   error: string | null;
-  player: Player;
-  availableTribes: Tribe[];
+  availableTribes: TribeEntry[];
   tiles: Record<string, Tile>;
-  opponents: Player[]
+  players: Player[];
+  playerIndex: number;
+  turnNumber: number;
+  playerNumber: number;
+  phase: string;
+  selectedStack: string | null;
+  isStackFromBank: boolean
+  selectedTile: string | null;
 }
 
 export type RootState = {

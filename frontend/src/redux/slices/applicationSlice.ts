@@ -1,20 +1,35 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { ApplicationState } from '../../types/redux';
 import { Language } from '../../types/misc';
+import { Player, TribeEntry } from '../../types/Board'
+import { json } from 'react-router-dom';
 
 const initialState: ApplicationState = {
   language: Language.NL,
   error: null,
-  player: {
-    name: "Arthur",
-    activeTribe: null,
-    passiveTribes: [],
-    isPlaying: false,
-    pieceStacks: [{type:"elves", amount:3}, {type:"show", amount:1}],
-  },
-  availableTribes: [{race: "elves", trait: "merchant"}, {race: "giants", trait:"fortunate"}], //dummy for now
+  availableTribes: [{race: "elves", trait: "merchant", pieceCount: 0, coinCount: 0}, {race: "giants", trait:"fortunate", pieceCount: 0, coinCount: 0}], //dummy for now
   tiles: {},
-  opponents: [],
+  players: [
+      {
+        name: "Loris",
+        activeTribe: {race: "dwarves", trait: "ugly"},
+        passiveTribes: [{race: "ghouls", trait:"flying"}],
+        pieceStacks: [],
+      },
+      {
+        name: "Cristian",
+        activeTribe: {race: "amazons", trait: "armed"},
+        passiveTribes: [{race: "ghouls", trait:"dragon-riding"}],
+        pieceStacks: [{type:"dwarves", amount:3}, {type:"dragon", amount:1}],
+      }
+  ],
+  playerIndex: 1,
+  turnNumber: 1,
+  playerNumber: 1,
+  phase: "tribechoice",
+  selectedStack: null,
+  isStackFromBank: false,
+  selectedTile: null,
 };
 
 const applicationSlice = createSlice({
@@ -24,23 +39,26 @@ const applicationSlice = createSlice({
     setLanguage(state, action: PayloadAction<Language>): void {
       state.language = action.payload;
     },
+    setSelectedStack(state, action) {
+      state.selectedStack = action.payload
+    },
+    setSelectedTile(state, action) {
+      state.selectedTile = action.payload
+    },
+    setIsStackFromBank(state, action) {
+      state.isStackFromBank = action.payload
+    },
     clearError(state) {
       state.error = null;
     },
     setError(state, action: PayloadAction<string>) {
       state.error = action.payload;
     },
-    selectTribe(state, action) {
-      state.player.activeTribe = action.payload;
+    setPlayers(state, action) {
+      state.players = action.payload
     },
     setTiles(state, action) {
       state.tiles = action.payload
-    },
-    setPlaying(state, action) {
-      state.player.isPlaying = action.payload
-    },
-    setPlayerStacks(state, action) {
-    state.player.pieceStacks = action.payload
     },
     updateTileStack(state, action) {
         const { tile_id, new_stacks } = action.payload
@@ -52,27 +70,96 @@ const applicationSlice = createSlice({
 
         tile.pieceStack = new_stacks; // Update the pieceStack for the tile
     },
-    setOpponents(state, action) {
-      state.opponents = action.payload
-    },
     websocketMessageReceived(state, action) {
-      const { type, payload } = action.payload;
+      const { type, data } = JSON.parse(action.payload);
 
+      const parsedData = data
       switch (type) {
-        case 'tilePolygonsResponse':
-          state.tiles = payload.tiles
-          break
 
-        case 'tilePieceStackChange':
-          this.updateTileStack(state, action)
+        case 'index':
+          state.playerIndex = Number(parsedData.index)
           break;
-        case 'OpponentUpdate':
-          state.opponents = payload.opponents
+        case 'error':
+          state.error = parsedData.message
+          break;
+        case 'playerupdate':
+          const players: Player[] = [];
+
+          // Use a for loop to construct Player objects
+          for (let i = 0; i < parsedData.length; i++) {
+            const playerData = parsedData[i];
+            console.log("here here")
+            console.log(playerData)
+            console.log(playerData.activeTribe)
+            const player: Player = {
+              name: playerData.name,
+              activeTribe: {race: playerData.activeTribe.race, trait: playerData.activeTribe.trait},
+              passiveTribes: [],
+              pieceStacks: [],
+            };
+            for (const stack of playerData.pieceStacks) {
+              player.pieceStacks.push({
+                type: stack.Type,
+                amount: stack.Amount
+              })
+            }
+            players.push(player);
+          }
+
+            state.players = players; // Update the state
+            console.log("Updated players:", players);
+          break;
+        case 'entriesupdate':
+          state.availableTribes = data
+          break;
+        case 'tileupdate': {
+
+          // Safely check if the tile exists
+          const tile = state.tiles[Number(parsedData.tileID)];
+          if (!tile) {
+            console.error(`Tile with ID ${parsedData.tileID} does not exist.`);
+            return;
+          }
+          const stacks = []
+          for (const stack of parsedData.stacks) {
+              stacks.push({
+                type: stack.Type,
+                amount: stack.Amount
+              })
+          }
+
+          // Update the pieceStack for the existing tile
+          tile.pieceStack = stacks;
+          break;
+        }
+        case 'turnupdate':
+          state.playerNumber = parsedData.playerNumber
+          state.turnNumber = parsedData.turnNumber
+          state.phase = parsedData.Phase
+          break;
+
+        case 'tribeentries':
+          const tribeEntries: TribeEntry[] = [];
+
+          for (let i = 0; i < parsedData.length; i++) {
+            const tribeData = parsedData[i];
+            const tribeEntry: TribeEntry = {
+              race: tribeData.Race,
+              trait: tribeData.Trait,
+              pieceCount: tribeData.piecepile,
+              coinCount: tribeData.coinpile,
+            };
+            tribeEntries.push(tribeEntry);
+          }
+
+          state.availableTribes = tribeEntries; 
+          console.log("Updated tribe entries:", tribeEntries);
           break;
 
         default:
           // Handle all other messages or log unhandled types
-          console.warn('Unhandled WebSocket message type:', type);
+          console.warn('Unhandled WebSocket message type:', data);
+          console.log(type)
           // state.messages.push(action.payload); // Store in general message log
           break;
       }
@@ -82,6 +169,6 @@ const applicationSlice = createSlice({
 
 const applicationReducer = applicationSlice.reducer;
 
-export const { setLanguage, setTiles, setPlaying, setPlayerStacks, clearError, setError, selectTribe, setOpponents, websocketMessageReceived, updateTileStack } = applicationSlice.actions;
+export const { setLanguage, setSelectedTile, setSelectedStack, setIsStackFromBank, setTiles, clearError, setError, websocketMessageReceived, updateTileStack, setPlayers } = applicationSlice.actions;
 
 export default applicationReducer;

@@ -1,1 +1,1 @@
-export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+export const WS_URL = 'ws://localhost:8080'; // Replace with your WebSocket server's URL

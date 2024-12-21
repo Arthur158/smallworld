@@ -4,9 +4,14 @@ import mapImage from '../../images/mapsw.jpg';
 import { Tile } from '../../types/Board';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
+import { sendMessageToBackend } from '../../services/backendService'
 
 export default function Map() {
   const tiles: Record<string, Tile> = useSelector((state: RootState) => state.application.tiles);
+  const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
+  const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
+  const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
+  const phase = useSelector((state: RootState) => state.application.phase);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const dispatch = useDispatch();
 
@@ -36,6 +41,18 @@ export default function Map() {
   if (imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
     return <div className="text-center text-[#5F4B32] font-bold">Loading...</div>;
   }
+
+  const handleTileStackClick = (tileID: string, stackType: string | null) => {
+    console.log("entered")
+    if ((phase == "Conquest" || phase == "TileAbandonment") && isStackFromBank && selectedStack != null) {
+      sendMessageToBackend("Conquest", {tileId: tileID.toString(), attackingStackType: selectedStack})
+    } else if (phase == 'Redeployment' && isStackFromBank && selectedStack != null) {
+      sendMessageToBackend("deploymentin", {tileId: tileID, stackType: selectedStack})
+    } else if (phase == 'Redeployment' && !isStackFromBank && selectedStack != null) {
+      sendMessageToBackend("deploymentthrough", {tileFromId: selectedTile, tileToId: tileID, stackType: selectedStack})
+    }
+  }
+
 
   const minScale = 1; 
   const maxScale = 5; 
@@ -172,7 +189,8 @@ export default function Map() {
     // Define a small threshold to distinguish click from drag, e.g. 5px
     if (movedDistance < 5) {
       console.log(`Polygon ${tileId} clicked`);
-      dispatch(setError(`Polygon ${tileId} clicked`));
+      handleTileStackClick(tileId, null)
+      dispatch(setError(tileId))
     }
   };
 
@@ -285,3 +303,4 @@ export default function Map() {
     </div>
   );
 }
+

@@ -4,18 +4,19 @@ import PlayerInfo from '../components/layouts/PlayerInfo';
 import React, { useEffect } from 'react';
 import { connectWebSocket } from '../services/backendService';
 import { parseAreaFile } from '../utility/MapParser';
-import { setTiles, setOpponents, updateTileStack, setPlaying } from '../redux/slices/applicationSlice';
+import { setTiles, setPlayers, updateTileStack } from '../redux/slices/applicationSlice';
 import { RootState, AppDispatch } from '../redux/store';
 import { useSelector, useDispatch } from 'react-redux';
 import { Polygon } from '../types/Board';
-import OpponentsList from '../components/layouts/OpponentsList'; 
+import OpponentsList from '../components/layouts/OpponentsList';
+import TurnInfoBlock from '../components/layouts/TurnInfoBlock'; // Import the new component
 
 export default function GamePage() {
   const tiles = useSelector((state: RootState) => state.application.tiles);
   const dispatch: AppDispatch = useDispatch();
 
   useEffect(() => {
-    connectWebSocket('ws://yourserver.com');
+    connectWebSocket();
 
     const loadAreas = async () => {
       try {
@@ -33,29 +34,11 @@ export default function GamePage() {
         dispatch(updateTileStack({tile_id:"1", new_stacks: [{type:"elves", amount:3}, {type:"dragon", amount:1}]}))
         dispatch(updateTileStack({tile_id:"5", new_stacks: [{type:"elves", amount:3}]}))
         dispatch(updateTileStack({tile_id:"20", new_stacks: [{type:"dwarves", amount:3}]}))
-        dispatch(setPlaying(false))
       } catch (error) {
         console.error('Error loading file:', error);
       }
     };
     loadAreas()
-
-    dispatch(setOpponents([
-      {
-        name: "Loris",
-        activeTribe: {race: "dwarves", trait: "ugly"},
-        passiveTribes: [{race: "ghouls", trait:"flying"}],
-        isPlaying: false,
-        pieceStacks: [],
-      },
-      {
-        name: "Cristian",
-        activeTribe: {race: "amazons", trait: "armed"},
-        passiveTribes: [{race: "ghouls", trait:"dragon-riding"}],
-        isPlaying: false,
-        pieceStacks: [{type:"dwarves", amount:3}, {type:"dragon", amount:1}],
-      }
-    ]))
   }, []);
 
   return (
@@ -69,6 +52,10 @@ export default function GamePage() {
           </div>
           <div className="border-t border-[#5F4B32] pt-4">
             <OpponentsList />
+          </div>
+          {/* Include TurnInfo below or above as you prefer */}
+          <div className="border-t border-[#5F4B32] pt-4">
+            <TurnInfoBlock />
           </div>
         </div>
         <div className="w-3/4 flex flex-col items-center justify-center p-4">

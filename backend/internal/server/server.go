@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 	"encoding/json"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 	"backend/internal/gamestate"
@@ -55,14 +56,24 @@ func startGame(c1, c2 *websocket.Conn) {
 	defer c1.Close()
 	defer c2.Close()
 
+	names := []string{"ulysse", "achille"}
+
 	players := []*websocket.Conn{c1, c2}
 
 	var mu sync.Mutex
+	var localMu sync.Mutex
 
 	// Send a message to all players
 	sendToAll := func(msg messages.Message) {
+
 		for _, conn := range players {
-			conn.WriteJSON(msg)
+			localMu.Lock()
+			err := conn.WriteJSON(msg)
+			localMu.Unlock()
+			if err != nil {
+				log.Println("err sending mess", err)
+			}
+
 		}
 	}
 
@@ -70,26 +81,14 @@ func startGame(c1, c2 *websocket.Conn) {
 
 	if err != nil {
 		log.Println("Error creating game", err)
-		sendToAll(messages.Message{Type: "error", Data: "Could not create game"})
+		sendToAll(messages.Message{Type: "error", Data: json.RawMessage([]byte(`{"message": "Could not create game"}`))})
 	}
-
-	// Notify players that the game has started
-	jsonData, err := json.MarshalIndent(state.Players, "", "  ")
-	for index, conn := range players {
-		conn.WriteJSON(messages.Message{Type: "index", Data: string(index)})
-	}
-	sendToAll(messages.Message{Type: "info", Data: "Game has started!"})
-	if err != nil {
-		log.Fatal("Error marshaling players:", err)
-	}
-	sendToAll(messages.Message{Type: "playerupdate", Data: string(jsonData)})
-	players[state.TurnInfo.PlayerIndex].WriteJSON(messages.Message{Type: "tribechoice"})
 
 	var wg sync.WaitGroup
 
 	for index, conn := range players {
 		wg.Add(1)
-		go handlePlayerConnection(conn, state, index, &wg, &mu, sendToAll)
+		go handlePlayerConnection(conn, state, index, &wg, &mu, sendToAll, names)
 	}
 
 	// Block until all player goroutines have finished
@@ -97,40 +96,116 @@ func startGame(c1, c2 *websocket.Conn) {
 	log.Println("Game ended: All players disconnected.")
 }
 
-func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, index int, wg *sync.WaitGroup, mu *sync.Mutex, sendToAll func(msg messages.Message)) {
+func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, index int, wg *sync.WaitGroup, mu *sync.Mutex, sendToAll func(msg messages.Message), names []string) {
 	defer wg.Done()
 
 	// Helper functions
 	sendError := func(message string) {
-		conn.WriteJSON(messages.Message{Type: "error", Data: message})
+		conn.WriteJSON(messages.Message{Type: "error", Data: json.RawMessage([]byte(`{"message": "` + message + `"}`))})	
 	}
 
 	sendStateMessage := func(message string) {
-		sendToAll(messages.Message{Type: "state", Data: message})
+		sendToAll(messages.Message{Type: "state", Data: json.RawMessage([]byte(`{"message": "` + message + `"}`))})
+	}
+	type Tribe struct {
+		Race  string `json:"race"`
+		Trait string `json:"trait"`
 	}
 
 	sendPlayerUpdate := func() {
-		jsonData, err := json.MarshalIndent(state.Players, "", "  ")
+
+		// Player represents the player object.
+		type Player struct {
+			Name	      string     `json:"name"`
+			ActiveTribe   Tribe       `json:"activeTribe"`   // Pointer to allow null value
+			PassiveTribes []Tribe      `json:"passiveTribes"` // List of passive tribes
+			PieceStacks   []gamestate.PieceStack `json:"pieceStacks"`
+		}
+
+		playerInfo := []Player {}
+		for i, player := range state.Players {
+			var playerData Player
+			if player.ActiveTribe != nil {
+				playerData.ActiveTribe = Tribe{Race: string(player.ActiveTribe.Race), Trait: string(player.ActiveTribe.Trait)}
+			} else {
+				playerData.ActiveTribe = Tribe{Race: "", Trait: ""}
+			}
+			playerData.Name = names[i]			
+			for _, tribe := range player.PassiveTribes {
+				playerData.PassiveTribes = append(playerData.PassiveTribes, Tribe{Race: string(tribe.Race), Trait: string(tribe.Trait)})
+			}
+			playerData.PieceStacks = player.PieceStacks
+			playerInfo = append(playerInfo, playerData)
+		}
+
+		jsonData, err := json.MarshalIndent(playerInfo, "", "  ")
 		if err != nil {
 			log.Fatal("Error marshaling players:", err)
 		}
-		sendToAll(messages.Message{Type: "playerupdate", Data: string(jsonData)})
+		sendToAll(messages.Message{Type: "playerupdate", Data: jsonData})
+	}
+
+	sendEntriesUpdate := func() {
+		type Entry struct {
+			Race string `json:race`
+			Trait string `json:trait`
+			CoinPile int      `json:"coinpile"` // List of passive tribes
+			PiecePile   int `json:"piecepile"`
+		}
+
+		entries := []Entry {}
+
+		for _, entry := range state.GetTribeEntries() {
+			entries = append(entries, Entry{Race: string(entry.Tribe.Race), Trait: string(entry.Tribe.Trait), CoinPile: entry.CoinPile, PiecePile: entry.PiecePile})
+		}
+
+		jsonData, err := json.MarshalIndent(entries, "", "  ")
+		if err != nil {
+			log.Fatal("Error marshaling tribe entries:", err)
+		}
+		sendToAll(messages.Message{Type: "tribeentries", Data: jsonData})
 	}
 
 	sendTileUpdate := func(tileID string) {
-		jsonData, err := json.MarshalIndent(state.GetTileStacks(tileID), "", "  ")
-		if err != nil {
-			log.Fatal("Error marshaling tile stacks:", err)
+		// Define a structure to include both tileID and its stacks
+		type TileUpdate struct {
+			TileID string      `json:"tileID"`
+			Stacks interface{} `json:"stacks"`
 		}
-		sendToAll(messages.Message{Type: "tileupdate", Data: string(jsonData)})
+
+		// Create the TileUpdate object with tileID and stacks
+		tileUpdate := TileUpdate{
+			TileID: tileID,
+			Stacks: state.GetTileStacks(tileID),
+		}
+
+		// Marshal the combined structure into JSON
+		jsonData, err := json.MarshalIndent(tileUpdate, "", "  ")
+		if err != nil {
+			log.Fatal("Error marshaling tile update:", err)
+		}
+
+		// Send the message with the new combined structure
+		sendToAll(messages.Message{Type: "tileupdate", Data: jsonData})
 	}
 
 	sendTurnUpdate := func() {
-		jsonData, err := json.MarshalIndent(state.TurnInfo, "", "  ")
+		type StateInfo struct {
+			TurnNumber int `json:"turnNumber"`
+			PlayerNumber int `json:"playerNumber"`
+			Phase string `json:"phase`
+}
+		stateInfo := StateInfo{
+			TurnNumber: state.TurnInfo.TurnIndex,
+			PlayerNumber: state.TurnInfo.PlayerIndex,
+			Phase : state.TurnInfo.Phase.String(),
+		}
+
+		jsonData, err := json.MarshalIndent(stateInfo, "", "  ")
 		if err != nil {
 			log.Fatal("Error marshaling turn info:", err)
 		}
-		sendToAll(messages.Message{Type: "turnupdate", Data: string(jsonData)})
+		sendToAll(messages.Message{Type: "turnupdate", Data: jsonData})
 	}
 
 
@@ -149,6 +224,7 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 		} else {
 			sendPlayerUpdate()
 			sendTurnUpdate()
+			sendEntriesUpdate()
 		}
 	}
 
@@ -280,6 +356,14 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 		}
 	}
 
+	mu.Lock()
+	sendPlayerUpdate()
+	sendTurnUpdate()
+	sendEntriesUpdate()
+	conn.WriteJSON(messages.Message{Type: "index", Data: json.RawMessage([]byte(`{"index": "` + strconv.Itoa(index) + `"}`))})
+	mu.Unlock()
+
+
 	// Main loop
 	for {
 		var msg messages.Message
@@ -295,7 +379,7 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 			handleTribePick(msg)
 		case "abandonment":
 			handleAbandonment(msg)
-		case "conquest":
+		case "Conquest":
 			handleConquest(msg)
 		case "startredeployment":
 			handleStartRedeployment()

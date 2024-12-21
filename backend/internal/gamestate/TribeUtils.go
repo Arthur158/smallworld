@@ -141,7 +141,7 @@ func createBaseTribe() *Tribe {
     tribe.checkAdjacency = func(t *Tile, gs *GameState) error {
         if gs.IsTribePresentOnTheBoard(tribe.Race) {
             for _, neighbour := range t.AdjacentTiles {
-                if neighbour.OwningTribe.Race == tribe.Race {
+                if neighbour.Presence != None && neighbour.OwningTribe.Race == tribe.Race {
                     return nil
                 }
             }
