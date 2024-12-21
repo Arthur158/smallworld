@@ -3,6 +3,7 @@ import { ApplicationState } from '../../types/redux';
 import { Language } from '../../types/misc';
 import { Player, TribeEntry } from '../../types/Board'
 import { json } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 
 const initialState: ApplicationState = {
   language: Language.NL,
@@ -30,6 +31,7 @@ const initialState: ApplicationState = {
   selectedStack: null,
   isStackFromBank: false,
   selectedTile: null,
+  messages: [],
 };
 
 const applicationSlice = createSlice({
@@ -72,6 +74,7 @@ const applicationSlice = createSlice({
     },
     websocketMessageReceived(state, action) {
       const { type, data } = JSON.parse(action.payload);
+      state.error = null
 
       const parsedData = data
       switch (type) {
@@ -88,9 +91,6 @@ const applicationSlice = createSlice({
           // Use a for loop to construct Player objects
           for (let i = 0; i < parsedData.length; i++) {
             const playerData = parsedData[i];
-            console.log("here here")
-            console.log(playerData)
-            console.log(playerData.activeTribe)
             const player: Player = {
               name: playerData.name,
               activeTribe: {race: playerData.activeTribe.race, trait: playerData.activeTribe.trait},
@@ -132,6 +132,31 @@ const applicationSlice = createSlice({
           tile.pieceStack = stacks;
           break;
         }
+        case 'alltileupdate': {
+          const players: Player[] = [];
+
+          // Use a for loop to construct Player objects
+          for (let i = 0; i < parsedData.length; i++) {
+            const tile = state.tiles[Number(parsedData[i].tileID)]
+            if (!tile) {
+              console.error(`Tile with ID ${parsedData.tileID} does not exist.`);
+              return;
+            }
+            const stacks = []
+            if (parsedData[i].stacks && Array.isArray(parsedData[i].stacks)) {
+              for (const stack of parsedData[i].stacks) {
+                stacks.push({
+                  type: stack.Type,
+                  amount: stack.Amount,
+                });
+              }
+            } 
+
+            // Update the pieceStack for the existing tile
+            tile.pieceStack = stacks;
+          }
+          break;
+        }
         case 'turnupdate':
           state.playerNumber = parsedData.playerNumber
           state.turnNumber = parsedData.turnNumber
@@ -157,10 +182,12 @@ const applicationSlice = createSlice({
           break;
 
         default:
-          // Handle all other messages or log unhandled types
           console.warn('Unhandled WebSocket message type:', data);
-          console.log(type)
-          // state.messages.push(action.payload); // Store in general message log
+          console.log(type);
+          // On ajoute le message brut (ou formaté) au tableau messages
+          state.messages.push(
+            `Type: ${type}, Content: ${JSON.stringify(parsedData)}`
+          );
           break;
       }
     },

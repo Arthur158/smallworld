@@ -17,9 +17,9 @@ type Tribe struct {
 	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
 	checkZoneAccess func(*Tile) error;
 	checkAdjacency func(*Tile, *GameState) error;
-	GetStacksForConquest func(*Tile) []PieceStack;
+	GetStacksForConquest func(*Tile, *Player);
 	CountPoints func(*Tile) int;
-	prepareDecline func(*GameState);
+	prepareDecline func(*GameState) error;
 	prepareRemoval func(*GameState) bool;
 	CanGoIntoDecline func(*GameState) bool
 }

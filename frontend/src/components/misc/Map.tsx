@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { setError } from '../../redux/slices/applicationSlice';
+import { setError, setSelectedStack, setIsStackFromBank, setSelectedTile } from '../../redux/slices/applicationSlice';
 import mapImage from '../../images/mapsw.jpg';
 import { Tile } from '../../types/Board';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
-import { sendMessageToBackend } from '../../services/backendService'
+import { sendMessageToBackend } from '../../services/backendService';
 
 export default function Map() {
   const tiles: Record<string, Tile> = useSelector((state: RootState) => state.application.tiles);
@@ -45,20 +45,34 @@ export default function Map() {
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
     console.log("entered")
     if ((phase == "Conquest" || phase == "TileAbandonment") && isStackFromBank && selectedStack != null) {
-      sendMessageToBackend("Conquest", {tileId: tileID.toString(), attackingStackType: selectedStack})
+      // when in conquest, only thing you want to do i be able to select attack stack and use it to conquer region
+      sendMessageToBackend("Conquest", {tileId: tileID.toString(), attackingStackType: selectedStack.toString()})
+    } else if ((phase == 'Redeployment' || phase == 'TileAbandonment') && selectedStack == stackType && selectedTile == tileID) {
+      // when clicking on the same stack in the same tile in redeployment or tileabandonment, you are trying to deselect it
+        dispatch(setSelectedStack(null))
+        dispatch(setSelectedTile(null))
+        dispatch(setIsStackFromBank(false))
+    } else if (phase == "TileAbandonment" && stackType != null) {
+      // when in abandonment, if you select a stack on a tile (rest of action in playerinfo)
+        dispatch(setSelectedStack(stackType))
+        dispatch(setSelectedTile(tileID))
     } else if (phase == 'Redeployment' && isStackFromBank && selectedStack != null) {
-      sendMessageToBackend("deploymentin", {tileId: tileID, stackType: selectedStack})
-    } else if (phase == 'Redeployment' && !isStackFromBank && selectedStack != null) {
-      sendMessageToBackend("deploymentthrough", {tileFromId: selectedTile, tileToId: tileID, stackType: selectedStack})
+      // when in redeployment, if you selected a stack from your box and you click on a tile, be it the tile or a stack on it, you want to redeploy to that tile.
+      sendMessageToBackend("deploymentin", {tileId: tileID.toString(), stackType: selectedStack.toString()})
+    } else if (phase == 'Redeployment' && !isStackFromBank && selectedTile != null && selectedStack != null) {
+      // when in redeployment, if you selected a stack but from the map, and then click on another zone, you are trying to redeploy to that zone
+      sendMessageToBackend("deploymentthrough", {tileFromId: selectedTile.toString(), tileToId: tileID.toString(), stackType: selectedStack})
+    } else if (phase == 'Redeployment' && selectedStack == null && stackType != null) {
+      dispatch(setSelectedStack(stackType))
+      dispatch(setSelectedTile(tileID))
+      dispatch(setIsStackFromBank(false))
     }
   }
 
-
-  const minScale = 1; 
-  const maxScale = 5; 
+  const minScale = 1;
+  const maxScale = 5;
   const baseWidth = 1130;
 
-  // Convert a screen position (in client coordinates) to SVG coordinates
   const clientToSvgCoords = (clientX: number, clientY: number) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const pt = svgRef.current.createSVGPoint();
@@ -112,20 +126,14 @@ export default function Map() {
       newScale /= scaleAmount;
     }
 
-    // Clamp scale
     newScale = Math.max(minScale, Math.min(newScale, maxScale));
 
-    // Get mouse position in SVG coords before scaling
     const { x: svgX, y: svgY } = clientToSvgCoords(e.clientX, e.clientY);
-
-    // After scaling, keep point under cursor stable
-    const prevScreenX = (svgX * scale) + translateX;
-    const prevScreenY = (svgY * scale) + translateY;
-
+    const prevScreenX = svgX * scale + translateX;
+    const prevScreenY = svgY * scale + translateY;
     let newTranslateX = prevScreenX - svgX * newScale;
     let newTranslateY = prevScreenY - svgY * newScale;
 
-    // Clamp translation
     const clamped = clampTranslate(newTranslateX, newTranslateY, newScale);
     newTranslateX = clamped.x;
     newTranslateY = clamped.y;
@@ -150,7 +158,6 @@ export default function Map() {
       let newTranslateX = translateX + dx;
       let newTranslateY = translateY + dy;
 
-      // Clamp translation
       const clamped = clampTranslate(newTranslateX, newTranslateY, scale);
       newTranslateX = clamped.x;
       newTranslateY = clamped.y;
@@ -159,7 +166,7 @@ export default function Map() {
       setTranslateY(newTranslateY);
       setLastMousePosition({ x: e.clientX, y: e.clientY });
 
-      setMovedDistance(movedDistance + Math.sqrt(dx*dx + dy*dy));
+      setMovedDistance(movedDistance + Math.sqrt(dx * dx + dy * dy));
     }
   };
 
@@ -184,16 +191,6 @@ export default function Map() {
     document.body.style.overflow = '';
   };
 
-  const handlePolygonClick = (tileId: string) => {
-    // Only trigger click action if map wasn't dragged significantly
-    // Define a small threshold to distinguish click from drag, e.g. 5px
-    if (movedDistance < 5) {
-      console.log(`Polygon ${tileId} clicked`);
-      handleTileStackClick(tileId, null)
-      dispatch(setError(tileId))
-    }
-  };
-
   return (
     <div
       className="flex justify-center items-center overflow-hidden relative"
@@ -215,10 +212,18 @@ export default function Map() {
         style={{ userSelect: 'none', cursor: isPanning ? 'grabbing' : 'grab' }}
       >
         <g transform={`translate(${translateX},${translateY}) scale(${scale})`}>
-          <image x="0" y="0" width={imageDimensions.width} height={imageDimensions.height} href={mapImage} />
+          <image
+            x="0"
+            y="0"
+            width={imageDimensions.width}
+            height={imageDimensions.height}
+            href={mapImage}
+          />
 
           {Object.values(tiles).map((tile) => {
-            const scaledCoords = tile.polygon.coords.map((coord: number) => coord * (imageDimensions.width / baseWidth));
+            const scaledCoords = tile.polygon.coords.map(
+              (coord: number) => coord * (imageDimensions.width / baseWidth)
+            );
             const points = [];
             for (let i = 0; i < scaledCoords.length; i += 2) {
               points.push(`${scaledCoords[i]},${scaledCoords[i + 1]}`);
@@ -234,68 +239,78 @@ export default function Map() {
                 strokeWidth={0}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
-                onClick={() => handlePolygonClick(tile.id)}
+                onClick={() => handleTileStackClick(tile.id, null)}
               />
             );
           })}
 
           {Object.values(tiles).map((tile) => (
             <g key={`stack-${tile.id}`}>
-              {tile.pieceStack
-                .slice()
-                .reverse()
-                .map((stack, index) => {
-                  const baseSize = 45;
-                  const offset = 0.4 * baseSize;
-                  const scaledStackX = (tile.polygon.stackX + index * offset) * (imageDimensions.width / baseWidth);
-                  const scaledStackY = (tile.polygon.stackY - index * offset) * (imageDimensions.width / baseWidth);
-                  const imageSrc = `/stacks/${stack.type}.png`;
+            {tile.pieceStack
+              .slice()
+              .reverse()
+              .map((stack, index) => {
+                const baseSize = 45;
+                const offset = 0.4 * baseSize;
+                const scaledStackX =
+                  (tile.polygon.stackX + index * offset) *
+                  (imageDimensions.width / baseWidth);
+                const scaledStackY =
+                  (tile.polygon.stackY - index * offset) *
+                  (imageDimensions.width / baseWidth);
+                const imageSrc = `/stacks/${stack.type}.png`;
+                
+                const isHighlighted = !isStackFromBank && selectedStack === stack.type && selectedTile === tile.id;
 
-                  return (
-                    <g key={`piece-${tile.id}-${index}`}>
-                      <rect
-                        x={scaledStackX}
-                        y={scaledStackY - baseSize}
-                        width={baseSize}
-                        height={baseSize}
-                        fill="blue"
-                        stroke="black"
-                      />
-                      <text
-                        x={scaledStackX + baseSize / 2}
-                        y={scaledStackY - baseSize / 2}
-                        fill="white"
-                        fontSize="8"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        {stack.type}
-                      </text>
-                      <image
-                        href={imageSrc}
-                        x={scaledStackX}
-                        y={scaledStackY - baseSize}
-                        width={baseSize}
-                        height={baseSize}
-                        onError={(e) => {
-                          (e.target as SVGImageElement).style.display = "none";
-                        }}
-                      />
-                      <text
-                        x={scaledStackX + baseSize - 3}
-                        y={scaledStackY - baseSize + 30}
-                        fill="black"
-                        fontSize="15"
-                        fontWeight="bold"
-                        textAnchor="end"
-                        dominantBaseline="hanging"
-                      >
-                        {stack.amount}
-                      </text>
-                    </g>
-                  );
-                })}
+                return (
+                  <g
+                    key={`piece-${tile.id}-${index}`}
+                    onClick={() => handleTileStackClick(tile.id, stack.type)}
+                  >
+                    <rect
+                      x={scaledStackX}
+                      y={scaledStackY - baseSize}
+                      width={baseSize}
+                      height={baseSize}
+                      fill={isHighlighted ? 'yellow' : 'blue'}
+                      stroke={isHighlighted ? 'red' : 'black'}
+                      strokeWidth={isHighlighted ? 3 : 1}
+                    />
+                    <text
+                      x={scaledStackX + baseSize / 2}
+                      y={scaledStackY - baseSize / 2}
+                      fill="white"
+                      fontSize="8"
+                      fontWeight="bold"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                    >
+                      {stack.type}
+                    </text>
+                    <image
+                      href={imageSrc}
+                      x={scaledStackX}
+                      y={scaledStackY - baseSize}
+                      width={baseSize}
+                      height={baseSize}
+                      onError={(e) => {
+                        (e.target as SVGImageElement).style.display = 'none';
+                      }}
+                    />
+                    <text
+                      x={scaledStackX + baseSize - 3}
+                      y={scaledStackY - baseSize + 30}
+                      fill="black"
+                      fontSize="15"
+                      fontWeight="bold"
+                      textAnchor="end"
+                      dominantBaseline="hanging"
+                    >
+                      {stack.amount}
+                    </text>
+                  </g>
+                );
+              })}
             </g>
           ))}
         </g>
@@ -303,4 +318,3 @@ export default function Map() {
     </div>
   );
 }
-

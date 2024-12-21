@@ -10,11 +10,6 @@ export default function Router(): JSX.Element {
 
   return (
     <>
-      {error && (
-        <div className="bg-red-500 text-white text-center py-2">
-          {error}
-        </div>
-      )}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/game" element={<GamePage />} /> {/* New Route */}

@@ -6,7 +6,7 @@ import (
 
 type GameState struct {
 	Players []Player
-	TribeList []TribeEntry
+	TribeList []*TribeEntry
 	TileList map[string]*Tile
 	TurnInfo TurnInfo
 }
@@ -48,7 +48,7 @@ func New(playerCount int) (*GameState, error) {
 	}, nil
 }
 
-func (gs *GameState) GetTribeEntries() []TribeEntry {
+func (gs *GameState) GetTribeEntries() []*TribeEntry {
 	return gs.TribeList[:5]
 }
 
@@ -79,8 +79,12 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 	entry := gs.TribeList[entryIndex]
 	// Enact changes
 	chooser.ActiveTribe = entry.Tribe
+	chooser.HasActiveTribe = true
 	chooser.CoinPile += entry.CoinPile - entryIndex 
 	gs.TribeList = append(gs.TribeList[:entryIndex], gs.TribeList[entryIndex+1:]...)
+	for _, tribeEntry := range gs.TribeList[:entryIndex] {
+		tribeEntry.CoinPile += 1
+	}
 	chooser.addReserves([]PieceStack{{Type: string(entry.Tribe.Race), Amount: entry.PiecePile}})
 	gs.TurnInfo.Phase = Conquest
 
@@ -242,6 +246,11 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 		return fmt.Errorf("Unable to redeploy", err)
 	}
 
+	tile.PieceStacks, ok = SubtractPieceStacks(tile.PieceStacks, stacks)
+	if !ok {
+		return fmt.Errorf("Could not substract the stacks")
+	}
+	
 	player.addReserves(stacks)
 
 	return nil
@@ -309,9 +318,11 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 
 	player := gs.Players[playerIndex];
 
-	if player.ActiveTribe.CanGoIntoDecline(gs){
-		return fmt.Errorf("You cannot go into decline now!")
+	err := player.ActiveTribe.prepareDecline(gs)
+	if err != nil {
+		return fmt.Errorf("error: ", err)
 	}
+
 
 	for i, tribe := range player.PassiveTribes {
 		if (tribe.prepareRemoval(gs)) {
@@ -319,8 +330,8 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 		}
 	}
 
-	player.ActiveTribe.prepareDecline(gs)
 	player.ActiveTribe = nil
+	player.HasActiveTribe = false
 
 	gs.handleNextPlayerTurn()
 
@@ -344,7 +355,7 @@ func (gs *GameState) handleNextPlayerTurn() {
 
 func (gs *GameState) ChoosePlayerStart() {
 	if gs.Players[gs.TurnInfo.PlayerIndex].HasActiveTribe {
-		gs.TurnInfo.Phase = TileAbandonment
+		gs.TurnInfo.Phase = DeclineChoice
 		gs.GetPieceStackForConquest(&gs.Players[gs.TurnInfo.PlayerIndex])
 	} else {
 		gs.TurnInfo.Phase = TribeChoice

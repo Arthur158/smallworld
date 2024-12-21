@@ -3,6 +3,7 @@ import { RootState } from '../../redux/store';
 import { Player, PieceStack } from '../../types/Board';
 import { setIsStackFromBank, setSelectedStack } from '../../redux/slices/applicationSlice'
 import { useSelector, useDispatch } from 'react-redux';
+import { sendMessageToBackend } from '../../services/backendService';
 
 export default function PlayerInfo() {
   const dispatch = useDispatch();
@@ -11,6 +12,8 @@ export default function PlayerInfo() {
   const ActiveIndex: number = useSelector((state: RootState) => state.application.playerNumber);
   const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
+  const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
+  const phase = useSelector((state: RootState) => state.application.phase);
 
   const player = allPlayers[playerIndex];
   const activePlayer = allPlayers[ActiveIndex];
@@ -28,7 +31,11 @@ export default function PlayerInfo() {
   }
 
   const handlePlayerClick = () => {
-    console.log('Hello');
+    if (phase == "TileAbandonment" && selectedTile != null && selectedStack != null) {
+      sendMessageToBackend("abandonment", {tileId: selectedTile.toString()})
+    } else if (phase == "Redeployment" && selectedTile != null && selectedStack != null) {
+      sendMessageToBackend("deploymentout", {tileId: selectedTile.toString(), stackType: selectedStack.toString()})
+    }
   };
 
   const renderPieceStacks = (pieceStacks: PieceStack[], isActive: boolean) => {

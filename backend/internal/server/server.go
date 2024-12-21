@@ -189,6 +189,33 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 		sendToAll(messages.Message{Type: "tileupdate", Data: jsonData})
 	}
 
+	sendAllTileUpdate := func() {
+		// Define a structure to include both tileID and its stacks
+		type TileUpdate struct {
+			TileID string      `json:"tileID"`
+			Stacks interface{} `json:"stacks"`
+		}
+
+		// Create the TileUpdate object with tileID and stacks
+		tileUpdates := []TileUpdate{}
+
+		for _, tile := range state.TileList {
+			tileUpdates = append(tileUpdates, TileUpdate{
+				tile.Id,
+				tile.PieceStacks,
+			})
+		}
+
+		// Marshal the combined structure into JSON
+		jsonData, err := json.MarshalIndent(tileUpdates, "", "  ")
+		if err != nil {
+			log.Fatal("Error marshaling tile update:", err)
+		}
+
+		// Send the message with the new combined structure
+		sendToAll(messages.Message{Type: "alltileupdate", Data: jsonData})
+	}
+
 	sendTurnUpdate := func() {
 		type StateInfo struct {
 			TurnNumber int `json:"turnNumber"`
@@ -255,6 +282,8 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 			sendError("Invalid conquest data")
 			return
 		}
+		log.Println(conquestData.TileID)
+		log.Println(conquestData.AttackingStackType)
 
 		if err := state.HandleConquest(conquestData.TileID, index, conquestData.AttackingStackType); err != nil {
 			sendError(err.Error())
@@ -270,13 +299,14 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 			sendError(err.Error())
 		} else {
 			sendPlayerUpdate()
+			sendTurnUpdate()
 		}
 	}
 
 	handleRedeploymentIn := func (msg messages.Message) {
 		var deployData struct {
 			TileID          string `json:"tileId"`
-			stackType	string `json:"stackType"`
+			StackType	string `json:"stackType"`
 		}
 
 		if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
@@ -284,7 +314,7 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 			return
 		}
 
-		if err := state.HandleRedeploymentIn(index, deployData.TileID, deployData.stackType); err != nil {
+		if err := state.HandleRedeploymentIn(index, deployData.TileID, deployData.StackType); err != nil {
 			sendError(err.Error())
 		} else {
 			sendPlayerUpdate()
@@ -295,16 +325,19 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 
 	handleRedeploymentOut := func (msg messages.Message) {
 		var deployData struct {
-			TileID          string `json:"tileId"`
-			stackType	string `json:"stackType"`
+		    TileID    string `json:"tileId"`
+		    StackType string `json:"stackType"`
 		}
 
 		if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
 			sendError("Invalid deploy data")
 			return
 		}
+		log.Println("deployment out")
+		log.Println(deployData.TileID)
+		log.Println(deployData.StackType)
 
-		if err := state.HandleRedeploymentOut(index, deployData.TileID, deployData.stackType); err != nil {
+		if err := state.HandleRedeploymentOut(index, deployData.TileID, deployData.StackType); err != nil {
 			sendError(err.Error())
 		} else {
 			sendPlayerUpdate()
@@ -317,7 +350,7 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 		var deployData struct {
 			TileFromID          string `json:"tileFromId"`
 			TileToID          string `json:"tileToId"`
-			stackType	string `json:"stackType"`
+			StackType	string `json:"stackType"`
 		}
 
 		if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
@@ -325,9 +358,12 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 			return
 		}
 
-		if err := state.HandleRedeploymentOut(index, deployData.TileFromID, deployData.stackType); err != nil {
+		log.Println(deployData.TileFromID)
+		log.Println(deployData.StackType)
+
+		if err := state.HandleRedeploymentOut(index, deployData.TileFromID, deployData.StackType); err != nil {
 			sendError(err.Error())
-		} else if err := state.HandleRedeploymentIn(index, deployData.TileToID, deployData.stackType); err != nil {
+		} else if err := state.HandleRedeploymentIn(index, deployData.TileToID, deployData.StackType); err != nil {
 			sendError(err.Error())
 		} else {
 			sendPlayerUpdate()
@@ -344,6 +380,7 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 		} else {
 			sendPlayerUpdate()
 			sendTurnUpdate()
+			sendAllTileUpdate()
 		}
 	}
 
@@ -353,6 +390,7 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 		} else {
 			sendPlayerUpdate()
 			sendTurnUpdate()
+			sendAllTileUpdate()
 		}
 	}
 

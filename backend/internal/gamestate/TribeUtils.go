@@ -2,11 +2,12 @@ package gamestate
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 )
 
-func createTribe(race Race, trait Trait) (TribeEntry, error) {
+func createTribe(race Race, trait Trait) (*TribeEntry, error) {
     tribe := createBaseTribe()
     tribe.Race = race
     tribe.Trait = trait
@@ -14,26 +15,26 @@ func createTribe(race Race, trait Trait) (TribeEntry, error) {
 
     raceVal, raceExists := RaceMap[race]
     if !raceExists {
-        return TribeEntry{}, fmt.Errorf("race '%s' not found in RaceMap", race)
+        return &TribeEntry{}, fmt.Errorf("race '%s' not found in RaceMap", race)
     }
     raceVal.Transform(tribe)
     pieceCount += raceVal.Count
 
     traitVal, traitExists := TraitMap[trait]
     if !traitExists {
-        return TribeEntry{}, fmt.Errorf("trait '%s' not found in TraitMap", trait)
+        return &TribeEntry{}, fmt.Errorf("trait '%s' not found in TraitMap", trait)
     }
     traitVal.Transform(tribe)
     pieceCount += traitVal.Count
 
-    return TribeEntry{
+    return &TribeEntry{
         Tribe: tribe,
         CoinPile: 0,
         PiecePile: pieceCount,
     }, nil
 }
 
-func createTribeList() ([]TribeEntry, error) {
+func createTribeList() ([]*TribeEntry, error) {
     raceKeys := make([]Race, 0, len(RaceMap))
     for race := range RaceMap {
         raceKeys = append(raceKeys, race)
@@ -49,7 +50,7 @@ func createTribeList() ([]TribeEntry, error) {
     r.Shuffle(len(raceKeys), func(i, j int) { raceKeys[i], raceKeys[j] = raceKeys[j], raceKeys[i] })
     r.Shuffle(len(traitKeys), func(i, j int) { traitKeys[i], traitKeys[j] = traitKeys[j], traitKeys[i] })
 
-    tribeEntries := []TribeEntry{}
+    tribeEntries := []*TribeEntry{}
     pairCount := min(len(raceKeys), len(traitKeys)) 
 
     for i := 0; i < pairCount; i++ {
@@ -119,6 +120,7 @@ func createBaseTribe() *Tribe {
 
     tribe.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
         for _, stack := range tile.PieceStacks {
+            log.Println(stack.Type)
             if stack.Type == stackType {
                 if stack.Amount == 1 {
                     return nil, fmt.Errorf("cannot take off single tribe")
@@ -154,28 +156,36 @@ func createBaseTribe() *Tribe {
         }
     }
 
-    tribe.GetStacksForConquest = func(tile *Tile) []PieceStack {
+    tribe.GetStacksForConquest = func(tile *Tile, player *Player) {
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
+                // Making sure the action is atomic
                 movingStack := []PieceStack{{Type: stack.Type, Amount: stack.Amount - 1}}
+                log.Println("were here")
+                log.Println(movingStack)
+                log.Println(tile.PieceStacks)
                 tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, movingStack)
-                return movingStack
+                log.Println(tile.PieceStacks)
+                player.addReserves(movingStack)
             }
         }
-        return nil
     }
 
     tribe.CountPoints = func(tile *Tile) int {
         return 1
     }
 
-    tribe.prepareDecline = func(gs *GameState) {
+    tribe.prepareDecline = func(gs *GameState) error {
+        if !tribe.CanGoIntoDecline(gs) {
+            return fmt.Errorf("The tribe cannot go in decline at this moment")
+        }
         for _, tile := range gs.TileList {
-            if tile.OwningTribe.Race == tribe.Race {
+            if tile.Presence != None && tile.OwningTribe.Race == tribe.Race {
                 tile.PieceStacks = []PieceStack{{Type: string(tribe.Race), Amount: 1}}
                 tile.Presence = Passive
             }
         }
+        return nil
     }
 
     tribe.prepareRemoval = func(gs *GameState) bool {

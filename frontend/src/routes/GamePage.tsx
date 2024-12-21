@@ -1,19 +1,24 @@
+// GamePage.tsx
+
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../redux/store';
+import { connectWebSocket } from '../services/backendService';
+import { parseAreaFile } from '../utility/MapParser';
+import { setTiles, updateTileStack } from '../redux/slices/applicationSlice';
+
 import TribeList from '../components/layouts/TribeList';
 import Map from '../components/misc/Map';
 import PlayerInfo from '../components/layouts/PlayerInfo';
-import React, { useEffect } from 'react';
-import { connectWebSocket } from '../services/backendService';
-import { parseAreaFile } from '../utility/MapParser';
-import { setTiles, setPlayers, updateTileStack } from '../redux/slices/applicationSlice';
-import { RootState, AppDispatch } from '../redux/store';
-import { useSelector, useDispatch } from 'react-redux';
-import { Polygon } from '../types/Board';
 import OpponentsList from '../components/layouts/OpponentsList';
-import TurnInfoBlock from '../components/layouts/TurnInfoBlock'; // Import the new component
+import TurnInfoBlock from '../components/layouts/TurnInfoBlock';
+import Chat from '../components/inputs/Chat'; // <-- On suppose qu'on l'a mis ici
 
 export default function GamePage() {
-  const tiles = useSelector((state: RootState) => state.application.tiles);
   const dispatch: AppDispatch = useDispatch();
+  const error = useSelector((state: RootState) => state.application.error);
+
+  const [showTribeList, setShowTribeList] = useState(true);
 
   useEffect(() => {
     connectWebSocket();
@@ -25,43 +30,101 @@ export default function GamePage() {
         const polygons = parseAreaFile(text);
 
         let id = 0;
-        const tiles = polygons.map((polygon: Polygon) => ({
+        const tileData = polygons.map((polygon) => ({
           id: id++,
           pieceStack: [],
           polygon,
         }));
-        dispatch(setTiles(tiles))
-        dispatch(updateTileStack({tile_id:"1", new_stacks: [{type:"elves", amount:3}, {type:"dragon", amount:1}]}))
-        dispatch(updateTileStack({tile_id:"5", new_stacks: [{type:"elves", amount:3}]}))
-        dispatch(updateTileStack({tile_id:"20", new_stacks: [{type:"dwarves", amount:3}]}))
+
+        dispatch(setTiles(tileData));
+
+        // Exemples de piles pour tests
+        dispatch(
+          updateTileStack({
+            tile_id: '1',
+            new_stacks: [
+              { type: 'elves', amount: 3 },
+              { type: 'dragon', amount: 1 },
+            ],
+          })
+        );
+        dispatch(
+          updateTileStack({
+            tile_id: '5',
+            new_stacks: [{ type: 'elves', amount: 3 }],
+          })
+        );
+        dispatch(
+          updateTileStack({
+            tile_id: '20',
+            new_stacks: [{ type: 'dwarves', amount: 3 }],
+          })
+        );
       } catch (error) {
         console.error('Error loading file:', error);
       }
     };
-    loadAreas()
-  }, []);
+    loadAreas();
+  }, [dispatch]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F5F5DC] text-[#5F4B32] font-serif">
-      <div className="flex flex-row flex-grow divide-x divide-[#5F4B32]">
-        <div className="w-1/4 flex flex-col p-4 space-y-4 border-r border-[#5F4B32]">
-          <h1 className="text-2xl mb-4 font-bold">Informations</h1>
-          <TribeList />
-          <div className="border-t border-[#5F4B32] pt-4">
-            <PlayerInfo />
-          </div>
-          <div className="border-t border-[#5F4B32] pt-4">
-            <OpponentsList />
-          </div>
-          {/* Include TurnInfo below or above as you prefer */}
-          <div className="border-t border-[#5F4B32] pt-4">
+    <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
+      {/* Bannière d'erreur */}
+      {error && (
+        <div className="absolute top-0 left-0 w-full bg-red-500 text-white text-center py-2 z-50">
+          {error}
+        </div>
+      )}
+
+      {/* Conteneur principal (enlève la marge haute si une erreur est affichée) */}
+      <div
+        className="flex flex-row w-full h-full"
+        style={{ marginTop: error ? '2.5rem' : 0 }}
+      >
+        {/* Colonne de gauche */}
+        <div className="flex flex-col p-4 space-y-4 w-1/3 h-full">
+          {/* Player Info */}
+          <div>
+            <div className="border border-[#5F4B32] bg-[#FDF5E6] rounded p-2 flex-shrink-0">
+              <PlayerInfo />
+            </div>
+            </div>
+
+          {/* Turn Info */}
+          <div className="border border-[#5F4B32] bg-[#FDF5E6] rounded p-2 flex-shrink-0">
             <TurnInfoBlock />
           </div>
-        </div>
-        <div className="w-3/4 flex flex-col items-center justify-center p-4">
-          <div className="border-4 border-[#8B4513] rounded-lg shadow-md bg-white p-2">
-            <Map />
+
+          {/* Tribe List */}
+          <div className="border border-[#5F4B32] bg-[#FDF5E6] rounded p-2 flex-shrink-0">
+            <button
+              className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors mb-2"
+              onClick={() => setShowTribeList((prev) => !prev)}
+            >
+              {showTribeList ? 'Hide Tribes' : 'Show Tribes'}
+            </button>
+            {showTribeList && <TribeList />}
           </div>
+
+          {/* Chat (prend l'espace restant s'il y en a) */}
+          <div className="flex-grow">
+            <Chat />
+          </div>
+          {/* OpponentsList en bas */}
+          <div className="h-1/4 border border-[#5F4B32] bg-[#FDF5E6] rounded p-2">
+            <OpponentsList />
+          </div>
+        </div>
+
+        {/* Colonne de droite */}
+        <div className="flex flex-col w-2/3 h-full p-4">
+          {/* Zone principale pour la Map */}
+          <div className="flex-grow mb-4">
+            <div className="border-4 border-[#8B4513] rounded-lg shadow-md bg-white w-full h-full p-1">
+              <Map />
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

@@ -1,3 +1,5 @@
+// OpponentsList.tsx
+
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
@@ -8,9 +10,8 @@ export default function OpponentsList() {
   const playerIndex: number = useSelector((state: RootState) => state.application.playerIndex);
   const activeIndex: number = useSelector((state: RootState) => state.application.playerNumber);
 
-  const player = allPlayers[playerIndex]
-
-  const activePlayer = allPlayers[activeIndex]
+  const player = allPlayers[playerIndex];
+  const activePlayer = allPlayers[activeIndex];
 
   const inactiveOpponents = allPlayers.filter((_, index) => {
     return index !== playerIndex && index !== activeIndex;
@@ -93,66 +94,70 @@ export default function OpponentsList() {
   };
 
   return (
-    <div className="w-full overflow-x-auto border border-[#5F4B32] rounded bg-[#FDF5E6] p-4 mt-4">
+    <div className="flex flex-col w-full h-full overflow-hidden border border-[#5F4B32] rounded bg-[#FDF5E6] p-4">
       <h3 className="text-lg font-bold underline mb-2">Adversaires</h3>
-      <div className="flex space-x-4 py-2">
-        {/* Render active opponent if activeIndex is not the current player */}
-        {activeIndex !== playerIndex && activePlayer && (
-          <div
-            key={activePlayer.name}
-            className="flex-shrink-0 p-3 border rounded font-bold border-[#8B4513] bg-[#FAEBD7]"
-          >
-            <p className="text-lg">{activePlayer.name}</p>
-            {activePlayer.activeTribe && (
-              <p className="text-base mt-1 italic">
-                {activePlayer.activeTribe.trait} {activePlayer.activeTribe.race}
-              </p>
-            )}
-            {activePlayer.passiveTribes.length > 0 && (
-              <div className="text-sm mt-1 opacity-80 italic">
-                {activePlayer.passiveTribes.map((tribe, i) => (
-                  <p key={i}>
-                    {tribe.trait} {tribe.race}
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* Render all inactive opponents */}
-        {inactiveOpponents.map((opponent) => (
-          <div
-            key={opponent.name}
-            className="flex-shrink-0 p-3 border rounded border-[#5F4B32] bg-[#FAF0E6]"
-          >
-            <p className="text-lg">{opponent.name}</p>
-            {opponent.activeTribe && (
-              <p className="text-base mt-1 italic">
-                {opponent.activeTribe.trait} {opponent.activeTribe.race}
-              </p>
-            )}
-            {opponent.passiveTribes.length > 0 && (
-              <div className="text-sm mt-1 opacity-80 italic">
-                {opponent.passiveTribes.map((tribe, i) => (
-                  <p key={i}>
-                    {tribe.trait} {tribe.race}
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      {/* Scrollable content so opponents are not squished */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex space-x-4 py-2">
+          {/* Render active opponent if activeIndex is not the current player */}
+          {activeIndex !== playerIndex && activePlayer && (
+            <div
+              key={activePlayer.name}
+              className="flex-shrink-0 p-3 border rounded font-bold border-[#8B4513] bg-[#FAEBD7]"
+            >
+              <p className="text-lg">{activePlayer.name}</p>
+              {activePlayer.activeTribe && (
+                <p className="text-base mt-1 italic">
+                  {activePlayer.activeTribe.trait} {activePlayer.activeTribe.race}
+                </p>
+              )}
+              {activePlayer.passiveTribes.length > 0 && (
+                <div className="text-sm mt-1 opacity-80 italic">
+                  {activePlayer.passiveTribes.map((tribe, i) => (
+                    <p key={i}>
+                      {tribe.trait} {tribe.race}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Render all inactive opponents */}
+          {inactiveOpponents.map((opponent) => (
+            <div
+              key={opponent.name}
+              className="flex-shrink-0 p-3 border rounded border-[#5F4B32] bg-[#FAF0E6]"
+            >
+              <p className="text-lg">{opponent.name}</p>
+              {opponent.activeTribe && (
+                <p className="text-base mt-1 italic">
+                  {opponent.activeTribe.trait} {opponent.activeTribe.race}
+                </p>
+              )}
+              {opponent.passiveTribes.length > 0 && (
+                <div className="text-sm mt-1 opacity-80 italic">
+                  {opponent.passiveTribes.map((tribe, i) => (
+                    <p key={i}>
+                      {tribe.trait} {tribe.race}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Render active player's piece stacks if it's not you */}
+        {activePlayer &&
+          activePlayer.name !== player.name &&
+          activePlayer.pieceStacks && (
+            <div className="flex space-x-4 mt-4">
+              {renderPieceStacks(activePlayer.pieceStacks, activeIndex === playerIndex)}
+            </div>
+          )}
       </div>
-
-      {/* Render active player's piece stacks */}
-      {activePlayer &&
-        activePlayer.name !== player.name &&
-        activePlayer.pieceStacks && (
-          <div className="flex space-x-4 mt-4">
-            {renderPieceStacks(activePlayer.pieceStacks, activeIndex === playerIndex)}
-          </div>
-        )}
     </div>
   );
 }
