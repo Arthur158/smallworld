@@ -15,7 +15,6 @@ func DoesPlayerHaveStack(stackType string, player *Player) bool {
 }
 
 func GetPlayerTribe(stackType string, player *Player) (*Tribe, error) {
-	print(stackType)
     if player.ActiveTribe.IsStackValid(stackType) {
 	return player.ActiveTribe, nil;
     }

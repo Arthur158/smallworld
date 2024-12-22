@@ -6,6 +6,7 @@ type Trait string;
 type Tribe struct {
 	Race Race;
 	Trait Trait;
+	IsActive bool;
 	IsStackValid func(string) bool;
 	countDefense func(*Tile) (int, error);
 	countAttack func(*Tile, int, string) []PieceStack;
@@ -19,7 +20,7 @@ type Tribe struct {
 	checkAdjacency func(*Tile, *GameState) error;
 	GetStacksForConquest func(*Tile, *Player);
 	CountPoints func(*Tile) int;
-	prepareDecline func(*GameState) error;
+	prepareDecline func(*GameState, *Player) error;
 	prepareRemoval func(*GameState) bool;
 	CanGoIntoDecline func(*GameState) bool
 }

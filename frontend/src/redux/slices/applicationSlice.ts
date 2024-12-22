@@ -10,20 +10,7 @@ const initialState: ApplicationState = {
   error: null,
   availableTribes: [{race: "elves", trait: "merchant", pieceCount: 0, coinCount: 0}, {race: "giants", trait:"fortunate", pieceCount: 0, coinCount: 0}], //dummy for now
   tiles: {},
-  players: [
-      {
-        name: "Loris",
-        activeTribe: {race: "dwarves", trait: "ugly"},
-        passiveTribes: [{race: "ghouls", trait:"flying"}],
-        pieceStacks: [],
-      },
-      {
-        name: "Cristian",
-        activeTribe: {race: "amazons", trait: "armed"},
-        passiveTribes: [{race: "ghouls", trait:"dragon-riding"}],
-        pieceStacks: [{type:"dwarves", amount:3}, {type:"dragon", amount:1}],
-      }
-  ],
+  players: [],
   playerIndex: 1,
   turnNumber: 1,
   playerNumber: 1,
@@ -80,6 +67,8 @@ const applicationSlice = createSlice({
       switch (type) {
 
         case 'index':
+          console.log("the index:")
+          console.log(parsedData)
           state.playerIndex = Number(parsedData.index)
           break;
         case 'error':
@@ -97,16 +86,22 @@ const applicationSlice = createSlice({
               passiveTribes: [],
               pieceStacks: [],
             };
-            for (const stack of playerData.pieceStacks) {
-              player.pieceStacks.push({
-                type: stack.Type,
-                amount: stack.Amount
-              })
+            if (parsedData[i].pieceStacks && Array.isArray(playerData.pieceStacks)) {
+              for (const stack of playerData.pieceStacks) {
+                player.pieceStacks.push({
+                  type: stack.type,
+                  amount: stack.amount,
+                  isActive: stack.isActive,
+                })
+              }
             }
+            console.log("updating...")
+            console.log(player)
             players.push(player);
           }
 
             state.players = players; // Update the state
+            
             console.log("Updated players:", players);
           break;
         case 'entriesupdate':
@@ -123,8 +118,9 @@ const applicationSlice = createSlice({
           const stacks = []
           for (const stack of parsedData.stacks) {
               stacks.push({
-                type: stack.Type,
-                amount: stack.Amount
+                type: stack.type,
+                amount: stack.amount,
+                isActive: stack.isActive
               })
           }
 
@@ -146,8 +142,9 @@ const applicationSlice = createSlice({
             if (parsedData[i].stacks && Array.isArray(parsedData[i].stacks)) {
               for (const stack of parsedData[i].stacks) {
                 stacks.push({
-                  type: stack.Type,
-                  amount: stack.Amount,
+                  type: stack.type,
+                  amount: stack.amount,
+                  isActive: stack.isActive,
                 });
               }
             } 

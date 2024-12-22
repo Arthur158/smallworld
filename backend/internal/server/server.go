@@ -78,35 +78,17 @@ func startGame(c1, c2 *websocket.Conn) {
 	}
 
 	state, err := gamestate.New(len(players))
-
 	if err != nil {
 		log.Println("Error creating game", err)
 		sendToAll(messages.Message{Type: "error", Data: json.RawMessage([]byte(`{"message": "Could not create game"}`))})
 	}
+	// BROADCAST FUNCTIONS
 
-	var wg sync.WaitGroup
-
-	for index, conn := range players {
-		wg.Add(1)
-		go handlePlayerConnection(conn, state, index, &wg, &mu, sendToAll, names)
-	}
-
-	// Block until all player goroutines have finished
-	wg.Wait()
-	log.Println("Game ended: All players disconnected.")
-}
-
-func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, index int, wg *sync.WaitGroup, mu *sync.Mutex, sendToAll func(msg messages.Message), names []string) {
-	defer wg.Done()
-
-	// Helper functions
-	sendError := func(message string) {
-		conn.WriteJSON(messages.Message{Type: "error", Data: json.RawMessage([]byte(`{"message": "` + message + `"}`))})	
-	}
 
 	sendStateMessage := func(message string) {
 		sendToAll(messages.Message{Type: "state", Data: json.RawMessage([]byte(`{"message": "` + message + `"}`))})
 	}
+
 	type Tribe struct {
 		Race  string `json:"race"`
 		Trait string `json:"trait"`
@@ -114,27 +96,43 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 
 	sendPlayerUpdate := func() {
 
-		// Player represents the player object.
-		type Player struct {
-			Name	      string     `json:"name"`
-			ActiveTribe   Tribe       `json:"activeTribe"`   // Pointer to allow null value
-			PassiveTribes []Tribe      `json:"passiveTribes"` // List of passive tribes
-			PieceStacks   []gamestate.PieceStack `json:"pieceStacks"`
+		type PieceStack struct {
+			Type     string `json:"type"`
+			Amount   int    `json:"amount"`
+			IsActive bool   `json:"isActive"`
 		}
 
-		playerInfo := []Player {}
+		// Player represents the player object.
+		type Player struct {
+			Name          string     `json:"name"`
+			ActiveTribe   Tribe      `json:"activeTribe"`   // Pointer to allow null value
+			PassiveTribes []Tribe    `json:"passiveTribes"` // List of passive tribes
+			PieceStacks   []PieceStack `json:"pieceStacks"` // Updated to new PieceStack structure
+		}
+
+		playerInfo := []Player{}
 		for i, player := range state.Players {
 			var playerData Player
-			if player.ActiveTribe != nil {
+
+			if player.HasActiveTribe {
 				playerData.ActiveTribe = Tribe{Race: string(player.ActiveTribe.Race), Trait: string(player.ActiveTribe.Trait)}
 			} else {
 				playerData.ActiveTribe = Tribe{Race: "", Trait: ""}
 			}
-			playerData.Name = names[i]			
+			playerData.Name = names[i]
 			for _, tribe := range player.PassiveTribes {
 				playerData.PassiveTribes = append(playerData.PassiveTribes, Tribe{Race: string(tribe.Race), Trait: string(tribe.Trait)})
 			}
-			playerData.PieceStacks = player.PieceStacks
+
+			// Map the old stacks to the new PieceStack structure
+			for _, stack := range player.PieceStacks {
+				playerData.PieceStacks = append(playerData.PieceStacks, PieceStack{
+				Type:     stack.Type,
+				Amount:   stack.Amount,
+				IsActive: true, // Set IsActive to true for all stacks
+			})
+			}
+
 			playerInfo = append(playerInfo, playerData)
 		}
 
@@ -167,17 +165,33 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 	}
 
 	sendTileUpdate := func(tileID string) {
+
+		type PieceStack struct {
+			Type     string `json:"type"`
+			Amount   int    `json:"amount"`
+			IsActive bool   `json:"isActive"`
+		}
+
 		// Define a structure to include both tileID and its stacks
 		type TileUpdate struct {
 			TileID string      `json:"tileID"`
-			Stacks interface{} `json:"stacks"`
+			Stacks []PieceStack `json:"stacks"`
 		}
 
 		// Create the TileUpdate object with tileID and stacks
 		tileUpdate := TileUpdate{
 			TileID: tileID,
-			Stacks: state.GetTileStacks(tileID),
+			Stacks: []PieceStack{},
 		}
+		tile := state.TileList[tileID]
+		for _, stack := range tile.PieceStacks {
+			tileUpdate.Stacks = append(tileUpdate.Stacks, PieceStack{
+			Type:     stack.Type,
+			Amount:   stack.Amount,
+			IsActive: tile.OwningTribe.IsActive,
+		})
+		}
+
 
 		// Marshal the combined structure into JSON
 		jsonData, err := json.MarshalIndent(tileUpdate, "", "  ")
@@ -191,19 +205,34 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 
 	sendAllTileUpdate := func() {
 		// Define a structure to include both tileID and its stacks
+		type PieceStack struct {
+			Type     string `json:"type"`
+			Amount   int    `json:"amount"`
+			IsActive bool   `json:"isActive"`
+		}
+
+		// Define a structure to include both tileID and its stacks
 		type TileUpdate struct {
 			TileID string      `json:"tileID"`
-			Stacks interface{} `json:"stacks"`
+			Stacks []PieceStack `json:"stacks"`
 		}
 
 		// Create the TileUpdate object with tileID and stacks
 		tileUpdates := []TileUpdate{}
 
 		for _, tile := range state.TileList {
-			tileUpdates = append(tileUpdates, TileUpdate{
-				tile.Id,
-				tile.PieceStacks,
+			tileUpdate := TileUpdate{
+				TileID: tile.Id,
+				Stacks: []PieceStack{},
+			}
+			for _, stack := range tile.PieceStacks {
+				tileUpdate.Stacks = append(tileUpdate.Stacks, PieceStack{
+				Type:     stack.Type,
+				Amount:   stack.Amount,
+				IsActive: tile.Presence == gamestate.Active,
 			})
+			}
+			tileUpdates = append(tileUpdates, tileUpdate)
 		}
 
 		// Marshal the combined structure into JSON
@@ -234,6 +263,67 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 		}
 		sendToAll(messages.Message{Type: "turnupdate", Data: jsonData})
 	}
+
+	var wg sync.WaitGroup
+
+	sendStateMessage("The game has started")
+	sendTurnUpdate()
+	sendPlayerUpdate()
+	sendAllTileUpdate()
+	sendEntriesUpdate()
+
+	for index, conn := range players {
+		mu.Lock()
+		conn.WriteJSON(messages.Message{
+		    Type: "index",
+		    Data: json.RawMessage([]byte(`{"index": "` + strconv.Itoa(index) + `"}`)),
+		})
+		mu.Unlock()
+		wg.Add(1)
+		go handlePlayerConnection(
+			conn,
+			state,
+			index,
+			names,
+			sendToAll,
+			sendStateMessage,
+			sendPlayerUpdate,
+			sendEntriesUpdate,
+			sendTileUpdate,
+			sendAllTileUpdate,
+			sendTurnUpdate,
+			&mu,
+			&wg,
+		)
+	}
+
+	// Block until all player goroutines have finished
+	wg.Wait()
+	log.Println("Game ended: All players disconnected.")
+}
+
+func handlePlayerConnection(
+	conn *websocket.Conn,
+	state *gamestate.GameState,
+	index int,
+	names []string,
+	sendToAll func(msg messages.Message),
+	sendStateMessage func(message string),
+	sendPlayerUpdate func(),
+	sendEntriesUpdate func(),
+	sendTileUpdate func(tileID string),
+	sendAllTileUpdate func(),
+	sendTurnUpdate func(),
+	mu *sync.Mutex,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+
+	// Helper functions
+	sendError := func(message string) {
+		conn.WriteJSON(messages.Message{Type: "error", Data: json.RawMessage([]byte(`{"message": "` + message + `"}`))})	
+	}
+
 
 
 	//Handling functions
@@ -282,8 +372,6 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 			sendError("Invalid conquest data")
 			return
 		}
-		log.Println(conquestData.TileID)
-		log.Println(conquestData.AttackingStackType)
 
 		if err := state.HandleConquest(conquestData.TileID, index, conquestData.AttackingStackType); err != nil {
 			sendError(err.Error())
@@ -393,14 +481,6 @@ func handlePlayerConnection(conn *websocket.Conn, state *gamestate.GameState, in
 			sendAllTileUpdate()
 		}
 	}
-
-	mu.Lock()
-	sendPlayerUpdate()
-	sendTurnUpdate()
-	sendEntriesUpdate()
-	conn.WriteJSON(messages.Message{Type: "index", Data: json.RawMessage([]byte(`{"index": "` + strconv.Itoa(index) + `"}`))})
-	mu.Unlock()
-
 
 	// Main loop
 	for {

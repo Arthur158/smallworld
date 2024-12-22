@@ -9,7 +9,7 @@ let socket: WebSocket | null = null;
 
 // Connect WebSocket
 export const connectWebSocket = () => {
-  socket = new WebSocket('wss://62f9-2a02-2788-11ca-f01-2e0-4cff-fe68-ed.ngrok-free.app/ws');
+  socket = new WebSocket('wss://0aa9-2a02-2788-11ca-f01-2e0-4cff-fe68-ed.ngrok-free.app/ws');
   // 'https://397a-2a02-2788-11ca-f01-2e0-4cff-fe68-ed.ngrok-free.app/' 
   // -> 'wss://397a-2a02-2788-11ca-f01-2e0-4cff-fe68-ed.ngrok-free.app/ws'
 

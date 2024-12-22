@@ -5,17 +5,17 @@ import (
 )
 
 type GameState struct {
-	Players []Player
+	Players []*Player
 	TribeList []*TribeEntry
 	TileList map[string]*Tile
-	TurnInfo TurnInfo
+	TurnInfo *TurnInfo
 }
 
 func New(playerCount int) (*GameState, error) {
 	// Create a list of initialized players
-	players := make([]Player, playerCount)
+	players := make([]*Player, playerCount)
 	for i := 0; i < playerCount; i++ {
-		players[i] = Player{
+		players[i] = &Player{
 			ActiveTribe:    nil,
 			PassiveTribes:  []*Tribe{}, // Initialize as empty slice
 			CoinPile: 5,
@@ -24,7 +24,7 @@ func New(playerCount int) (*GameState, error) {
 		}
 	}
 
-	turnInfo := TurnInfo{
+	turnInfo := &TurnInfo{
 		TurnIndex: 1,
 		PlayerIndex: 0,
 		Phase: TribeChoice,
@@ -62,7 +62,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 		return fmt.Errorf("It is not this player's turn!")
 	}
 
-	chooser := &gs.Players[chooserIndex]
+	chooser := gs.Players[chooserIndex]
 
 	if gs.TurnInfo.Phase != TribeChoice {
 		return fmt.Errorf("The player is not supposed to pick a new tribe!")
@@ -74,6 +74,10 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	if chooser.CoinPile < entryIndex {
 		return fmt.Errorf("The player only has %d coins, but they need %d for picking this tribe", chooser.CoinPile, entryIndex)
+	}
+
+	for _, entry := range gs.TribeList {
+		println(entry.Tribe.Race)
 	}
 
 	entry := gs.TribeList[entryIndex]
@@ -102,7 +106,7 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
-	player := &gs.Players[playerIndex]
+	player := gs.Players[playerIndex]
 
 	tile, ok := gs.TileList[tileId]
 	if !ok {
@@ -136,11 +140,11 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return fmt.Errorf("It is not this player's turn!")
 	}
 
-	if gs.TurnInfo.Phase != Conquest && gs.TurnInfo.Phase != TileAbandonment {
+	if gs.TurnInfo.Phase != Conquest && gs.TurnInfo.Phase != TileAbandonment && gs.TurnInfo.Phase != DeclineChoice {
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
-	attacker := &gs.Players[attackerIndex]
+	attacker := gs.Players[attackerIndex]
 
 	if !DoesPlayerHaveStack(attackingStackType, attacker) {
 		return fmt.Errorf("The stack is invalid for this player!")
@@ -211,7 +215,7 @@ func (gs *GameState) HandleStartRedeployment(playerIndex int) error {
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
-	player := &gs.Players[playerIndex]
+	player := gs.Players[playerIndex]
 	newStacks := player.ActiveTribe.startRedeployment()
 	player.addReserves(newStacks)
 
@@ -230,7 +234,7 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
-	player := &gs.Players[playerIndex]
+	player := gs.Players[playerIndex]
 
 	tile, ok := gs.TileList[tileId]
 	if !ok {
@@ -265,7 +269,7 @@ func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackT
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
-	player := &gs.Players[playerIndex]
+	player := gs.Players[playerIndex]
 
 	tile, ok := gs.TileList[tileId]
 	if !ok {
@@ -300,7 +304,7 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
-	player := &gs.Players[playerIndex]
+	player := gs.Players[playerIndex]
 
 	CoinsMade := gs.CountPoints(player)
 
@@ -318,11 +322,15 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 
 	player := gs.Players[playerIndex];
 
-	err := player.ActiveTribe.prepareDecline(gs)
+	if !player.HasActiveTribe {
+		return fmt.Errorf("The player does not have an active tribe!")
+	}
+
+	err := player.ActiveTribe.prepareDecline(gs, player)
+
 	if err != nil {
 		return fmt.Errorf("error: ", err)
 	}
-
 
 	for i, tribe := range player.PassiveTribes {
 		if (tribe.prepareRemoval(gs)) {
@@ -356,7 +364,7 @@ func (gs *GameState) handleNextPlayerTurn() {
 func (gs *GameState) ChoosePlayerStart() {
 	if gs.Players[gs.TurnInfo.PlayerIndex].HasActiveTribe {
 		gs.TurnInfo.Phase = DeclineChoice
-		gs.GetPieceStackForConquest(&gs.Players[gs.TurnInfo.PlayerIndex])
+		gs.GetPieceStackForConquest(gs.Players[gs.TurnInfo.PlayerIndex])
 	} else {
 		gs.TurnInfo.Phase = TribeChoice
 	}

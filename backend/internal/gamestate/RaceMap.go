@@ -6,16 +6,54 @@ type RaceValue struct {
 }
 
 var RaceMap = map[Race]RaceValue {
-	"Orc": {Transform: func(t *Tribe) {
+	"Wizard": {Transform: func(t *Tribe) {
 		}, Count: 5},
-	"Gypsies": {Transform: func(t *Tribe) {
+	"White Lady": {Transform: func(t *Tribe) {
 		}, Count: 6},
-	"Humans": {Transform: func(t *Tribe) {
+	"Wendigo": {Transform: func(t *Tribe) {
 		}, Count: 5},
-	"Elves": {Transform: func(t *Tribe) {
+	"Troll": {Transform: func(t *Tribe) {
 		}, Count: 6},
-	"Dwarves": {Transform: func(t *Tribe) {
+	"Triton": {Transform: func(t *Tribe) {
 		}, Count: 3},
-	"Giants": {Transform: func(t *Tribe) {
+	"Sorcerer": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Skeletton": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Shrubman": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Scavenger": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Scarecrow": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Ratman": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Pygmy": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Priestess": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Pixy": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Orc": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Leprechaun": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Kobold": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Khan": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Human": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Halfling": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Gypsy": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Goblin": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Giant": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Faun": {Transform: func(t *Tribe) {
+		}, Count: 6},
+	"Elf": {Transform: func(t *Tribe) {
 		}, Count: 6},
 }

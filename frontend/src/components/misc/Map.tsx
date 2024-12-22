@@ -27,6 +27,22 @@ export default function Map() {
 
   const svgRef = useRef<SVGSVGElement | null>(null);
 
+  // Inject the keyframes into the document once
+  useEffect(() => {
+    const styles = document.createElement('style');
+    styles.innerHTML = `
+      @keyframes flash {
+        0% { stroke: blue; }
+        50% { stroke: lightblue; }
+        100% { stroke: blue; }
+      }
+      .flash-border {
+        animation: flash 1s infinite;
+      }
+    `;
+    document.head.appendChild(styles);
+  }, []);
+
   useEffect(() => {
     const image = new Image();
     image.src = mapImage;
@@ -43,31 +59,35 @@ export default function Map() {
   }
 
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
-    console.log("entered")
-    if ((phase == "Conquest" || phase == "TileAbandonment") && isStackFromBank && selectedStack != null) {
-      // when in conquest, only thing you want to do i be able to select attack stack and use it to conquer region
-      sendMessageToBackend("Conquest", {tileId: tileID.toString(), attackingStackType: selectedStack.toString()})
-    } else if ((phase == 'Redeployment' || phase == 'TileAbandonment') && selectedStack == stackType && selectedTile == tileID) {
-      // when clicking on the same stack in the same tile in redeployment or tileabandonment, you are trying to deselect it
-        dispatch(setSelectedStack(null))
-        dispatch(setSelectedTile(null))
-        dispatch(setIsStackFromBank(false))
-    } else if (phase == "TileAbandonment" && stackType != null) {
-      // when in abandonment, if you select a stack on a tile (rest of action in playerinfo)
-        dispatch(setSelectedStack(stackType))
-        dispatch(setSelectedTile(tileID))
-    } else if (phase == 'Redeployment' && isStackFromBank && selectedStack != null) {
-      // when in redeployment, if you selected a stack from your box and you click on a tile, be it the tile or a stack on it, you want to redeploy to that tile.
-      sendMessageToBackend("deploymentin", {tileId: tileID.toString(), stackType: selectedStack.toString()})
-    } else if (phase == 'Redeployment' && !isStackFromBank && selectedTile != null && selectedStack != null) {
-      // when in redeployment, if you selected a stack but from the map, and then click on another zone, you are trying to redeploy to that zone
-      sendMessageToBackend("deploymentthrough", {tileFromId: selectedTile.toString(), tileToId: tileID.toString(), stackType: selectedStack})
-    } else if (phase == 'Redeployment' && selectedStack == null && stackType != null) {
-      dispatch(setSelectedStack(stackType))
-      dispatch(setSelectedTile(tileID))
-      dispatch(setIsStackFromBank(false))
+    console.log(phase);
+    console.log(isStackFromBank);
+    console.log(selectedStack);
+
+    if ((phase === "Conquest" || phase === "TileAbandonment" || phase === "DeclineChoice") && isStackFromBank && selectedStack != null) {
+      console.log("conquest");
+      sendMessageToBackend("Conquest", { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
+    } else if ((phase === 'Redeployment' || phase === 'TileAbandonment') && selectedStack === stackType && selectedTile === tileID) {
+      console.log("redep");
+      dispatch(setSelectedStack(null));
+      dispatch(setSelectedTile(null));
+      dispatch(setIsStackFromBank(false));
+    } else if ((phase === "TileAbandonment" || phase === "DeclineChoice") && stackType != null) {
+      console.log("abandon");
+      dispatch(setSelectedStack(stackType));
+      dispatch(setSelectedTile(tileID));
+    } else if (phase === 'Redeployment' && isStackFromBank && selectedStack != null) {
+      console.log("redep");
+      sendMessageToBackend("deploymentin", { tileId: tileID.toString(), stackType: selectedStack.toString() });
+    } else if (phase === 'Redeployment' && !isStackFromBank && selectedTile != null && selectedStack != null) {
+      console.log("redep");
+      sendMessageToBackend("deploymentthrough", { tileFromId: selectedTile.toString(), tileToId: tileID.toString(), stackType: selectedStack });
+    } else if (phase === 'Redeployment' && selectedStack == null && stackType != null) {
+      console.log("redep");
+      dispatch(setSelectedStack(stackType));
+      dispatch(setSelectedTile(tileID));
+      dispatch(setIsStackFromBank(false));
     }
-  }
+  };
 
   const minScale = 1;
   const maxScale = 5;
@@ -246,71 +266,75 @@ export default function Map() {
 
           {Object.values(tiles).map((tile) => (
             <g key={`stack-${tile.id}`}>
-            {tile.pieceStack
-              .slice()
-              .reverse()
-              .map((stack, index) => {
-                const baseSize = 45;
-                const offset = 0.4 * baseSize;
-                const scaledStackX =
-                  (tile.polygon.stackX + index * offset) *
-                  (imageDimensions.width / baseWidth);
-                const scaledStackY =
-                  (tile.polygon.stackY - index * offset) *
-                  (imageDimensions.width / baseWidth);
-                const imageSrc = `/stacks/${stack.type}.png`;
-                
-                const isHighlighted = !isStackFromBank && selectedStack === stack.type && selectedTile === tile.id;
+              {tile.pieceStack
+                .slice()
+                .reverse()
+                .map((stack, index) => {
+                  const baseSize = 61;
+                  const offset = 0.4 * baseSize;
+                  const scaledStackX =
+                    (tile.polygon.stackX + index * offset) *
+                    (imageDimensions.width / baseWidth);
+                  const scaledStackY =
+                    (tile.polygon.stackY - index * offset) *
+                    (imageDimensions.width / baseWidth);
+                  const imageSrc = `/stacks/${stack.type}.png`;
 
-                return (
-                  <g
-                    key={`piece-${tile.id}-${index}`}
-                    onClick={() => handleTileStackClick(tile.id, stack.type)}
-                  >
-                    <rect
-                      x={scaledStackX}
-                      y={scaledStackY - baseSize}
-                      width={baseSize}
-                      height={baseSize}
-                      fill={isHighlighted ? 'yellow' : 'blue'}
-                      stroke={isHighlighted ? 'red' : 'black'}
-                      strokeWidth={isHighlighted ? 3 : 1}
-                    />
-                    <text
-                      x={scaledStackX + baseSize / 2}
-                      y={scaledStackY - baseSize / 2}
-                      fill="white"
-                      fontSize="8"
-                      fontWeight="bold"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
+                  const isGray = !stack.isActive;
+                  const isSelected =
+                    selectedTile === tile.id && selectedStack === stack.type;
+
+                  return (
+                    <g
+                      key={`piece-${tile.id}-${index}`}
+                      onClick={() => handleTileStackClick(tile.id, stack.type)}
                     >
-                      {stack.type}
-                    </text>
-                    <image
-                      href={imageSrc}
-                      x={scaledStackX}
-                      y={scaledStackY - baseSize}
-                      width={baseSize}
-                      height={baseSize}
-                      onError={(e) => {
-                        (e.target as SVGImageElement).style.display = 'none';
-                      }}
-                    />
-                    <text
-                      x={scaledStackX + baseSize - 3}
-                      y={scaledStackY - baseSize + 30}
-                      fill="black"
-                      fontSize="15"
-                      fontWeight="bold"
-                      textAnchor="end"
-                      dominantBaseline="hanging"
-                    >
-                      {stack.amount}
-                    </text>
-                  </g>
-                );
-              })}
+                      <rect
+                        x={scaledStackX}
+                        y={scaledStackY - baseSize}
+                        width={baseSize}
+                        height={baseSize}
+                        fill={isGray ? "#808080" : "blue"}
+                        stroke="black"
+                        strokeWidth={isSelected ? 4 : 1}
+                        className={isSelected ? 'flash-border' : ''}
+                      />
+                      <text
+                        x={scaledStackX + baseSize / 2}
+                        y={scaledStackY - baseSize / 2}
+                        fill="white"
+                        fontSize="8"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        {stack.type}
+                      </text>
+                      <image
+                        href={imageSrc}
+                        x={scaledStackX}
+                        y={scaledStackY - baseSize}
+                        width={baseSize}
+                        height={baseSize}
+                        style={{ filter: isGray ? 'grayscale(100%)' : 'none' }}
+                        onError={(e) => {
+                          (e.target as SVGImageElement).style.display = 'none';
+                        }}
+                      />
+                      <text
+                        x={scaledStackX + baseSize - 3}
+                        y={scaledStackY - baseSize + 45}
+                        fill="black"
+                        fontSize="18"
+                        fontWeight="bold"
+                        textAnchor="end"
+                        dominantBaseline="hanging"
+                      >
+                        {stack.amount}
+                      </text>
+                    </g>
+                  );
+                })}
             </g>
           ))}
         </g>

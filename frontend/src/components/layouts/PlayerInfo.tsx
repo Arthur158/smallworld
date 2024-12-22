@@ -1,7 +1,7 @@
 import React from 'react';
 import { RootState } from '../../redux/store';
 import { Player, PieceStack } from '../../types/Board';
-import { setIsStackFromBank, setSelectedStack } from '../../redux/slices/applicationSlice'
+import { setIsStackFromBank, setSelectedStack } from '../../redux/slices/applicationSlice';
 import { useSelector, useDispatch } from 'react-redux';
 import { sendMessageToBackend } from '../../services/backendService';
 
@@ -15,39 +15,52 @@ export default function PlayerInfo() {
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
   const phase = useSelector((state: RootState) => state.application.phase);
 
+  // Si la liste des joueurs est vide ou l'indice est hors borne, on affiche un placeholder.
+  if (!allPlayers || allPlayers.length === 0 || playerIndex < 0 || playerIndex >= allPlayers.length) {
+    return (
+      <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative">
+        No player data available
+      </div>
+    );
+  }
+
   const player = allPlayers[playerIndex];
-  const activePlayer = allPlayers[ActiveIndex];
+  // Même si vous n'utilisez pas forcément activePlayer, on le conserve
+  const activePlayer = allPlayers[ActiveIndex]; 
 
   const baseSize = 45;
 
   const handlePieceStackClick = (stackType: string) => {
-    if (isStackFromBank && selectedStack == stackType) {
-      dispatch(setIsStackFromBank(false))
-      dispatch(setSelectedStack(null))
+    if (isStackFromBank && selectedStack === stackType) {
+      dispatch(setIsStackFromBank(false));
+      dispatch(setSelectedStack(null));
     } else {
-    dispatch(setIsStackFromBank(true))
-    dispatch(setSelectedStack(stackType))
-    }
-  }
-
-  const handlePlayerClick = () => {
-    if (phase == "TileAbandonment" && selectedTile != null && selectedStack != null) {
-      sendMessageToBackend("abandonment", {tileId: selectedTile.toString()})
-    } else if (phase == "Redeployment" && selectedTile != null && selectedStack != null) {
-      sendMessageToBackend("deploymentout", {tileId: selectedTile.toString(), stackType: selectedStack.toString()})
+      dispatch(setIsStackFromBank(true));
+      dispatch(setSelectedStack(stackType));
     }
   };
 
-  const renderPieceStacks = (pieceStacks: PieceStack[], isActive: boolean) => {
+  const handlePlayerClick = () => {
+    if (phase === 'TileAbandonment' && selectedTile != null && selectedStack != null) {
+      sendMessageToBackend('abandonment', { tileId: selectedTile.toString() });
+    } else if (phase === 'Redeployment' && selectedTile != null && selectedStack != null) {
+      sendMessageToBackend('deploymentout', {
+        tileId: selectedTile.toString(),
+        stackType: selectedStack.toString(),
+      });
+    }
+  };
+
+  // On retire toute restriction sur l'affichage des piles (isActive n'agit plus sur l'opacité ni la "cliquabilité").
+  const renderPieceStacks = (pieceStacks: PieceStack[]) => {
     return (
       <div className="flex space-x-2 mt-2 relative z-10">
         {pieceStacks.map((stack, index) => {
           const imageSrc = `/stacks/${stack.type}.png`;
-          const isClickable = isActive;
-
-          // Determine if the stack should be flashy
-          const isFlashy =
-            isStackFromBank && selectedStack === stack.type;
+          // Plus de restriction : tout est clickable
+          const isClickable = true;
+          // Effet flashy si la pile est sélectionnée
+          const isFlashy = isStackFromBank && selectedStack === stack.type;
 
           return (
             <div
@@ -56,13 +69,14 @@ export default function PlayerInfo() {
               style={{
                 width: baseSize,
                 height: baseSize,
-                cursor: isClickable ? 'pointer' : 'default',
-                opacity: isActive ? 1 : 0.5,
+                cursor: 'pointer',
+                // On force l'opacité à 1 pour tout le monde
+                opacity: 1,
                 border: isFlashy ? '3px solid blue' : '1px solid black',
                 animation: isFlashy ? 'flash 1s infinite' : undefined,
               }}
               onClick={(e) => {
-                e.stopPropagation(); // Prevents the click event from bubbling up
+                e.stopPropagation();
                 if (isClickable) {
                   handlePieceStackClick(stack.type);
                 }
@@ -145,12 +159,12 @@ export default function PlayerInfo() {
           ))}
         </div>
       )}
-      {renderPieceStacks(player.pieceStacks, playerIndex === ActiveIndex)}
+      {renderPieceStacks(player.pieceStacks)}
     </div>
   );
 }
 
-// CSS for the flashing animation
+// CSS pour l’animation de clignotement
 const styles = document.createElement('style');
 styles.innerHTML = `
   @keyframes flash {

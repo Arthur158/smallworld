@@ -69,6 +69,7 @@ func createBaseTribe() *Tribe {
     tribe := Tribe{
         Race: "Unknown",
         Trait: "Unknown",
+        IsActive: true,
     }
 
     tribe.IsStackValid = func(s string) bool {
@@ -120,7 +121,6 @@ func createBaseTribe() *Tribe {
 
     tribe.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
         for _, stack := range tile.PieceStacks {
-            log.Println(stack.Type)
             if stack.Type == stackType {
                 if stack.Amount == 1 {
                     return nil, fmt.Errorf("cannot take off single tribe")
@@ -161,11 +161,7 @@ func createBaseTribe() *Tribe {
             if stack.Type == string(tribe.Race) {
                 // Making sure the action is atomic
                 movingStack := []PieceStack{{Type: stack.Type, Amount: stack.Amount - 1}}
-                log.Println("were here")
-                log.Println(movingStack)
-                log.Println(tile.PieceStacks)
                 tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, movingStack)
-                log.Println(tile.PieceStacks)
                 player.addReserves(movingStack)
             }
         }
@@ -175,12 +171,26 @@ func createBaseTribe() *Tribe {
         return 1
     }
 
-    tribe.prepareDecline = func(gs *GameState) error {
+    tribe.prepareDecline = func(gs *GameState, player *Player) error {
         if !tribe.CanGoIntoDecline(gs) {
             return fmt.Errorf("The tribe cannot go in decline at this moment")
         }
+        stacks := []PieceStack{}
+        log.Println("before")
+        log.Println(player.PieceStacks)
+        for _, stack := range player.PieceStacks {
+            if stack.Type != string(tribe.Race) {
+                stacks = append(stacks, stack)
+            }
+        }
+
+        player.PieceStacks = stacks
+
+        
+        log.Println("dumbfounded")
         for _, tile := range gs.TileList {
             if tile.Presence != None && tile.OwningTribe.Race == tribe.Race {
+                log.Println("dumbfounded2")
                 tile.PieceStacks = []PieceStack{{Type: string(tribe.Race), Amount: 1}}
                 tile.Presence = Passive
             }

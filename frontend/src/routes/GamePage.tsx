@@ -38,28 +38,6 @@ export default function GamePage() {
 
         dispatch(setTiles(tileData));
 
-        // Exemples de piles pour tests
-        dispatch(
-          updateTileStack({
-            tile_id: '1',
-            new_stacks: [
-              { type: 'elves', amount: 3 },
-              { type: 'dragon', amount: 1 },
-            ],
-          })
-        );
-        dispatch(
-          updateTileStack({
-            tile_id: '5',
-            new_stacks: [{ type: 'elves', amount: 3 }],
-          })
-        );
-        dispatch(
-          updateTileStack({
-            tile_id: '20',
-            new_stacks: [{ type: 'dwarves', amount: 3 }],
-          })
-        );
       } catch (error) {
         console.error('Error loading file:', error);
       }

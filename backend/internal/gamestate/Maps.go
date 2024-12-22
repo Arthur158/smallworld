@@ -42,7 +42,7 @@ func Map1() map[string]*Tile {
     }
 
     tileMap["1"].AdjacentTiles = []*Tile{
-        tileMap["0"], tileMap["8"], tileMap["10"], tileMap["12"], tileMap["28"], tileMap["7"],
+        tileMap["0"], tileMap["8"], tileMap["10"], tileMap["12"], tileMap["28"], tileMap["7"], tileMap["2"],
     }
 
     tileMap["2"].AdjacentTiles = []*Tile{
@@ -162,6 +162,14 @@ func Map1() map[string]*Tile {
     for id, tile := range tileMap {
         result[id] = tile // Dereference pointer to get a Tile value
     }
+
+    lostTribe := createBaseTribe()
+
+    for _, id := range []string{ "22", "21", "4", "3", "11", "26", "1", "13", "16", "0"} {
+        tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
+        tileMap[id].OwningTribe = lostTribe
+    }
+
 
     return result
 }
