@@ -19,12 +19,14 @@ const initialState: ApplicationState = {
   isStackFromBank: false,
   selectedTile: null,
   messages: [],
+  scores: [],
 };
 
 const applicationSlice = createSlice({
   name: 'application',
   initialState,
   reducers: {
+    reset: () => initialState,
     setLanguage(state, action: PayloadAction<Language>): void {
       state.language = action.payload;
     },
@@ -45,6 +47,9 @@ const applicationSlice = createSlice({
     },
     setPlayers(state, action) {
       state.players = action.payload
+    },
+    setScores(state, action) {
+      state.scores = action.payload
     },
     setTiles(state, action) {
       state.tiles = action.payload
@@ -73,6 +78,9 @@ const applicationSlice = createSlice({
           break;
         case 'error':
           state.error = parsedData.message
+          state.messages.push(
+            `${JSON.stringify(parsedData.message)}`
+          );
           break;
         case 'playerupdate':
           const players: Player[] = [];
@@ -177,14 +185,19 @@ const applicationSlice = createSlice({
           state.availableTribes = tribeEntries; 
           console.log("Updated tribe entries:", tribeEntries);
           break;
+        case 'gamefinished':
+          state.scores = parsedData
+          state.phase = "GameFinished"
+          break;
+        case 'message':
+          state.messages.push(
+            `${JSON.stringify(parsedData.message)}`
+          );
+          break;
 
         default:
           console.warn('Unhandled WebSocket message type:', data);
           console.log(type);
-          // On ajoute le message brut (ou formaté) au tableau messages
-          state.messages.push(
-            `Type: ${type}, Content: ${JSON.stringify(parsedData)}`
-          );
           break;
       }
     },
@@ -193,6 +206,6 @@ const applicationSlice = createSlice({
 
 const applicationReducer = applicationSlice.reducer;
 
-export const { setLanguage, setSelectedTile, setSelectedStack, setIsStackFromBank, setTiles, clearError, setError, websocketMessageReceived, updateTileStack, setPlayers } = applicationSlice.actions;
+export const { reset, setLanguage, setSelectedTile, setSelectedStack, setIsStackFromBank, setTiles, clearError, setError, websocketMessageReceived, updateTileStack, setPlayers } = applicationSlice.actions;
 
 export default applicationReducer;

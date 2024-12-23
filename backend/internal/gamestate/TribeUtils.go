@@ -176,8 +176,6 @@ func createBaseTribe() *Tribe {
             return fmt.Errorf("The tribe cannot go in decline at this moment")
         }
         stacks := []PieceStack{}
-        log.Println("before")
-        log.Println(player.PieceStacks)
         for _, stack := range player.PieceStacks {
             if stack.Type != string(tribe.Race) {
                 stacks = append(stacks, stack)
@@ -186,11 +184,8 @@ func createBaseTribe() *Tribe {
 
         player.PieceStacks = stacks
 
-        
-        log.Println("dumbfounded")
         for _, tile := range gs.TileList {
             if tile.Presence != None && tile.OwningTribe.Race == tribe.Race {
-                log.Println("dumbfounded2")
                 tile.PieceStacks = []PieceStack{{Type: string(tribe.Race), Amount: 1}}
                 tile.Presence = Passive
             }
@@ -199,8 +194,9 @@ func createBaseTribe() *Tribe {
     }
 
     tribe.prepareRemoval = func(gs *GameState) bool {
+        log.Println("yooww")
         for _, tile := range gs.TileList {
-            if tile.OwningTribe.Race == tribe.Race {
+            if tile.Presence != None && tile.OwningTribe.Race == tribe.Race {
                 tile.PieceStacks = []PieceStack{}
                 tile.Presence = None
             }

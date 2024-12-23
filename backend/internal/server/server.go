@@ -6,6 +6,7 @@ import (
 	"sync"
 	"encoding/json"
 	"strconv"
+	"fmt"
 
 	"github.com/gorilla/websocket"
 	"backend/internal/gamestate"
@@ -86,7 +87,7 @@ func startGame(c1, c2 *websocket.Conn) {
 
 
 	sendStateMessage := func(message string) {
-		sendToAll(messages.Message{Type: "state", Data: json.RawMessage([]byte(`{"message": "` + message + `"}`))})
+		sendToAll(messages.Message{Type: "message", Data: json.RawMessage([]byte(`{"message": "` + message + `"}`))})
 	}
 
 	type Tribe struct {
@@ -264,9 +265,21 @@ func startGame(c1, c2 *websocket.Conn) {
 		sendToAll(messages.Message{Type: "turnupdate", Data: jsonData})
 	}
 
+	sendGameFinishedUpdate := func() {
+		scores := []int{}
+		for _, player := range state.Players {
+			scores = append(scores, player.CoinPile)
+		}
+		// Marshal the combined structure into JSON
+		jsonData, err := json.MarshalIndent(scores, "", "  ")
+		if err != nil {
+			log.Fatal("Error marshaling tile update:", err)
+		}
+		sendToAll(messages.Message{Type: "gamefinished", Data: jsonData})
+	}
+
 	var wg sync.WaitGroup
 
-	sendStateMessage("The game has started")
 	sendTurnUpdate()
 	sendPlayerUpdate()
 	sendAllTileUpdate()
@@ -292,6 +305,7 @@ func startGame(c1, c2 *websocket.Conn) {
 			sendTileUpdate,
 			sendAllTileUpdate,
 			sendTurnUpdate,
+			sendGameFinishedUpdate,
 			&mu,
 			&wg,
 		)
@@ -314,6 +328,7 @@ func handlePlayerConnection(
 	sendTileUpdate func(tileID string),
 	sendAllTileUpdate func(),
 	sendTurnUpdate func(),
+	sendGameFinishedUpdate func(),
 	mu *sync.Mutex,
 	wg *sync.WaitGroup,
 ) {
@@ -469,6 +484,20 @@ func handlePlayerConnection(
 			sendPlayerUpdate()
 			sendTurnUpdate()
 			sendAllTileUpdate()
+			pointsList := state.Players[index].PointsEachTurn
+			log.Println(state.TurnInfo.TurnIndex)
+			log.Println(pointsList)
+
+			sendStateMessage(
+			    fmt.Sprintf(
+				"player %s made %d points this turn",
+				names[index],
+				pointsList[len(pointsList) - 1]-pointsList[len(pointsList) - 2],
+			    ),
+			)
+			if state.TurnInfo.Phase == gamestate.GameFinished {
+				sendGameFinishedUpdate()
+			} 
 		}
 	}
 
@@ -479,6 +508,9 @@ func handlePlayerConnection(
 			sendPlayerUpdate()
 			sendTurnUpdate()
 			sendAllTileUpdate()
+			if state.TurnInfo.Phase == gamestate.GameFinished {
+				sendGameFinishedUpdate()
+			} 
 		}
 	}
 

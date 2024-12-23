@@ -78,27 +78,31 @@ func SubtractPieceStacks(reserves, expanses []PieceStack) ([]PieceStack, bool) {
 	for _, stack1 := range reserves {
 		subtracted := false
 
-		// Search for a matching type in list2
+		// Search for a matching type in expanses
 		for _, stack2 := range expanses {
 			if stack1.Type == stack2.Type {
 				if stack1.Amount < stack2.Amount {
 					// Not enough quantity to subtract
 					return nil, false
 				}
-				// Subtract the amount and mark as processed
-				result = append(result, PieceStack{Type: stack1.Type, Amount: stack1.Amount - stack2.Amount})
+				// Subtract the amount
+				remainingAmount := stack1.Amount - stack2.Amount
+				if remainingAmount > 0 {
+					// Only add to result if the remaining amount is greater than 0
+					result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount})
+				}
 				subtracted = true
 				break
 			}
 		}
 
-		// If no match was found in list2, add the stack1 element unchanged
+		// If no match was found in expanses, add the stack1 element unchanged
 		if !subtracted {
 			result = append(result, stack1)
 		}
 	}
 
-	// Verify no types in list2 are missing from list1
+	// Verify no types in expanses are missing from reserves
 	for _, stack2 := range expanses {
 		found := false
 		for _, stack1 := range reserves {

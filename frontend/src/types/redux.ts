@@ -16,6 +16,7 @@ export interface ApplicationState {
   isStackFromBank: boolean
   selectedTile: string | null;
   messages: string[]
+  scores: number[]
 }
 
 export type RootState = {

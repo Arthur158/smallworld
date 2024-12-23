@@ -59,30 +59,32 @@ export default function Map() {
   }
 
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
-    console.log(phase);
-    console.log(isStackFromBank);
-    console.log(selectedStack);
-
-    if ((phase === "Conquest" || phase === "TileAbandonment" || phase === "DeclineChoice") && isStackFromBank && selectedStack != null) {
-      console.log("conquest");
+    if (
+      (phase === "Conquest" || phase === "TileAbandonment" || phase === "DeclineChoice") &&
+      isStackFromBank &&
+      selectedStack != null
+    ) {
       sendMessageToBackend("Conquest", { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
-    } else if ((phase === 'Redeployment' || phase === 'TileAbandonment') && selectedStack === stackType && selectedTile === tileID) {
-      console.log("redep");
+    } else if (
+      (phase === 'Redeployment' || phase === 'TileAbandonment') &&
+      selectedStack === stackType &&
+      selectedTile === tileID
+    ) {
       dispatch(setSelectedStack(null));
       dispatch(setSelectedTile(null));
       dispatch(setIsStackFromBank(false));
     } else if ((phase === "TileAbandonment" || phase === "DeclineChoice") && stackType != null) {
-      console.log("abandon");
       dispatch(setSelectedStack(stackType));
       dispatch(setSelectedTile(tileID));
     } else if (phase === 'Redeployment' && isStackFromBank && selectedStack != null) {
-      console.log("redep");
       sendMessageToBackend("deploymentin", { tileId: tileID.toString(), stackType: selectedStack.toString() });
     } else if (phase === 'Redeployment' && !isStackFromBank && selectedTile != null && selectedStack != null) {
-      console.log("redep");
-      sendMessageToBackend("deploymentthrough", { tileFromId: selectedTile.toString(), tileToId: tileID.toString(), stackType: selectedStack });
+      sendMessageToBackend("deploymentthrough", {
+        tileFromId: selectedTile.toString(),
+        tileToId: tileID.toString(),
+        stackType: selectedStack
+      });
     } else if (phase === 'Redeployment' && selectedStack == null && stackType != null) {
-      console.log("redep");
       dispatch(setSelectedStack(stackType));
       dispatch(setSelectedTile(tileID));
       dispatch(setIsStackFromBank(false));
@@ -244,7 +246,7 @@ export default function Map() {
             const scaledCoords = tile.polygon.coords.map(
               (coord: number) => coord * (imageDimensions.width / baseWidth)
             );
-            const points = [];
+            const points: string[] = [];
             for (let i = 0; i < scaledCoords.length; i += 2) {
               points.push(`${scaledCoords[i]},${scaledCoords[i + 1]}`);
             }
@@ -284,54 +286,76 @@ export default function Map() {
                   const isSelected =
                     selectedTile === tile.id && selectedStack === stack.type;
 
+                  // We create multiple images (or "layers") to visually stack them
+                  // Each piece moves slightly bottom-right, so we see the "pile".
                   return (
                     <g
                       key={`piece-${tile.id}-${index}`}
                       onClick={() => handleTileStackClick(tile.id, stack.type)}
                     >
-                      <rect
-                        x={scaledStackX}
-                        y={scaledStackY - baseSize}
-                        width={baseSize}
-                        height={baseSize}
-                        fill={isGray ? "#808080" : "blue"}
-                        stroke="black"
-                        strokeWidth={isSelected ? 4 : 1}
-                        className={isSelected ? 'flash-border' : ''}
-                      />
-                      <text
-                        x={scaledStackX + baseSize / 2}
-                        y={scaledStackY - baseSize / 2}
-                        fill="white"
-                        fontSize="8"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        {stack.type}
-                      </text>
-                      <image
-                        href={imageSrc}
-                        x={scaledStackX}
-                        y={scaledStackY - baseSize}
-                        width={baseSize}
-                        height={baseSize}
-                        style={{ filter: isGray ? 'grayscale(100%)' : 'none' }}
-                        onError={(e) => {
-                          (e.target as SVGImageElement).style.display = 'none';
-                        }}
-                      />
-                      <text
-                        x={scaledStackX + baseSize - 3}
-                        y={scaledStackY - baseSize + 45}
-                        fill="black"
-                        fontSize="18"
-                        fontWeight="bold"
-                        textAnchor="end"
-                        dominantBaseline="hanging"
-                      >
-                        {stack.amount}
-                      </text>
+                      {[...Array(stack.amount)].map((_, i) => {
+                        const pieceX = scaledStackX + i * 3;
+                        const pieceY = scaledStackY + i * 3;
+                        const isTopPiece = i === stack.amount - 1;
+
+                        return (
+                          <g key={`piece-layer-${i}`}>
+                            <image
+                              href={imageSrc}
+                              x={pieceX}
+                              y={pieceY - baseSize}
+                              width={baseSize}
+                              height={baseSize}
+                              style={{
+                                filter: isGray ? 'grayscale(100%)' : 'none',
+                              }}
+                              onError={(e) => {
+                                (e.target as SVGImageElement).style.display = 'none';
+                              }}
+                            />
+                            {/* If it's the top piece, show type, amount and (optionally) a flashing border */}
+                            {isTopPiece && (
+                              <>
+                                {/* A stroke behind the image to show selection (flash) */}
+                                {isSelected && (
+                                  <rect
+                                    x={pieceX}
+                                    y={pieceY - baseSize}
+                                    width={baseSize}
+                                    height={baseSize}
+                                    fill="none"
+                                    stroke="blue"
+                                    strokeWidth={4}
+                                    className="flash-border"
+                                  />
+                                )}
+                                <text
+                                  x={pieceX + baseSize / 2}
+                                  y={pieceY - baseSize / 2}
+                                  fill="white"
+                                  fontSize="8"
+                                  fontWeight="bold"
+                                  textAnchor="middle"
+                                  dominantBaseline="middle"
+                                >
+                                  {stack.type}
+                                </text>
+                                <text
+                                  x={pieceX + baseSize - 3}
+                                  y={pieceY - baseSize + 45}
+                                  fill="black"
+                                  fontSize="18"
+                                  fontWeight="bold"
+                                  textAnchor="end"
+                                  dominantBaseline="hanging"
+                                >
+                                  {stack.amount}
+                                </text>
+                              </>
+                            )}
+                          </g>
+                        );
+                      })}
                     </g>
                   );
                 })}

@@ -128,6 +128,7 @@ type Player struct {
 	CoinPile int
 	PieceStacks []PieceStack
 	HasActiveTribe bool
+	PointsEachTurn []int;
 }
 
 type Phase int
