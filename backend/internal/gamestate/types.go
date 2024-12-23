@@ -7,22 +7,41 @@ type Tribe struct {
 	Race Race;
 	Trait Trait;
 	IsActive bool;
-	IsStackValid func(string) bool;
-	countDefense func(*Tile) (int, error);
-	countAttack func(*Tile, int, string) []PieceStack;
-	countReturningStacks func(*Tile) []PieceStack;
-	countNewTileStacks func([]PieceStack) []PieceStack;
+
+	giveInitialStacks func() []PieceStack;
+
+	//abandonment
 	CanTileBeAbandoned func(*Tile) bool;
 	ReceiveAbandonment func(*Tile) []PieceStack;
-	startRedeployment func() []PieceStack;
-	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
+
+	// receive for conquest
+	GetStacksForConquest func(*Tile, *Player);
+
+	// conquest checks
+	IsStackValid func(string) bool;
 	checkZoneAccess func(*Tile) error;
 	checkAdjacency func(*Tile, *GameState) error;
-	GetStacksForConquest func(*Tile, *Player);
+
+	// conquest for attacker
+	countAttack func(*Tile, int, string) []PieceStack;
+	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
+
+	//conquest for defender
+	countDefense func(*Tile) (int, error);
+	countReturningStacks func(*Tile) ([]PieceStack, []PieceStack);
+
+	// redeployment
+	startRedeployment func() []PieceStack;
+	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
+
+	// end of turn
 	CountPoints func(*Tile) int;
-	prepareDecline func(*GameState, *Player) error;
-	prepareRemoval func(*GameState) bool;
+
+	// decline
+	countPiecesRemaining func(*Tile) []PieceStack;
+	countRemainingAttackingStacks func(*Player) []PieceStack;
 	CanGoIntoDecline func(*GameState) bool
+	prepareRemoval func(*GameState) bool;
 }
 
 type TribeEntry struct {

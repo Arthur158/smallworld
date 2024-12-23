@@ -284,7 +284,7 @@ export default function Map() {
 
                   const isGray = !stack.isActive;
                   const isSelected =
-                    selectedTile === tile.id && selectedStack === stack.type;
+                    selectedTile === tile.id && selectedStack === stack.type && isStackFromBank === false;
 
                   // We create multiple images (or "layers") to visually stack them
                   // Each piece moves slightly bottom-right, so we see the "pile".

@@ -28,25 +28,6 @@ func GetPlayerTribe(stackType string, player *Player) (*Tribe, error) {
     return nil, fmt.Errorf("Player did not have valid tribe for piecestack")
 }
 
-func (player *Player) addReserves(stacks []PieceStack) {
-    for _, stack := range stacks { // Iterate over the incoming stacks
-        found := false
-
-        // Search for a matching stack in player's PieceStacks
-        for i := range player.PieceStacks {
-            if player.PieceStacks[i].Type == stack.Type {
-                player.PieceStacks[i].Amount += stack.Amount // Add to the existing stack
-                found = true
-                break
-            }
-        }
-
-        // If no matching stack was found, add a new one
-        if !found {
-            player.PieceStacks = append(player.PieceStacks, stack)
-        }
-    }
-}
 func AddPieceStacks(first, second []PieceStack) []PieceStack {
     result := make([]PieceStack, 0)
     pieceMap := make(map[string]int)

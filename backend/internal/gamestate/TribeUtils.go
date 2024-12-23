@@ -2,7 +2,6 @@ package gamestate
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 )
@@ -94,16 +93,16 @@ func createBaseTribe() *Tribe {
         return price, nil
     }
 
-    tribe.countReturningStacks = func(tile *Tile) []PieceStack {
+    tribe.countReturningStacks = func(tile *Tile) ([]PieceStack, []PieceStack) {
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
-                return []PieceStack{{Type: stack.Type, Amount: stack.Amount - 1}}
+                return []PieceStack{{Type: stack.Type, Amount: stack.Amount - 1}}, nil
             }
         }
-        return nil
+        return nil, nil
     }
 
-    tribe.countNewTileStacks = func(ps []PieceStack) []PieceStack {
+    tribe.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
         return ps
     }
 
@@ -112,7 +111,12 @@ func createBaseTribe() *Tribe {
     }
 
     tribe.ReceiveAbandonment = func(tile *Tile) []PieceStack {
-        return []PieceStack{{Type: string(tribe.Race), Amount: 1}}
+        for _, stack := range tile.PieceStacks {
+            if stack.Type == string(tribe.Race) {
+                return []PieceStack{{Type: stack.Type, Amount: stack.Amount }}
+            }
+        }
+        return []PieceStack{}
     }
 
     tribe.startRedeployment = func() []PieceStack {
@@ -156,13 +160,14 @@ func createBaseTribe() *Tribe {
         }
     }
 
+    // the dilemma here is that we could make it return the piecestack, but then the action would not be atomic anymore since the piecestack would be removed from the tile and then returned and the stack would be given to the player later.
     tribe.GetStacksForConquest = func(tile *Tile, player *Player) {
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 // Making sure the action is atomic
                 movingStack := []PieceStack{{Type: stack.Type, Amount: stack.Amount - 1}}
                 tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, movingStack)
-                player.addReserves(movingStack)
+                player.PieceStacks = AddPieceStacks(player.PieceStacks, movingStack)
             }
         }
     }
@@ -171,30 +176,16 @@ func createBaseTribe() *Tribe {
         return 1
     }
 
-    tribe.prepareDecline = func(gs *GameState, player *Player) error {
-        if !tribe.CanGoIntoDecline(gs) {
-            return fmt.Errorf("The tribe cannot go in decline at this moment")
-        }
-        stacks := []PieceStack{}
-        for _, stack := range player.PieceStacks {
-            if stack.Type != string(tribe.Race) {
-                stacks = append(stacks, stack)
-            }
-        }
-
-        player.PieceStacks = stacks
-
-        for _, tile := range gs.TileList {
-            if tile.Presence != None && tile.OwningTribe.Race == tribe.Race {
-                tile.PieceStacks = []PieceStack{{Type: string(tribe.Race), Amount: 1}}
-                tile.Presence = Passive
-            }
-        }
-        return nil
+    tribe.countRemainingAttackingStacks = func(player *Player) []PieceStack {
+        return []PieceStack{}
     }
 
+    tribe.countPiecesRemaining = func(tile *Tile) []PieceStack {
+        return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: 1}}
+    }
+    
+
     tribe.prepareRemoval = func(gs *GameState) bool {
-        log.Println("yooww")
         for _, tile := range gs.TileList {
             if tile.Presence != None && tile.OwningTribe.Race == tribe.Race {
                 tile.PieceStacks = []PieceStack{}
@@ -206,6 +197,10 @@ func createBaseTribe() *Tribe {
 
     tribe.CanGoIntoDecline = func(gs *GameState) bool {
         return gs.TurnInfo.Phase == DeclineChoice
+    }
+
+    tribe.giveInitialStacks = func() []PieceStack {
+        return nil
     }
 
     return &tribe

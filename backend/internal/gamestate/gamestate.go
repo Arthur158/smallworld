@@ -87,10 +87,11 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 	for _, tribeEntry := range gs.TribeList[:entryIndex] {
 		tribeEntry.CoinPile += 1
 	}
-	chooser.addReserves([]PieceStack{{Type: string(entry.Tribe.Race), Amount: entry.PiecePile}})
-	gs.TurnInfo.Phase = Conquest
 
-	// Error handling too small a list to do here.
+	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, []PieceStack{{Type: string(entry.Tribe.Race), Amount: entry.PiecePile}})
+	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
+
+	gs.TurnInfo.Phase = Conquest
 
 	return nil;
 }
@@ -122,7 +123,7 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
 
 	stacks := tile.OwningTribe.ReceiveAbandonment(tile)
 
-	tile.OwningPlayer.addReserves(stacks)
+	tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, stacks)
 	tile.OwningTribe = nil
 	tile.OwningPlayer = nil
 	tile.PieceStacks = []PieceStack{}
@@ -183,19 +184,21 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	attackCostStacks := attackingTribe.countAttack(tile, tileCost, attackingStackType)
-	newTileStacks := attackingTribe.countNewTileStacks(attackCostStacks)
+	newTileStacks := attackingTribe.countNewTileStacks(attackCostStacks, tile)
 	newStacks, ok := SubtractPieceStacks(attacker.PieceStacks, attackCostStacks)
 	if !ok {
 		return fmt.Errorf("The player does not have enough pieces")
 	}
 
+	defenderRemainingStacks	:= []PieceStack{}
 	// Enact changes
-	if tile.Presence == Passive || tile.Presence == Active {
-		defenderReturningStacks := defendingTribe.countReturningStacks(tile)
-		tile.OwningPlayer.addReserves(defenderReturningStacks)
+	if tile.Presence != None {
+		defenderReturningStacks, tempDefenderRemainingStacks := defendingTribe.countReturningStacks(tile)
+		tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, defenderReturningStacks)
+		defenderRemainingStacks = tempDefenderRemainingStacks
 	}
 	attacker.PieceStacks = newStacks
-	tile.PieceStacks = newTileStacks
+	tile.PieceStacks = AddPieceStacks(newTileStacks, defenderRemainingStacks)
 	tile.OwningTribe = attackingTribe
 	tile.OwningPlayer = attacker
 	tile.Presence = Active; // fucking zombies here
@@ -215,7 +218,7 @@ func (gs *GameState) HandleStartRedeployment(playerIndex int) error {
 
 	player := gs.Players[playerIndex]
 	newStacks := player.ActiveTribe.startRedeployment()
-	player.addReserves(newStacks)
+	player.PieceStacks = AddPieceStacks(player.PieceStacks, newStacks)
 
 	gs.TurnInfo.Phase = Redeployment
 
@@ -253,7 +256,7 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 		return fmt.Errorf("Could not substract the stacks")
 	}
 	
-	player.addReserves(stacks)
+	player.PieceStacks = AddPieceStacks(player.PieceStacks, stacks)
 
 	return nil
 }
@@ -304,10 +307,7 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 
 	player := gs.Players[playerIndex]
 
-	CoinsMade := gs.CountPoints(player)
-
-	player.CoinPile += CoinsMade
-	
+	player.CoinPile += gs.countPoints(player)
 	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
 
 	gs.handleNextPlayerTurn()
@@ -334,22 +334,41 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 		}
 	}
 
-	err := player.ActiveTribe.prepareDecline(gs, player)
-	if err != nil {
-		return fmt.Errorf("error: ", err)
-	}
+        if !player.ActiveTribe.CanGoIntoDecline(gs) {
+            return fmt.Errorf("The tribe cannot go in decline at this moment")
+        }
+
+	player.PieceStacks = player.ActiveTribe.countRemainingAttackingStacks(player)
+
+	// iterate over the tiles and remove pieces accordingly if the tribe is the one going into decline
+	for _, tile := range gs.TileList {
+            if tile.Presence != None && tile.OwningTribe.Race == player.ActiveTribe.Race {
+                tile.PieceStacks = tile.OwningTribe.countPiecesRemaining(tile)
+                tile.Presence = Passive
+            }
+        }
+
 
 	player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
 	player.ActiveTribe = nil
 	player.HasActiveTribe = false
 
-	CoinsMade := gs.CountPoints(player)
-	player.CoinPile += CoinsMade
+	player.CoinPile = gs.countPoints(player)
 	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
 
 	gs.handleNextPlayerTurn()
 
 	return nil
+}
+
+func (gs *GameState) countPoints(player *Player) int {
+	total := 0
+	for _, tile := range gs.TileList {
+		if tile.OwningPlayer == player {
+			total += tile.OwningTribe.CountPoints(tile)
+		}
+	}
+	return total
 }
 
 

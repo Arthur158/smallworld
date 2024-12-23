@@ -41,13 +41,21 @@ export default function PlayerInfo() {
   };
 
   const handlePlayerClick = () => {
+    console.log("hehehehe")
+    console.log(isStackFromBank)
+    console.log(selectedTile)
+    console.log(selectedStack)
     if (phase === 'TileAbandonment' && selectedTile != null && selectedStack != null) {
       sendMessageToBackend('abandonment', { tileId: selectedTile.toString() });
-    } else if (phase === 'Redeployment' && selectedTile != null && selectedStack != null) {
+    } else if (phase === 'Redeployment' && selectedTile != null && selectedStack != null && !isStackFromBank) {
       sendMessageToBackend('deploymentout', {
         tileId: selectedTile.toString(),
         stackType: selectedStack.toString(),
       });
+    } else if (isStackFromBank) {
+      console.log("inhere")
+      dispatch(setSelectedStack(null))
+      dispatch(setIsStackFromBank(false))
     }
   };
 

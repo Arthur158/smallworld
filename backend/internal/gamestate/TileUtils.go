@@ -25,13 +25,3 @@ func (gs *GameState) GetPieceStackForConquest(player *Player) {
     }
 }
 
-func (gs *GameState) CountPoints(player *Player) int {
-    total := 0
-    for _, tile := range gs.TileList {
-        if tile.OwningPlayer == player {
-            total += tile.OwningTribe.CountPoints(tile)
-        }
-    }
-
-    return total
-}

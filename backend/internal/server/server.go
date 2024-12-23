@@ -484,10 +484,8 @@ func handlePlayerConnection(
 			sendPlayerUpdate()
 			sendTurnUpdate()
 			sendAllTileUpdate()
-			pointsList := state.Players[index].PointsEachTurn
-			log.Println(state.TurnInfo.TurnIndex)
-			log.Println(pointsList)
 
+			pointsList := state.Players[index].PointsEachTurn
 			sendStateMessage(
 			    fmt.Sprintf(
 				"player %s made %d points this turn",
@@ -495,6 +493,7 @@ func handlePlayerConnection(
 				pointsList[len(pointsList) - 1]-pointsList[len(pointsList) - 2],
 			    ),
 			)
+
 			if state.TurnInfo.Phase == gamestate.GameFinished {
 				sendGameFinishedUpdate()
 			} 
@@ -508,6 +507,16 @@ func handlePlayerConnection(
 			sendPlayerUpdate()
 			sendTurnUpdate()
 			sendAllTileUpdate()
+
+			pointsList := state.Players[index].PointsEachTurn
+			sendStateMessage(
+			    fmt.Sprintf(
+				"player %s made %d points this turn",
+				names[index],
+				pointsList[len(pointsList) - 1]-pointsList[len(pointsList) - 2],
+			    ),
+			)
+
 			if state.TurnInfo.Phase == gamestate.GameFinished {
 				sendGameFinishedUpdate()
 			} 
