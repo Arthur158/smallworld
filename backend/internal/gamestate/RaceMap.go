@@ -34,14 +34,36 @@ var RaceMap = map[Race]RaceValue {
 		oldCountPoints := t.CountPoints
 		t.CountPoints = func(tile *Tile) int {
 			count := oldCountPoints(tile)
-			println("were here")
-			for _, attr := range tile.Attributes {
-				if attr == Magic {
-					count += 1
+			if t.IsActive {
+				for _, attr := range tile.Attributes {
+					if attr == Magic {
+						count += 1
+					}
 				}
 			}
-			println(count)
 			return count
+		}
+		}, Count: 5},
+	"Khan": {Transform: func(t *Tribe) {
+		oldCountPoints := t.CountPoints
+		t.CountPoints = func(tile *Tile) int {
+			count := oldCountPoints(tile)
+			if t.IsActive && (tile.Biome == Field || tile.Biome == Hill) {
+				count += 1
+			} else if t.IsActive {
+				count -= 1
+			}
+			return max(0, count)
+		}
+		}, Count: 5},
+	"Human": {Transform: func(t *Tribe) {
+		oldCountPoints := t.CountPoints
+		t.CountPoints = func(tile *Tile) int {
+			count := oldCountPoints(tile)
+			if t.IsActive && tile.Biome == Field {
+				count += 1
+			} 
+			return max(0, count)
 		}
 		}, Count: 5},
 	"White Lady": {Transform: func(t *Tribe) {
@@ -73,10 +95,6 @@ var RaceMap = map[Race]RaceValue {
 	"Leprechaun": {Transform: func(t *Tribe) {
 		}, Count: 6},
 	"Kobold": {Transform: func(t *Tribe) {
-		}, Count: 6},
-	"Khan": {Transform: func(t *Tribe) {
-		}, Count: 6},
-	"Human": {Transform: func(t *Tribe) {
 		}, Count: 6},
 	"Halfling": {Transform: func(t *Tribe) {
 		}, Count: 6},

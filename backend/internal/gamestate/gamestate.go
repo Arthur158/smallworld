@@ -334,9 +334,11 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 		}
 	}
 
-        if !player.ActiveTribe.CanGoIntoDecline(gs) {
+        if !player.ActiveTribe.canGoIntoDecline(gs) {
             return fmt.Errorf("The tribe cannot go in decline at this moment")
         }
+
+	player.ActiveTribe.goIntoDecline(gs)
 
 	player.PieceStacks = player.ActiveTribe.countRemainingAttackingStacks(player)
 
@@ -353,7 +355,7 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 	player.ActiveTribe = nil
 	player.HasActiveTribe = false
 
-	player.CoinPile = gs.countPoints(player)
+	player.CoinPile += gs.countPoints(player)
 	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
 
 	gs.handleNextPlayerTurn()

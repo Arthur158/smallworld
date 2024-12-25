@@ -436,9 +436,6 @@ func handlePlayerConnection(
 			sendError("Invalid deploy data")
 			return
 		}
-		log.Println("deployment out")
-		log.Println(deployData.TileID)
-		log.Println(deployData.StackType)
 
 		if err := state.HandleRedeploymentOut(index, deployData.TileID, deployData.StackType); err != nil {
 			sendError(err.Error())
@@ -461,8 +458,6 @@ func handlePlayerConnection(
 			return
 		}
 
-		log.Println(deployData.TileFromID)
-		log.Println(deployData.StackType)
 
 		if err := state.HandleRedeploymentOut(index, deployData.TileFromID, deployData.StackType); err != nil {
 			sendError(err.Error())

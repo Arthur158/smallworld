@@ -72,7 +72,7 @@ func createBaseTribe() *Tribe {
     }
 
     tribe.IsStackValid = func(s string) bool {
-        return  s == string(tribe.Race)
+        return  s == string(tribe.Race) && tribe.IsActive
     }
 
     tribe.countAttack = func(tile *Tile, cost int, stackType string) []PieceStack {
@@ -107,7 +107,7 @@ func createBaseTribe() *Tribe {
     }
 
     tribe.CanTileBeAbandoned = func(tile *Tile) bool {
-        return true
+        return tribe.IsActive
     }
 
     tribe.ReceiveAbandonment = func(tile *Tile) []PieceStack {
@@ -195,8 +195,13 @@ func createBaseTribe() *Tribe {
         return true
     }
 
-    tribe.CanGoIntoDecline = func(gs *GameState) bool {
+    tribe.canGoIntoDecline = func(gs *GameState) bool {
         return gs.TurnInfo.Phase == DeclineChoice
+    }
+
+    // This function should be used to undo tribe advantages in certain tribe, although in an ideal world this would also deactivate any illegal actions, but should not be possible in the first place.
+    tribe.goIntoDecline = func(gs *GameState) {
+        tribe.IsActive = false
     }
 
     tribe.giveInitialStacks = func() []PieceStack {
