@@ -34,6 +34,7 @@ func New(playerCount int) (*GameState, error) {
 
 	tribelist, err := createTribeList()
 
+	// This should be passed when dynamically choosing the Map
 	tilelist := Map1()
 
         if err != nil {
@@ -46,15 +47,6 @@ func New(playerCount int) (*GameState, error) {
 		TileList:	tilelist,
 		TurnInfo:	turnInfo,
 	}, nil
-}
-
-func (gs *GameState) GetTribeEntries() []*TribeEntry {
-	return gs.TribeList[:5]
-}
-
-func (gs *GameState) GetTileStacks(id string) []PieceStack {
-	// Careful error management here
-	return gs.TileList[id].PieceStacks
 }
 
 func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {

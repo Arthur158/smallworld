@@ -1,5 +1,5 @@
 import { Language } from './misc';
-import { TribeEntry, Tile, Player } from './Board'
+import { TribeEntry, Tile, Player, Room } from './Board'
 
 
 export interface ApplicationState {
@@ -17,6 +17,10 @@ export interface ApplicationState {
   selectedTile: string | null;
   messages: string[]
   scores: number[]
+  rooms: Room[]
+  room: Room | null
+  name: string
+  gameStarted: boolean
 }
 
 export type RootState = {

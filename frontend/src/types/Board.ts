@@ -36,3 +36,12 @@ export interface Player {
   passiveTribes: Tribe[];
   pieceStacks: PieceStack[]
 }
+
+export interface Room {
+  id: string;
+  name: string;
+  creator: string;
+  players: string[];
+}
+
+

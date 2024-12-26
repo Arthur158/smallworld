@@ -25,30 +25,6 @@ export default function GamePage() {
   const [showTribeList, setShowTribeList] = useState(true);
 
   useEffect(() => {
-    connectWebSocket();
-
-    const loadAreas = async () => {
-      try {
-        const response = await fetch('/maps/map.txt');
-        const text = await response.text();
-        const polygons = parseAreaFile(text);
-
-        let id = 0;
-        const tileData = polygons.map((polygon) => ({
-          id: id++,
-          pieceStack: [],
-          polygon,
-        }));
-
-        dispatch(setTiles(tileData));
-      } catch (error) {
-        console.error('Error loading file:', error);
-      }
-    };
-    loadAreas();
-  }, [dispatch]);
-
-  useEffect(() => {
     const handlePageRefresh = () => {
       dispatch(reset());
     };
