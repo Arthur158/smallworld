@@ -2,6 +2,7 @@ package gamestate;
 
 import (
 	"fmt"
+	"math/rand"
 )
 
 
@@ -100,4 +101,13 @@ func SubtractPieceStacks(reserves, expanses []PieceStack) ([]PieceStack, bool) {
 	return result, true
 }
 
+// rollCustomDiceWithLocalRNG returns a random number from a dice with faces 0, 0, 0, 1, 2, 3 using a local RNG
+func RollDice() int {
+	// Define the dice faces
+	faces := []int{0, 0, 0, 1, 2, 3}
 
+	// Return a random face
+	result := faces[rand.Intn(len(faces))] 
+	println(result)
+	return result
+}

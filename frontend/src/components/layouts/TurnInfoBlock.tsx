@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { RootState } from '../../redux/store';
 import { sendMessageToBackend } from '../../services/backendService'
 import { setIsStackFromBank, setSelectedStack, setSelectedTile } from '../../redux/slices/applicationSlice'
@@ -35,6 +35,26 @@ export default function TurnInfoBlock() {
     dispatch(setSelectedTile(null))
     dispatch(setSelectedStack(null))
   }
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === 'd') { // Replace 't' with the key you want to trigger the action
+        handleDecline()
+      }
+      if (event.key === 'r') { // Replace 't' with the key you want to trigger the action
+        handleRedeploy()
+      }
+      if (event.key === 'e') { // Replace 't' with the key you want to trigger the action
+        handleEndTurn()
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, []);
 
 
   return (

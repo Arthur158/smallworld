@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+        "log"
 )
 
-func createTribe(race Race, trait Trait) (*TribeEntry, error) {
+func createTribe(race Race, trait Trait) (*Tribe, error) {
     tribe := createBaseTribe()
     tribe.Race = race
     tribe.Trait = trait
@@ -14,23 +15,19 @@ func createTribe(race Race, trait Trait) (*TribeEntry, error) {
 
     raceVal, raceExists := RaceMap[race]
     if !raceExists {
-        return &TribeEntry{}, fmt.Errorf("race '%s' not found in RaceMap", race)
+        return &Tribe{}, fmt.Errorf("race '%s' not found in RaceMap", race)
     }
     raceVal.Transform(tribe)
     pieceCount += raceVal.Count
 
     traitVal, traitExists := TraitMap[trait]
     if !traitExists {
-        return &TribeEntry{}, fmt.Errorf("trait '%s' not found in TraitMap", trait)
+        return &Tribe{}, fmt.Errorf("trait '%s' not found in TraitMap", trait)
     }
     traitVal.Transform(tribe)
     pieceCount += traitVal.Count
 
-    return &TribeEntry{
-        Tribe: tribe,
-        CoinPile: 0,
-        PiecePile: pieceCount,
-    }, nil
+    return tribe, nil
 }
 
 func createTribeList() ([]*TribeEntry, error) {
@@ -53,12 +50,12 @@ func createTribeList() ([]*TribeEntry, error) {
     pairCount := min(len(raceKeys), len(traitKeys)) 
 
     for i := 0; i < pairCount; i++ {
-        tribeEntry, err := createTribe(raceKeys[i], traitKeys[i])
-        if err != nil {
-            return nil, fmt.Errorf("failed to create tribe with race '%s' and trait '%s': %w", raceKeys[i], traitKeys[i], err)
-        }
-
-        tribeEntries = append(tribeEntries, tribeEntry)
+        tribeEntries = append(tribeEntries, &TribeEntry{
+            Race: raceKeys[i],
+            Trait: traitKeys[i],
+            CoinPile: 0,
+            PiecePile: RaceMap[raceKeys[i]].Count + TraitMap[traitKeys[i]].Count,
+        })
     }
 
     return tribeEntries, nil
@@ -69,28 +66,29 @@ func createBaseTribe() *Tribe {
         Race: "Unknown",
         Trait: "Unknown",
         IsActive: true,
+        State: make(map[string]interface{}),
     }
 
     tribe.IsStackValid = func(s string) bool {
         return  s == string(tribe.Race) && tribe.IsActive
     }
 
-    tribe.countAttack = func(tile *Tile, cost int, stackType string) []PieceStack {
+    tribe.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
         if stackType == string(tribe.Race) {
-            return []PieceStack{{Type: string(tribe.Race), Amount: max(1, cost)}}
+            return []PieceStack{{Type: string(tribe.Race), Amount: max(1, cost)}}, 0, 0
         } else {
-            return []PieceStack{{Type: string(tribe.Race), Amount: 1000 + cost}}
+            return []PieceStack{{Type: string(tribe.Race), Amount: 1000 + cost}}, 0, 0
         }
     }
 
-    tribe.countDefense = func(tile *Tile) (int, error) {
+    tribe.countDefense = func(tile *Tile) (int, int, int, error) {
         price := CountDefense(tile)
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 price += stack.Amount
             }
         }
-        return price, nil
+        return price, 0, 0, nil
     }
 
     tribe.countReturningStacks = func(tile *Tile) ([]PieceStack, []PieceStack) {
@@ -106,11 +104,11 @@ func createBaseTribe() *Tribe {
         return ps
     }
 
-    tribe.CanTileBeAbandoned = func(tile *Tile) bool {
+    tribe.canTileBeAbandoned = func(tile *Tile) bool {
         return tribe.IsActive
     }
 
-    tribe.ReceiveAbandonment = func(tile *Tile) []PieceStack {
+    tribe.receiveAbandonment = func(tile *Tile) []PieceStack {
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 return []PieceStack{{Type: stack.Type, Amount: stack.Amount }}
@@ -119,18 +117,20 @@ func createBaseTribe() *Tribe {
         return []PieceStack{}
     }
 
-    tribe.startRedeployment = func() []PieceStack {
+    tribe.startRedeployment = func(gs *GameState) []PieceStack {
         return []PieceStack{}
     }
 
     tribe.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
-        for _, stack := range tile.PieceStacks {
-            if stack.Type == stackType {
-                if stack.Amount == 1 {
-                    return nil, fmt.Errorf("cannot take off single tribe")
-                } else {
-                    stack.Amount -= 1
-                    return []PieceStack{{Type: stackType, Amount: 1}}, nil
+        if stackType == string(tribe.Race) {
+            for _, stack := range tile.PieceStacks {
+                if stack.Type == stackType {
+                    if stack.Amount == 1 {
+                        return nil, fmt.Errorf("cannot take off single tribe")
+                    } else {
+                        stack.Amount -= 1
+                        return []PieceStack{{Type: stackType, Amount: 1}}, nil
+                    }
                 }
             }
         }
@@ -161,7 +161,7 @@ func createBaseTribe() *Tribe {
     }
 
     // the dilemma here is that we could make it return the piecestack, but then the action would not be atomic anymore since the piecestack would be removed from the tile and then returned and the stack would be given to the player later.
-    tribe.GetStacksForConquest = func(tile *Tile, player *Player) {
+    tribe.getStacksForConquest = func(tile *Tile, player *Player) {
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 // Making sure the action is atomic
@@ -172,7 +172,7 @@ func createBaseTribe() *Tribe {
         }
     }
 
-    tribe.CountPoints = func(tile *Tile) int {
+    tribe.countPoints = func(tile *Tile) int {
         return 1
     }
 
@@ -206,6 +206,76 @@ func createBaseTribe() *Tribe {
 
     tribe.giveInitialStacks = func() []PieceStack {
         return nil
+    }
+
+    tribe.countExtrapoints = func() int {
+        return 0
+    }
+
+    // probs the ugliest piece of code of this project
+    tribe.calculateRemainingAttackingStacks = func(reserves []PieceStack, expanses []PieceStack) ([]PieceStack, []PieceStack, bool, error) {
+        result := []PieceStack{} // Start with an empty list
+        stacksToRemove := []PieceStack{}
+        hasDiceBeenUsed := false
+
+	for _, stack1 := range reserves {
+		subtracted := false
+
+		// Search for a matching type in expanses
+		for _, stack2 := range expanses {
+			if stack1.Type == stack2.Type {
+				if stack1.Amount + 3 < stack2.Amount {
+					// Not enough quantity to subtract
+					return nil, nil, false, fmt.Errorf("Even the dice can't help")
+				} else if stack1.Amount < stack2.Amount {
+                                        diceThrow := RollDice()
+                                        println(diceThrow)
+                                        if stack1.Amount + diceThrow >= stack2.Amount {
+                                            hasDiceBeenUsed = true
+                                            stacksToRemove = append(stacksToRemove, PieceStack{Type: stack1.Type, Amount: stack2.Amount - stack1.Amount})
+                                            log.Println(stacksToRemove)
+                                        } else {
+                                            return nil, nil, true, fmt.Errorf("The dice was not enough")
+                                        }
+                                        
+                                }
+				// Subtract the amount
+				remainingAmount := stack1.Amount - stack2.Amount
+				if remainingAmount > 0 {
+					// Only add to result if the remaining amount is greater than 0
+					result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount})
+				}
+				subtracted = true
+				break
+			}
+		}
+
+		// If no match was found in expanses, add the stack1 element unchanged
+		if !subtracted {
+			result = append(result, stack1)
+		}
+	}
+
+	// Verify no types in expanses are missing from reserves
+	for _, stack2 := range expanses {
+		found := false
+		for _, stack1 := range reserves {
+			if stack1.Type == stack2.Type {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, nil, false, fmt.Errorf("A stack is missing")
+		}
+	}
+
+	return result, stacksToRemove, hasDiceBeenUsed, nil
+
+    }
+
+    tribe.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
+        return stackType == string(tribe.Race)
     }
 
     return &tribe

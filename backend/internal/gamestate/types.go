@@ -7,15 +7,16 @@ type Tribe struct {
 	Race Race;
 	Trait Trait;
 	IsActive bool;
+	State map[string]interface{};
 
 	giveInitialStacks func() []PieceStack;
 
 	//abandonment
-	CanTileBeAbandoned func(*Tile) bool;
-	ReceiveAbandonment func(*Tile) []PieceStack;
+	canTileBeAbandoned func(*Tile) bool;
+	receiveAbandonment func(*Tile) []PieceStack;
 
 	// receive for conquest
-	GetStacksForConquest func(*Tile, *Player);
+	getStacksForConquest func(*Tile, *Player);
 
 	// conquest checks
 	IsStackValid func(string) bool;
@@ -23,19 +24,22 @@ type Tribe struct {
 	checkAdjacency func(*Tile, *GameState) error;
 
 	// conquest for attacker
-	countAttack func(*Tile, int, string) []PieceStack;
+	countAttack func(*Tile, int, string) ([]PieceStack, int, int);
 	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
+	calculateRemainingAttackingStacks func([]PieceStack, []PieceStack) ([]PieceStack, []PieceStack, bool, error)
 
 	//conquest for defender
-	countDefense func(*Tile) (int, error);
+	countDefense func(*Tile) (int, int, int, error);
 	countReturningStacks func(*Tile) ([]PieceStack, []PieceStack);
 
 	// redeployment
-	startRedeployment func() []PieceStack;
+	startRedeployment func(*GameState) []PieceStack;
 	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
+	canBeRedeployedIn func(*Tile, string) bool;
 
 	// end of turn
-	CountPoints func(*Tile) int;
+	countPoints func(*Tile) int;
+	countExtrapoints func() int;
 
 	// decline
 	countPiecesRemaining func(*Tile) []PieceStack;
@@ -46,7 +50,8 @@ type Tribe struct {
 }
 
 type TribeEntry struct {
-	Tribe *Tribe;
+	Race Race;
+	Trait Trait;
 	CoinPile int;
 	PiecePile int;
 }
@@ -186,8 +191,5 @@ type TurnInfo struct {
 	TurnIndex int;
 	PlayerIndex int;
 	Phase Phase;
-	ConqueredPassive int;
-	ConqueredActive int;
-	Conquered int;
 }
 

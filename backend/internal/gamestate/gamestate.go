@@ -30,8 +30,6 @@ func New(playerCount int) (*GameState, error) {
 		TurnIndex: 1,
 		PlayerIndex: 0,
 		Phase: TribeChoice,
-		ConqueredPassive: 0,
-		ConqueredActive: 0,
 	}
 
 	tribelist, err := createTribeList()
@@ -80,15 +78,20 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	entry := gs.TribeList[entryIndex]
 	// Enact changes
-	chooser.ActiveTribe = entry.Tribe
+	tempActiveTribe, err := createTribe(entry.Race, entry.Trait)
+	if err != nil {
+		return fmt.Errorf("Could not create tribe:", err)
+	}
+	chooser.ActiveTribe = tempActiveTribe
 	chooser.HasActiveTribe = true
 	chooser.CoinPile += entry.CoinPile - entryIndex 
+	chooser.PointsEachTurn[len(chooser.PointsEachTurn) - 1] += entry.CoinPile - entryIndex
 	gs.TribeList = append(gs.TribeList[:entryIndex], gs.TribeList[entryIndex+1:]...)
 	for _, tribeEntry := range gs.TribeList[:entryIndex] {
 		tribeEntry.CoinPile += 1
 	}
 
-	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, []PieceStack{{Type: string(entry.Tribe.Race), Amount: entry.PiecePile}})
+	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, []PieceStack{{Type: string(entry.Race), Amount: entry.PiecePile}})
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
 
 	gs.TurnInfo.Phase = Conquest
@@ -117,11 +120,11 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
 	}
 
 	// maybe do the necessary in cantilebeabandoned for now, meaning checking if the zone only contains the piecestack with 1, this function is necessary to keep the functionality for zombies anyways, so we might as well use it for checking if there is only 1 stack on there.
-	if !tile.OwningTribe.CanTileBeAbandoned(tile) {
+	if !tile.OwningTribe.canTileBeAbandoned(tile) {
 		return fmt.Errorf("Stack cannot be removed!")
 	}
 
-	stacks := tile.OwningTribe.ReceiveAbandonment(tile)
+	stacks := tile.OwningTribe.receiveAbandonment(tile)
 
 	tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, stacks)
 	tile.OwningTribe = nil
@@ -173,21 +176,23 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return fmt.Errorf("cannot reach zone", err)
 	}
 
-	var tileCost int
+	var tileCost, moneyGainDefender, moneyLossAttacker int
 	if tile.Presence == Passive || tile.Presence == Active {
-		tileCost, err = defendingTribe.countDefense(tile)
+		tileCost, moneyGainDefender, moneyLossAttacker, err = defendingTribe.countDefense(tile)
 		if err != nil {
-			fmt.Errorf("Impossible to attack", err)
+			return fmt.Errorf("Impossible to attack", err)
 		}
 	} else {
 		tileCost = CountDefense(tile)
 	}
 
-	attackCostStacks := attackingTribe.countAttack(tile, tileCost, attackingStackType)
+	attackCostStacks, moneyGainAttacker, moneyLossDefender := attackingTribe.countAttack(tile, tileCost, attackingStackType)
 	newTileStacks := attackingTribe.countNewTileStacks(attackCostStacks, tile)
-	newStacks, ok := SubtractPieceStacks(attacker.PieceStacks, attackCostStacks)
-	if !ok {
-		return fmt.Errorf("The player does not have enough pieces")
+	newStacks, stacksToRemove, hasDiceBeenUsed, err := attackingTribe.calculateRemainingAttackingStacks(attacker.PieceStacks, attackCostStacks)
+	if err != nil && hasDiceBeenUsed {
+		return gs.HandleStartRedeployment(attackerIndex)
+	} else if err != nil {
+		return fmt.Errorf("Failure", err)
 	}
 
 	defenderRemainingStacks	:= []PieceStack{}
@@ -196,13 +201,21 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		defenderReturningStacks, tempDefenderRemainingStacks := defendingTribe.countReturningStacks(tile)
 		tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, defenderReturningStacks)
 		defenderRemainingStacks = tempDefenderRemainingStacks
+		tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender
+		// tile.OwningPlayer.PointsEachTurn[len(tile.OwningPlayer.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	}
+	tile.PieceStacks, _ = SubtractPieceStacks(AddPieceStacks(newTileStacks, defenderRemainingStacks), stacksToRemove)
 	attacker.PieceStacks = newStacks
-	tile.PieceStacks = AddPieceStacks(newTileStacks, defenderRemainingStacks)
+	attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
+	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	tile.OwningTribe = attackingTribe
 	tile.OwningPlayer = attacker
 	tile.Presence = Active; // fucking zombies here
-	gs.TurnInfo.Phase = Conquest
+	if hasDiceBeenUsed {
+		return gs.HandleStartRedeployment(attackerIndex)
+	} else {
+		gs.TurnInfo.Phase = Conquest
+	}
 
 	return nil
 }
@@ -217,7 +230,7 @@ func (gs *GameState) HandleStartRedeployment(playerIndex int) error {
 	}
 
 	player := gs.Players[playerIndex]
-	newStacks := player.ActiveTribe.startRedeployment()
+	newStacks := player.ActiveTribe.startRedeployment(gs)
 	player.PieceStacks = AddPieceStacks(player.PieceStacks, newStacks)
 
 	gs.TurnInfo.Phase = Redeployment
@@ -279,6 +292,10 @@ func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackT
 
 	if tile.OwningPlayer != player {
 		return fmt.Errorf("This tile does not belong to the player!")
+	}
+
+	if !tile.OwningTribe.canBeRedeployedIn(tile, stackType) {
+		return fmt.Errorf("Cannot redeploy here")
 	}
 
 	movingStack := []PieceStack{{Type: stackType, Amount: 1}}
@@ -367,9 +384,16 @@ func (gs *GameState) countPoints(player *Player) int {
 	total := 0
 	for _, tile := range gs.TileList {
 		if tile.OwningPlayer == player {
-			total += tile.OwningTribe.CountPoints(tile)
+			total += tile.OwningTribe.countPoints(tile)
 		}
 	}
+	if player.HasActiveTribe {
+		total += player.ActiveTribe.countExtrapoints()
+	}
+	for _, passiveTribe := range player.PassiveTribes {
+		total += passiveTribe.countExtrapoints()
+	}
+
 	return total
 }
 

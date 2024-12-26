@@ -86,7 +86,7 @@ func Map1() map[string]*Tile {
     }
 
     tileMap["12"].AdjacentTiles = []*Tile{
-        tileMap["0"], tileMap["13"], tileMap["10"], tileMap["15"], // et éventuellement tileMap["13’"] si c’est distinct
+        tileMap["0"], tileMap["13"], tileMap["10"], tileMap["15"], tileMap["29"], 
     }
 
     tileMap["13"].AdjacentTiles = []*Tile{
@@ -164,10 +164,17 @@ func Map1() map[string]*Tile {
     }
 
     lostTribe := createBaseTribe()
+    lostTribe.Race = "Lost Tribe"
+    lostTribe.Trait = "Lost"
+    lostPlayer := Player{
+        PieceStacks : []PieceStack{},
+    }
 
     for _, id := range []string{ "22", "21", "4", "3", "11", "26", "1", "13", "16", "0"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
+        tileMap[id].Presence = Passive
+        tileMap[id].OwningPlayer = &lostPlayer
     }
 
 

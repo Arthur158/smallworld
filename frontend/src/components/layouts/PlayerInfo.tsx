@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { RootState } from '../../redux/store';
 import { Player, PieceStack } from '../../types/Board';
-import { setIsStackFromBank, setSelectedStack } from '../../redux/slices/applicationSlice';
+import { setIsStackFromBank, setSelectedStack, setSelectedTile } from '../../redux/slices/applicationSlice';
 import { useSelector, useDispatch } from 'react-redux';
 import { sendMessageToBackend } from '../../services/backendService';
+import { store } from '../../redux/store'; // Import the Redux store
 
 export default function PlayerInfo() {
   const dispatch = useDispatch();
@@ -14,6 +15,28 @@ export default function PlayerInfo() {
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
   const phase = useSelector((state: RootState) => state.application.phase);
+  var index = 0
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === 'f') { // Replace 't' with the key you want to trigger the action
+        dispatch(setIsStackFromBank(false))
+        dispatch(setSelectedTile(null))
+        dispatch(setSelectedStack(null))
+      }
+      // if (event.key === 'c') { // Replace 't' with the key you want to trigger the action
+      //   store.dispatch(setIsStackFromBank(true))
+      //   store.dispatch(setSelectedStack(allPlayers[playerIndex].pieceStacks[index]))
+      //   index = (index + 1) % allPlayers[playerIndex].pieceStacks.length
+      // }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, []);
 
   // Si la liste des joueurs est vide ou l'indice est hors borne, on affiche un placeholder.
   if (!allPlayers || allPlayers.length === 0 || playerIndex < 0 || playerIndex >= allPlayers.length) {

@@ -155,7 +155,7 @@ func startGame(c1, c2 *websocket.Conn) {
 		entries := []Entry {}
 
 		for _, entry := range state.GetTribeEntries() {
-			entries = append(entries, Entry{Race: string(entry.Tribe.Race), Trait: string(entry.Tribe.Trait), CoinPile: entry.CoinPile, PiecePile: entry.PiecePile})
+			entries = append(entries, Entry{Race: string(entry.Race), Trait: string(entry.Trait), CoinPile: entry.CoinPile, PiecePile: entry.PiecePile})
 		}
 
 		jsonData, err := json.MarshalIndent(entries, "", "  ")
@@ -390,6 +390,7 @@ func handlePlayerConnection(
 
 		if err := state.HandleConquest(conquestData.TileID, index, conquestData.AttackingStackType); err != nil {
 			sendError(err.Error())
+			sendTurnUpdate()
 		} else {
 			sendPlayerUpdate()
 			sendTileUpdate(conquestData.TileID)
@@ -403,6 +404,7 @@ func handlePlayerConnection(
 		} else {
 			sendPlayerUpdate()
 			sendTurnUpdate()
+			sendAllTileUpdate()
 		}
 	}
 

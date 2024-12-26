@@ -20,7 +20,7 @@ func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
 func (gs *GameState) GetPieceStackForConquest(player *Player) {
     for _, tile := range gs.TileList {
         if tile.OwningPlayer == player {
-            tile.OwningTribe.GetStacksForConquest(tile, player)
+            tile.OwningTribe.getStacksForConquest(tile, player)
         }
     }
 }
