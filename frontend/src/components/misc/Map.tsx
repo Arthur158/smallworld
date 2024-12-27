@@ -59,11 +59,14 @@ export default function Map() {
   }
 
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
+    console.log("getting here")
+    console.log(tileID)
     if (
       (phase === "Conquest" || phase === "TileAbandonment" || phase === "DeclineChoice") &&
       isStackFromBank &&
       selectedStack != null
     ) {
+      console.log("trying here")
       sendMessageToBackend("Conquest", { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
     } else if (
       (phase === 'Redeployment' || phase === 'TileAbandonment') &&

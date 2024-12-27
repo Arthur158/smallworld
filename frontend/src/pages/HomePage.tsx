@@ -6,14 +6,8 @@ import { RootState } from '../redux/store';
 import { setName, reset, setTiles } from '../redux/slices/applicationSlice'; // <--- new actions to track selection
 import { connectWebSocket } from '../services/backendService';
 import { parseAreaFile } from '../utility/MapParser';
+import { Room } from '../types/Board';
 
-type Room = {
-  id: string;
-  name: string;
-  players: string[];
-  maxPlayers: number;
-  createdBy: string;
-};
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -21,8 +15,16 @@ export default function HomePage() {
 
   // Pull the rooms array from Redux
   const rooms = useSelector((state: RootState) => state.application.rooms);
-  const room = useSelector((state: RootState) => state.application.room);
+  const roomid = useSelector((state: RootState) => state.application.roomid);
   const gameStarted = useSelector((state: RootState) => state.application.gameStarted);
+  let room : Room | null = null
+  if (rooms) {
+    for (const r of rooms) {
+      if (r.id == roomid) {
+        room = r
+      }
+    }
+  }
 
   // Local state for the username and roomName the user inputs
   const username = useSelector((state: RootState) => state.application.name);

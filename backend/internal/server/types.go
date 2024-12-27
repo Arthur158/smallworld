@@ -1,14 +1,15 @@
 package server
 import (
 	"github.com/gorilla/websocket"
+	"backend/internal/gamestate"
+	"sync"
 )
 
 type Client struct {
 	Conn     *websocket.Conn
-	Stop chan struct{}
 	Username string
-	RoomID   string
-	IsHost   bool
+	Index	int
+	Room   *Room
 }
 
 type Room struct {
@@ -18,4 +19,6 @@ type Room struct {
 	Players      []*Client
 	MaxPlayers   int
 	InProgress   bool
+	Gamestate    gamestate.GameState
+	mu	     sync.Mutex
 }

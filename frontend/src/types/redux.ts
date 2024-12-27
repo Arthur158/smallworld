@@ -18,7 +18,7 @@ export interface ApplicationState {
   messages: string[]
   scores: number[]
   rooms: Room[]
-  room: Room | null
+  roomid: string
   name: string
   gameStarted: boolean
 }

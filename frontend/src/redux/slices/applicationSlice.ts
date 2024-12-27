@@ -24,7 +24,7 @@ const initialState: ApplicationState = {
   scores: [],
 
   rooms: [],
-  room: null,
+  roomid: "",
   name: "",
   gameStarted: false
 };
@@ -95,13 +95,6 @@ const applicationSlice = createSlice({
           state.gameStarted = true
           break;
       }
-        case 'roomUpdate': {
-          // Expecting an array of rooms
-          // E.g. data = [ { id, name, players: [...], ...}, {...}, ... ]
-          state.room = parsedData;
-          // If user already has a selectedRoom, update it if it changed
-          break;
-        }
         case 'roomEntriesUpdate': {
           // Expecting an array of rooms
           // E.g. data = [ { id, name, players: [...], ...}, {...}, ... ]
@@ -113,6 +106,9 @@ const applicationSlice = createSlice({
         case 'index':
           console.log('the index:', parsedData);
           state.playerIndex = Number(parsedData.index);
+          break;
+        case 'roomid':
+          state.roomid = parsedData.roomid;
           break;
 
         case 'error':
@@ -150,7 +146,8 @@ const applicationSlice = createSlice({
           state.players = players;
           break;
         }
-        case 'entriesupdate':
+        case 'tribeentries':
+          console.log(parsedData)
           state.availableTribes = parsedData;
           break;
 
@@ -196,7 +193,7 @@ const applicationSlice = createSlice({
         case 'turnupdate':
           state.playerNumber = parsedData.playerNumber;
           state.turnNumber = parsedData.turnNumber;
-          state.phase = parsedData.Phase;
+          state.phase = parsedData.phase;
           break;
 
         case 'tribeentries': {
