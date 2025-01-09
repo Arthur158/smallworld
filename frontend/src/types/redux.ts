@@ -21,6 +21,7 @@ export interface ApplicationState {
   roomid: string
   name: string
   gameStarted: boolean
+  mapImageUrl: string | null;
 }
 
 export type RootState = {

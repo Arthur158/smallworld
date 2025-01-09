@@ -202,7 +202,14 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	tile.OwningTribe = attackingTribe
 	tile.OwningPlayer = attacker
-	tile.Presence = Active; // fucking zombies here
+
+	if tile.OwningTribe != nil && tile.OwningTribe.IsActive {
+		tile.Presence = Active
+	} else if tile.OwningTribe != nil {
+		tile.Presence = Passive
+	} else {
+		tile.Presence = None
+	}
 	if hasDiceBeenUsed {
 		return gs.HandleStartRedeployment(attackerIndex)
 	} else {

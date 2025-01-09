@@ -24,6 +24,7 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 		MaxPlayers:   maxPlayers,
 		InProgress:   false,
 		Gamestate:    gamestate.GameState{},
+		Map: Map1,
 	}
 	rooms[roomID] = newRoom
 
@@ -87,6 +88,7 @@ func joinRoom(client *Client, roomID, username string) {
 }
 
 func (room *Room) startLobbyGame(client *Client, roomID string) {
+	log.Println(room.Map.Name)
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
@@ -124,9 +126,10 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 	}
 
+	room.sendMapUpdate()
 	room.sendEntriesUpdate()
-	room.sendAllTileUpdate()
 	room.sendPlayerUpdate()
+	room.sendAllTileUpdate()
 
 	sendRoomsUpdateToAll()
 }
@@ -282,8 +285,8 @@ func (room *Room) sendEntriesUpdate () {
 	type Entry struct {
 		Race      string `json:"race"`
 		Trait     string `json:"trait"`
-		CoinPile  int    `json:"coinpile"`
-		PiecePile int    `json:"piecepile"`
+		CoinPile  int    `json:"coinCount"`
+		PiecePile int    `json:"pieceCount"`
 	}
 	entries := []Entry{}
 	for _, entry := range room.Gamestate.TribeList[:5] {

@@ -1,7 +1,7 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { ApplicationState } from '../../types/redux';
 import { Language } from '../../types/misc';
-import { Player, TribeEntry, Room } from '../../types/Board';
+import { Player, TribeEntry, Room, Tile } from '../../types/Board';
 
 
 const initialState: ApplicationState = {
@@ -26,7 +26,8 @@ const initialState: ApplicationState = {
   rooms: [],
   roomid: "",
   name: "",
-  gameStarted: false
+  gameStarted: false,
+  mapImageUrl: null,
 };
 
 const applicationSlice = createSlice({
@@ -119,6 +120,53 @@ const applicationSlice = createSlice({
         // ---------------------------------------------------------------------
         // Game-Related
         // ---------------------------------------------------------------------
+        case 'mapupdate': {
+          console.log("map update recognized")
+          console.log(data.picture)
+          // For example, data.Picture = base64-encoded PNG
+          // 1) Convert base64 → binary → Blob
+          if (data.picture) {
+            console.log("pic exists")
+            const byteString = atob(data.picture);
+            console.log("1")
+            const array = new Uint8Array(byteString.length);
+            console.log("2")
+            for (let i = 0; i < byteString.length; i++) {
+              array[i] = byteString.charCodeAt(i);
+            }
+            console.log("3")
+            const imageBlob = new Blob([array], { type: 'image/png' });
+            console.log("4")
+
+            // 2) Build an Object URL
+            const imgUrl = URL.createObjectURL(imageBlob);
+            console.log("url fine")
+            console.log(imgUrl)
+
+            // 3) Store that short string in Redux
+            state.mapImageUrl = imgUrl;
+          }
+
+          // Handle the tiles portion as before:
+          // e.g., data.Tiles => parse to state.tiles
+          const newTiles: Record<string, Tile> = {};
+          data.zones.forEach((tileData: any, index: number) => {
+            const tileId = String(tileData.id || index + 1);
+            newTiles[tileId] = {
+              id: tileId,
+              polygon: {
+                coords: tileData.polygon.coords,
+                stackX: tileData.polygon.stackX,
+                stackY: tileData.polygon.stackY,
+              },
+              pieceStack: [],
+            };
+          });
+          console.log("tiles fine")
+          console.log(newTiles)
+          state.tiles = newTiles;
+          break;
+        }
         case 'playerupdate': {
           const players: Player[] = [];
           for (let i = 0; i < parsedData.length; i++) {

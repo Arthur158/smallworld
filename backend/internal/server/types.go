@@ -21,4 +21,23 @@ type Room struct {
 	InProgress   bool
 	Gamestate    gamestate.GameState
 	mu	     sync.Mutex
+	Map	     Map
+}
+
+type Map struct {
+	Name	string
+	PopulateTiles func() map[string]*gamestate.Tile
+	populateMap   func() []TileData
+}
+
+type TilePolygon struct {
+    Coords []int `json:"coords"`
+    StackX int   `json:"stackX"`
+    StackY int   `json:"stackY"`
+}
+
+type TileData struct {
+    ID      int         `json:"id"`
+    Polygon TilePolygon `json:"polygon"`
+    // ...
 }

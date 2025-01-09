@@ -1,19 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { setError, setSelectedStack, setIsStackFromBank, setSelectedTile } from '../../redux/slices/applicationSlice';
-import mapImage from '../../images/mapsw.jpg';
 import { Tile } from '../../types/Board';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { sendMessageToBackend } from '../../services/backendService';
 
 export default function Map() {
+  const dispatch = useDispatch();
+
   const tiles: Record<string, Tile> = useSelector((state: RootState) => state.application.tiles);
   const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
+  const mapImageUrl = useSelector((state: RootState) => state.application.mapImageUrl);
   const phase = useSelector((state: RootState) => state.application.phase);
+
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
-  const dispatch = useDispatch();
 
   // Pan & Zoom state
   const [scale, setScale] = useState(1);
@@ -44,18 +46,20 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
+    if (!mapImageUrl) return;
     const image = new Image();
-    image.src = mapImage;
+    image.src = mapImageUrl;  // <--- the blob URL
     image.onload = () => {
       setImageDimensions({ width: image.width, height: image.height });
     };
     image.onerror = () => {
-      console.error('Failed to load image');
+      console.error('Failed to load map image from blob URL');
     };
-  }, []);
+  }, [mapImageUrl]);
 
-  if (imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
-    return <div className="text-center text-[#5F4B32] font-bold">Loading...</div>;
+  // If no image is loaded or no tiles, show a "Loading" message
+  if (!mapImageUrl || imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
+    return <div className="text-center text-[#5F4B32] font-bold">Loading map...</div>;
   }
 
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
@@ -242,7 +246,7 @@ export default function Map() {
             y="0"
             width={imageDimensions.width}
             height={imageDimensions.height}
-            href={mapImage}
+            href={mapImageUrl}
           />
 
           {Object.values(tiles).map((tile) => {
@@ -275,7 +279,7 @@ export default function Map() {
                 .slice()
                 .reverse()
                 .map((stack, index) => {
-                  const baseSize = 61;
+                  const baseSize = imageDimensions.width * 0.0555;
                   const offset = 0.4 * baseSize;
                   const scaledStackX =
                     (tile.polygon.stackX + index * offset) *
