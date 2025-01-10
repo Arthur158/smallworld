@@ -12,7 +12,7 @@ type GameState struct {
 	TurnInfo *TurnInfo
 }
 
-func New(playerCount int) (*GameState, error) {
+func New(playerCount int, mapName string) (*GameState, error) {
 	// Create a list of initialized players
 	players := make([]*Player, playerCount)
 	for i := 0; i < playerCount; i++ {
@@ -34,8 +34,8 @@ func New(playerCount int) (*GameState, error) {
 
 	tribelist, err := createTribeList()
 
-	// This should be passed when dynamically choosing the Map
-	tilelist := Map1()
+	log.Println(mapName)
+	tilelist := MapRegistry[mapName]()
 
         if err != nil {
             return nil, fmt.Errorf("failed to create list of tribe entries", err)

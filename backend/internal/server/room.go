@@ -87,6 +87,30 @@ func joinRoom(client *Client, roomID, username string) {
 	sendRoomsUpdateToAll()
 }
 
+func (room *Room) removePlayer(client *Client) {
+	roomsMu.Lock()
+	defer roomsMu.Unlock()
+
+	newPlayers := []*Client{}
+	log.Println(room.Players)
+	for _, player := range room.Players {
+		if player.Username != client.Username {
+			newPlayers = append(newPlayers, player)
+		}
+	}
+	room.Players = newPlayers
+	if room.HostUsername == client.Username && len(room.Players) != 0 {
+		room.HostUsername = room.Players[0].Username
+	}
+	// If all players left, remove the room or handle as you wish
+	if len(room.Players) == 0 {
+		delete(rooms, room.ID)
+	}
+
+	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": ""}`)))
+
+}
+
 func (room *Room) startLobbyGame(client *Client, roomID string) {
 	log.Println(room.Map.Name)
 	roomsMu.Lock()
@@ -109,7 +133,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	// Mark the room as in-progress
 	room.InProgress = true
 	
-	tempState, err := gamestate.New(len(room.Players))
+	tempState, err := gamestate.New(len(room.Players), room.Map.Name)
 	if err != nil {
 		log.Println("Error creating game:", err)
 		room.sendToRoomPlayers(messages.Message{

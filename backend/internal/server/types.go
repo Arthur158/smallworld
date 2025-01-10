@@ -26,7 +26,6 @@ type Room struct {
 
 type Map struct {
 	Name	string
-	PopulateTiles func() map[string]*gamestate.Tile
 	populateMap   func() []TileData
 }
 

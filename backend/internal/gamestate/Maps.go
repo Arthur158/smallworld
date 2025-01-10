@@ -184,5 +184,5 @@ func Map1() map[string]*Tile {
 
 // MapRegistry stores map definitions for dynamic loading
 var MapRegistry = map[string]func() map[string]*Tile{
-	"Map1": Map1,
+	"map3players": Map1,
 }

@@ -72,6 +72,9 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		createRoom(client, data.RoomName, data.Username, data.MaxPlayers)
 
+	case "leaveroom":
+		client.Room.removePlayer(client)
+		sendRoomsUpdateToAll()
 	case "requestrefresh":
 		sendRoomsUpdateToAll()
 
@@ -109,21 +112,7 @@ func removeClient(client *Client) {
 
 	// Also remove client from any room
 	if client.Room != nil {
-		room := client.Room
-		roomsMu.Lock()
-		defer roomsMu.Unlock()
-
-		newPlayers := []*Client{}
-		for _, player := range room.Players {
-			if player.Username != client.Username {
-				newPlayers = append(newPlayers, player)
-			}
-		}
-		room.Players = newPlayers
-		// If all players left, remove the room or handle as you wish
-		if len(room.Players) == 0 {
-			delete(rooms, room.ID)
-		}
+		client.Room.removePlayer(client)
 	}
 
 	sendRoomsUpdateToAll()

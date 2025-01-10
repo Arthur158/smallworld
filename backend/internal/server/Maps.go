@@ -1,6 +1,5 @@
 package server
 
-import "backend/internal/gamestate"
 
 import (
 	"io/ioutil"
@@ -437,7 +436,6 @@ func populateMap1() []TileData {
 }
 
 var Map1 = Map{
-	Name: "map5players",
-	PopulateTiles: gamestate.Map1,
+	Name: "map3players",
 	populateMap: populateMap1,
 }

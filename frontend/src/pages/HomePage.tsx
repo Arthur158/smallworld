@@ -119,7 +119,10 @@ export default function HomePage() {
     sendMessageToBackend('startGame', {
       roomId: room.id,
     });
-    navigate('/game');
+  };
+  const handleLeaveRoom = () => {
+    if (!room) return;
+    sendMessageToBackend('leaveroom', {})
   };
 
   // Decide if the user is in a room based on `selectedRoom`
@@ -214,6 +217,13 @@ export default function HomePage() {
               Start Game
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleLeaveRoom}
+            className="btn btn-primary"
+          >
+            Leave Room
+          </button>
         </div>
       )}
     </div>

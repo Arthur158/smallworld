@@ -151,7 +151,7 @@ const applicationSlice = createSlice({
           // e.g., data.Tiles => parse to state.tiles
           const newTiles: Record<string, Tile> = {};
           data.zones.forEach((tileData: any, index: number) => {
-            const tileId = String(tileData.id || index + 1);
+            const tileId = String(tileData.id);
             newTiles[tileId] = {
               id: tileId,
               polygon: {
