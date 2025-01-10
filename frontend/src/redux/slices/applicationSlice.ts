@@ -28,6 +28,7 @@ const initialState: ApplicationState = {
   name: "",
   gameStarted: false,
   mapImageUrl: null,
+  isAuthenticated: false
 };
 
 const applicationSlice = createSlice({
@@ -85,7 +86,6 @@ const applicationSlice = createSlice({
 
     websocketMessageReceived(state, action) {
       const { type, data } = JSON.parse(action.payload);
-      state.error = null; // clear previous errors on new message
 
       const parsedData = data;
       switch (type) {

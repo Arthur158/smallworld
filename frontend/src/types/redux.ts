@@ -22,6 +22,7 @@ export interface ApplicationState {
   name: string
   gameStarted: boolean
   mapImageUrl: string | null;
+  isAuthenticated: boolean;
 }
 
 export type RootState = {
