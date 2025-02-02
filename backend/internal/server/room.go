@@ -92,7 +92,6 @@ func (room *Room) removePlayer(client *Client) {
 	defer roomsMu.Unlock()
 
 	newPlayers := []*Client{}
-	log.Println(room.Players)
 	for _, player := range room.Players {
 		if player.Username != client.Username {
 			newPlayers = append(newPlayers, player)
@@ -112,7 +111,6 @@ func (room *Room) removePlayer(client *Client) {
 }
 
 func (room *Room) startLobbyGame(client *Client, roomID string) {
-	log.Println(room.Map.Name)
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
@@ -174,6 +172,17 @@ func (room *Room) sendStateMessage (message string) {
 		Type: "message",
 		Data: json.RawMessage([]byte(`{"message": "` + message + `"}`)),
 	})
+}
+
+func (room *Room) sendBigUpdate() {
+	if (room.InProgress) {
+		room.sendMapUpdate()
+		room.sendAllTileUpdate()
+		room.sendTurnUpdate()
+		room.sendPlayerUpdate()
+		room.sendEntriesUpdate()
+	}
+	sendRoomsUpdateToAll()
 }
 
 func (room *Room) sendTurnUpdate() {

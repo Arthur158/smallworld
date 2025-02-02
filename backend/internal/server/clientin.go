@@ -5,7 +5,6 @@ import (
 	"backend/internal/messages"
 	"backend/internal/gamestate"
 	"fmt"
-	"log"
 )
 
 // Function that sends map updates to all players
@@ -51,7 +50,6 @@ func (client *Client) handleTribePick (msg messages.Message) {
 		return
 	}
 
-	log.Println(client.Room)
 	if err := client.Room.Gamestate.HandleTribeChoice(client.Index, pickData.PickIndex); err != nil {
 		client.sendError(err.Error())
 	} else {

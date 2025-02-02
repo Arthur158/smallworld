@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
-import { connectWebSocket, sendMessageToBackend } from '../services/backendService';
+import { sendMessageToBackend } from '../services/backendService';
 import { setTiles, reset } from '../redux/slices/applicationSlice';
 import { parseAreaFile } from '../utility/MapParser';
 import { Room } from '../types/Board';
@@ -56,7 +56,6 @@ export default function LobbyPage() {
     if (!roomName.trim() || !username.trim()) return;
     sendMessageToBackend('createRoom', {
       roomName,
-      username,
       maxPlayers: 5,
     });
   };
@@ -66,7 +65,6 @@ export default function LobbyPage() {
     if (!username.trim()) return;
     sendMessageToBackend('joinRoom', {
       roomId: selectedRoomId,
-      username,
     });
   };
 

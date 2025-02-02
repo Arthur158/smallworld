@@ -28,7 +28,6 @@ export default function LoginRegisterPage() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     sendMessageToBackend('login', {username: username, password: password});
-
   };
 
   // REGISTER FORM SUBMIT

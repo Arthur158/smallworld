@@ -8,6 +8,7 @@ import (
 type Client struct {
 	Conn     *websocket.Conn
 	Username string
+	IsAuthenticated bool
 	Index	int
 	Room   *Room
 }

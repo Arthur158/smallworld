@@ -1,7 +1,7 @@
 // src/components/Router.tsx (or src/Router.tsx)
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import React, { useEffect} from 'react';
 import { RootState } from '../redux/store';
 
 import LoginRegisterPage from '../pages/RegisterPage';
@@ -9,7 +9,19 @@ import LobbyPage from '../pages/LobbyPage';
 import GamePage from '../routes/GamePage';
 
 export default function AppRouter(): JSX.Element {
-  const { isAuthenticated } = useSelector((state: RootState) => state.application);
+  const { isAuthenticated, gameStarted } = useSelector((state: RootState) => state.application);
+  const navigate = useNavigate()
+
+  // Detect changes in isAuthenticated and redirect if false
+  useEffect(() => {
+    if (gameStarted) {
+      navigate("/game", { replace: true})
+    } else if (isAuthenticated) {
+      navigate("/lobby", { replace: true });
+    } else {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <Routes>

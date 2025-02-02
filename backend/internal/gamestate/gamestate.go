@@ -2,7 +2,6 @@ package gamestate
 
 import (
 	"fmt"
-	"log"
 )
 
 type GameState struct {
@@ -34,7 +33,6 @@ func New(playerCount int, mapName string) (*GameState, error) {
 
 	tribelist, err := createTribeList()
 
-	log.Println(mapName)
 	tilelist := MapRegistry[mapName]()
 
         if err != nil {
@@ -143,7 +141,6 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	if !DoesPlayerHaveStack(attackingStackType, attacker) {
 		return fmt.Errorf("The stack is invalid for this player!")
 	}
-
 
 	tile, ok := gs.TileList[tileId]
 	if !ok {
@@ -342,8 +339,6 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 		return fmt.Errorf("The player does not have an active tribe!")
 	}
 
-
-	log.Println(player.PassiveTribes)
 	for i, tribe := range player.PassiveTribes {
 		if (tribe.prepareRemoval(gs)) {
 			player.PassiveTribes = append(player.PassiveTribes[:i], player.PassiveTribes[i+1:]...)

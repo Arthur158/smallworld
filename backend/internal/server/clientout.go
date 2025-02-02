@@ -5,6 +5,7 @@ import (
 	"log"
 	"backend/internal/messages"
 	"fmt"
+	"strconv"
 )
 
 
@@ -12,6 +13,7 @@ func readMessages(client *Client) {
 	conn := client.Conn
 	for {
 		// Read message from the WebSocket connection
+		log.Println(client.Username)
 		_, messageBytes, err := conn.ReadMessage()
 		if err != nil {
 			// Client has disconnected or an error occurred
@@ -63,14 +65,13 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 	case "createRoom":
 		var data struct {
 			RoomName  string `json:"roomName"`
-			Username  string `json:"username"`
 			MaxPlayers int   `json:"maxPlayers"`
 		}
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling createRoom data:", err)
 			return
 		}
-		createRoom(client, data.RoomName, data.Username, data.MaxPlayers)
+		createRoom(client, data.RoomName, client.Username, data.MaxPlayers)
 
 	case "leaveroom":
 		client.Room.removePlayer(client)
@@ -81,13 +82,12 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 	case "joinRoom":
 		var data struct {
 			RoomID   string `json:"roomId"`
-			Username string `json:"username"`
 		}
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling joinRoom data:", err)
 			return
 		}
-		joinRoom(client, data.RoomID, data.Username)
+		joinRoom(client, data.RoomID, client.Username)
 
 	case "startGame":
 		var data struct {
@@ -99,21 +99,93 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		client.Room.startLobbyGame(client, data.RoomID)
 
+	case "register":
+		var data struct {
+			UserName string `json:"username"`
+			Password string `json:"password"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling register data:", err)
+			return
+		}
+
+		if err := AddUser(data.UserName, data.Password); err != nil {
+			log.Println("Error adding user", err)
+			client.sendError("error adding user")
+			return
+		}
+
+		client.handleLogin(data.UserName, data.Password)
+		sendRoomsUpdateToAll()
+		
+	case "login":
+		var data struct {
+			UserName string `json:"username"`
+			Password string `json:"password"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling register data:", err)
+			return
+		}
+		client.handleLogin(data.UserName, data.Password)
+		log.Println("here")
+		log.Println(client.Room)
+		sendRoomsUpdateToAll()
+
 	default:
-			log.Println("Received unknown or in-game message type:", msg.Type)
+		log.Println("Received unknown or in-game message type:", msg.Type)
 	}
+}
+
+func (client *Client) handleLogin(userName string, password string) {
+	_, exists := nameSet[userName]
+	if exists {
+		log.Println("user tried to auth twice")
+		client.sendError("user with that username already active")
+		return
+	}
+
+	if err := AuthenticateUser(userName, password); err != nil {
+		log.Println("Error adding user", err)
+		return
+	}
+
+	client.Username = userName
+	nameSet[client.Username] = struct{}{}
+	client.IsAuthenticated = true
+	client.sendMessage("auth", json.RawMessage([]byte(`{"name": "` + client.Username + `"}`)))
+
+	room, exists := disconnectedUsers[client.Username]; if exists {
+		client.Room = room
+		delete(disconnectedUsers, client.Username)
+		for i, player := range room.Players {
+			if player.Username == client.Username {
+				room.Players[i] = client
+				client.sendMessage("index", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(i) + `"}`)))
+			}
+		}
+		if room.InProgress {
+			room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
+		}
+		room.sendBigUpdate()
+		client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
+	}
+
+
 }
 
 func removeClient(client *Client) {
 	connectedClientsMu.Lock()
 	defer connectedClientsMu.Unlock()
 
-	delete(connectedClients, client.Conn)
-
-	// Also remove client from any room
-	if client.Room != nil {
-		client.Room.removePlayer(client)
+	delete(nameSet, client.Username)
+	log.Println("name delete from nameset", client.Username)
+	log.Println(client.Username)
+	if (client.Room != nil) {
+		disconnectedUsers[client.Username] = client.Room
 	}
+
+	delete(connectedClients, client.Conn)
 
 	sendRoomsUpdateToAll()
 }
