@@ -74,7 +74,7 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		createRoom(client, data.RoomName, client.Username, data.MaxPlayers)
 
 	case "leaveroom":
-		client.Room.removePlayer(client)
+		client.Room.removePlayer(client.Username)
 		client.sendMessage("lobby", nil)
 		sendRoomsUpdateToAll()
 	case "requestrefresh":
@@ -131,8 +131,52 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.handleLogin(data.UserName, data.Password)
 		log.Println(client.Room)
 		sendRoomsUpdateToAll()
+	case "moveUp":
+		var data struct {
+			RoomId string `json:"roomId"`
+			Username string `json:"username"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling register data:", err)
+			return
+		}
+		client.Room.MovePlayer(data.Username, "up")
+		sendRoomsUpdateToAll()
+	case "moveDown":
+		var data struct {
+			RoomId string `json:"roomId"`
+			Username string `json:"username"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling register data:", err)
+			return
+		}
+		client.Room.MovePlayer(data.Username, "down")
+		sendRoomsUpdateToAll()
+	case "changeRoomSize":
+		var data struct {
+			RoomId string `json:"roomId"`
+			NewSize int `json:"newSize"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling register data:", err)
+			return
+		}
+		client.Room.ChangeSize(data.NewSize)
+	case "kickPlayer":
+		var data struct {
+			RoomId string `json:"roomId"`
+			Username string `json:"username"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling register data:", err)
+			return
+		}
+		client.Room.removePlayer(data.Username)
+		sendRoomsUpdateToAll()
+		
 	case "savegame":
-		id, err := SaveGameState(&client.Room.Gamestate)
+		id, err := SaveGameState(&client.Room.Gamestate, client.Index)
 		if err != nil {
 			log.Println("Error saving game", err)
 			client.sendError("error saving game")
@@ -157,14 +201,13 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		log.Println("Successfully parsed:", data)
 
 		// Load game state using SaveId
-		newstate, err := LoadGameState(data.SaveId)
+		newstate, _, err := LoadGameState(data.SaveId)
 		if err != nil {
 			log.Println("Error loading game", err)
 			client.sendError("error loading game")
 			return
 		}
 		client.Room.Gamestate = *newstate
-		client.Room.loaded = true
 
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
@@ -193,7 +236,7 @@ func (client *Client) handleLogin(userName string, password string) {
 		client.Room = room
 		delete(disconnectedUsers, client.Username)
 		for i, player := range room.Players {
-			if player.Username == client.Username {
+			if player != nil && player.Username == client.Username {
 				room.Players[i] = client
 				client.sendMessage("index", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(i) + `"}`)))
 			}
@@ -262,7 +305,11 @@ func sendRoomsUpdateToAll() {
 		if !r.InProgress {
 			playerNames := []string{}
 			for _, player := range r.Players {
-				playerNames = append(playerNames, player.Username)
+				if player != nil {
+					playerNames = append(playerNames, player.Username)
+				} else {
+					playerNames = append(playerNames, "")
+				}
 			}
 			roomList = append(roomList, map[string]interface{}{
 				"id":         r.ID,
@@ -270,6 +317,7 @@ func sendRoomsUpdateToAll() {
 				"players":    playerNames,
 				"maxPlayers": r.MaxPlayers,
 				"creator":  r.HostUsername,
+				"capacity": r.MaxPlayers,
 			})
 		}
 	}

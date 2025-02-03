@@ -14,28 +14,89 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
-	// Create a unique room ID
-	roomID := uuid.New().String()
-	newRoom := &Room{
-		ID:           roomID,
+	room := &Room{
+		ID:           uuid.New().String(),
 		Name:         roomName,
 		HostUsername: username,
-		Players:      []*Client{},
+		Players:      make([]*Client, maxPlayers), // Create a fixed-size slice with nil values
 		MaxPlayers:   maxPlayers,
 		InProgress:   false,
 		Gamestate:    gamestate.GameState{},
-		Map: Map1,
-		loaded: false,
+		Map:          Map1,
 	}
-	rooms[roomID] = newRoom
+	rooms[room.ID] = room
+
+	for i := range(maxPlayers) {
+		room.Players[i] = nil
+	}
+
+	tempState, err := gamestate.New(len(room.Players), room.Map.Name)
+	if err != nil {
+		log.Println("Error creating game:", err)
+		room.sendToRoomPlayers(messages.Message{
+			Type: "error",
+			Data: json.RawMessage([]byte(`{"message": "Could not create game"}`)),
+		})
+		return
+	}
+	room.Gamestate = *tempState
+
 
 	// Mark this client as the host
 	client.Username = username
-	client.Room = newRoom
-	newRoom.Players = append(newRoom.Players, client)
+	client.Room = room
+	room.Players[0] = client
 
 	sendRoomsUpdateToAll()
-	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + newRoom.ID + `"}`)))
+	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
+}
+
+// ChangeSize modifies the room size while preserving existing players
+func (room *Room) ChangeSize(newSize int) {
+	// Ensure the new size is between 2 and 5
+	log.Println(newSize)
+	if newSize < 2 || newSize > 5 {
+		log.Println("Invalid room size. Must be between 2 and 5.")
+		return
+	}
+
+	roomsMu.Lock()
+	defer roomsMu.Unlock()
+
+	currentPlayers := len(room.Players)
+
+	if newSize < currentPlayers {
+		// Truncate the list if the new size is smaller
+		room.Players = room.Players[:newSize]
+	} else {
+		// Expand the list with nil values if the new size is larger
+		for len(room.Players) < newSize {
+			room.Players = append(room.Players, nil)
+		}
+	}
+
+	// Assign new max size
+	room.MaxPlayers = newSize
+
+	// Ensure the host is still valid
+	if len(room.Players) > 0 && room.HostUsername == "" {
+		for _, player := range room.Players {
+			if player != nil {
+				room.HostUsername = player.Username
+				break
+			}
+		}
+	}
+
+	// Notify all players in the room about the update
+	room.sendToRoomPlayers(messages.Message{
+		Type: "roomupdate",
+		Data: json.RawMessage([]byte(`{"maxPlayers": ` + strconv.Itoa(newSize) + `}`)),
+	})
+
+	log.Printf("Room %s resized to %d players.\n", room.ID, newSize)
+
+	sendRoomsUpdateToAll()
 }
 
 func joinRoom(client *Client, roomID, username string) {
@@ -45,16 +106,21 @@ func joinRoom(client *Client, roomID, username string) {
 	// If the client was already in a different room, remove them from that old room
 	oldRoom := client.Room
 	if oldRoom != nil {
-		oldRoom := client.Room
-		var updatedPlayers []*Client
-		for _, c := range oldRoom.Players {
-			if c != client {
-			    updatedPlayers = append(updatedPlayers, c)
+		for i, c := range oldRoom.Players {
+			if c == client {
+				oldRoom.Players[i] = nil // Mark the slot as empty
+				break
 			}
 		}
-		oldRoom.Players = updatedPlayers
 		// If the old room becomes empty, optionally remove it
-		if len(oldRoom.Players) == 0 {
+		empty := true
+		for _, c := range oldRoom.Players {
+			if c != nil {
+				empty = false
+				break
+			}
+		}
+		if empty {
 			delete(rooms, oldRoom.ID)
 		}
 	}
@@ -71,7 +137,17 @@ func joinRoom(client *Client, roomID, username string) {
 		return
 	}
 
-	if len(newRoom.Players) >= newRoom.MaxPlayers {
+	// Check for available slots
+	slotFound := false
+	for i := range newRoom.Players {
+		if newRoom.Players[i] == nil { // Find the first empty spot
+			newRoom.Players[i] = client
+			slotFound = true
+			break
+		}
+	}
+
+	if !slotFound {
 		client.sendError("Room is full.")
 		return
 	}
@@ -80,27 +156,30 @@ func joinRoom(client *Client, roomID, username string) {
 	client.Username = username
 	client.Room = newRoom
 
-	// Add client to the new room
-	newRoom.Players = append(newRoom.Players, client)
+	// Notify client about successful join
+	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + newRoom.ID + `"}`)))
 
 	// Broadcast the updated rooms list to everyone
-	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + newRoom.ID + `"}`)))
 	sendRoomsUpdateToAll()
 }
 
-func (room *Room) removePlayer(client *Client) {
+func (room *Room) removePlayer(username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
+	var client Client
 
-	newPlayers := []*Client{}
-	for _, player := range room.Players {
-		if player.Username != client.Username {
-			newPlayers = append(newPlayers, player)
+	for i, player := range room.Players {
+		if player != nil && player.Username == username {
+			client = *player
+			room.Players[i] = nil
 		}
 	}
-	room.Players = newPlayers
 	if room.HostUsername == client.Username && len(room.Players) != 0 {
-		room.HostUsername = room.Players[0].Username
+		for _, player := range room.Players {
+			if player != nil {
+				room.HostUsername = player.Username
+			}
+		}
 	}
 	if room.InProgress {
 		room.sendStateMessage("A player left the game, game ended!") // in the future replace with a bot
@@ -109,12 +188,41 @@ func (room *Room) removePlayer(client *Client) {
 		room.InProgress = false
 	}
 	// If all players left, remove the room or handle as you wish
-	if len(room.Players) == 0 {
+	count := 0
+	for _, player := range(room.Players) {
+		if player != nil {
+			count += 1
+		}
+	}
+	if count == 0 {
 		delete(rooms, room.ID)
 	}
 
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": ""}`)))
 
+}
+
+func (r *Room) MovePlayer(username string, direction string) bool {
+	for i := range r.Players {
+		// Find the player
+		if r.Players[i] != nil && r.Players[i].Username == username {
+			switch direction {
+			case "up":
+				// Swap with the slot above, even if it's nil
+				if i > 0 {
+					r.Players[i], r.Players[i-1] = r.Players[i-1], r.Players[i]
+					return true
+				}
+			case "down":
+				// Swap with the slot below, even if it's nil
+				if i < len(r.Players)-1 {
+					r.Players[i], r.Players[i+1] = r.Players[i+1], r.Players[i]
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (room *Room) startLobbyGame(client *Client, roomID string) {
@@ -138,18 +246,6 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	// Mark the room as in-progress
 	room.InProgress = true
 	
-	if !room.loaded {
-		tempState, err := gamestate.New(len(room.Players), room.Map.Name)
-		if err != nil {
-			log.Println("Error creating game:", err)
-			room.sendToRoomPlayers(messages.Message{
-				Type: "error",
-				Data: json.RawMessage([]byte(`{"message": "Could not create game"}`)),
-			})
-			return
-		}
-		room.Gamestate = *tempState
-	}
 	room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
 	for i, client := range room.Players {
 		client.sendMessage("index", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(i) + `"}`)))
@@ -167,11 +263,13 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 func (room *Room) sendToRoomPlayers (msg messages.Message) {
 	for _, player := range room.Players {
-		room.mu.Lock()
-		err := player.Conn.WriteJSON(msg)
-		room.mu.Unlock()
-		if err != nil {
-			log.Println("Error sending message:", err)
+		if player != nil {
+			room.mu.Lock()
+			err := player.Conn.WriteJSON(msg)
+			room.mu.Unlock()
+			if err != nil {
+				log.Println("Error sending message:", err)
+			}
 		}
 	}
 }

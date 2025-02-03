@@ -23,7 +23,6 @@ type Room struct {
 	Gamestate    gamestate.GameState
 	mu	     sync.Mutex
 	Map	     Map
-	loaded	     bool
 }
 
 type Map struct {

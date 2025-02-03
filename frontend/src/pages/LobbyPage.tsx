@@ -5,14 +5,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import { sendMessageToBackend } from '../services/backendService';
-import { setTiles, reset } from '../redux/slices/applicationSlice';
+import { reset } from '../redux/slices/applicationSlice';
 import { Room } from '../types/Board';
 
 export default function LobbyPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // Redux state
   const {
     name: username,
     isAuthenticated,
@@ -22,16 +21,14 @@ export default function LobbyPage() {
     saveGames,
   } = useSelector((state: RootState) => state.application);
 
-  // Local state
   const [roomName, setRoomName] = useState('');
 
-  // Identify current room (if any)
   let currentRoom: Room | null = null;
   if (rooms) {
     currentRoom = rooms.find((r) => r.id === roomid) || null;
   }
 
-  // If user not authenticated, redirect home
+  // Redirect if not authenticated or if game started
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/');
@@ -55,16 +52,15 @@ export default function LobbyPage() {
     };
   }, [dispatch]);
 
-  // Create room
+  // Create / Join / Start / Leave
   const handleCreateRoom = () => {
     if (!roomName.trim() || !username.trim()) return;
     sendMessageToBackend('createRoom', {
       roomName,
-      maxPlayers: 5,
+      maxPlayers: 2,
     });
   };
 
-  // Join room
   const handleJoinRoom = (selectedRoomId: string) => {
     if (!username.trim()) return;
     sendMessageToBackend('joinRoom', {
@@ -72,7 +68,6 @@ export default function LobbyPage() {
     });
   };
 
-  // Start game
   const handleStartGame = () => {
     if (!currentRoom) return;
     sendMessageToBackend('startGame', {
@@ -80,24 +75,42 @@ export default function LobbyPage() {
     });
   };
 
-  // Leave room
   const handleLeaveRoom = () => {
     sendMessageToBackend('leaveroom', {});
   };
 
-  // Placeholder for handling clicks on game IDs
-  // Replace with your own logic as needed
   const handleGameIdClick = (gameId: number) => {
-    sendMessageToBackend('loadgame', {saveId: gameId});
+    sendMessageToBackend('loadgame', { saveId: gameId });
   };
 
-  // Check if user is in a room
+  // Callbacks (backend must implement these)
+  const handleRoomSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSize = parseInt(event.target.value, 10);
+    if (!currentRoom) return;
+    sendMessageToBackend('changeRoomSize', { roomId: currentRoom.id, newSize });
+  };
+
+  const handleMoveUp = (playerName: string) => {
+    if (!currentRoom) return;
+    sendMessageToBackend('moveUp', { roomId: currentRoom.id, username: playerName });
+  };
+
+  const handleMoveDown = (playerName: string) => {
+    if (!currentRoom) return;
+    sendMessageToBackend('moveDown', { roomId: currentRoom.id, username: playerName });
+  };
+
+  const handleKickPlayer = (playerName: string) => {
+    if (!currentRoom) return;
+    sendMessageToBackend('kickPlayer', { roomId: currentRoom.id, username: playerName });
+  };
+
   const userInRoom = !!currentRoom;
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
       <div className="flex w-full h-full">
-        {/* Left Column */}
+        {/* Left column */}
         <div className="w-2/3 h-full flex flex-col border border-[#5F4B32] bg-[#FDF5E6]">
           <div className="flex-1 overflow-y-auto p-4">
             <h1 className="text-3xl font-bold mb-4">Welcome to the Lobby</h1>
@@ -105,10 +118,10 @@ export default function LobbyPage() {
               <span className="font-semibold">Logged in as:</span> {username}
             </div>
 
-            {/* If user is not in a room, show Create Room + Available Rooms */}
+            {/* If not in a room, show 'Create Room' and room list */}
             {!userInRoom && (
               <div className="space-y-6">
-                {/* Create Room Section */}
+                {/* Create Room */}
                 <div className="border border-[#5F4B32] p-4 bg-white">
                   <h2 className="text-xl font-bold mb-2 underline">Create a Room</h2>
                   <div className="flex flex-col mb-2">
@@ -129,7 +142,7 @@ export default function LobbyPage() {
                   </button>
                 </div>
 
-                {/* Available Rooms Section */}
+                {/* Available Rooms */}
                 <div className="border border-[#5F4B32] p-4 bg-white">
                   <h2 className="text-xl font-bold mb-2 underline">Available Rooms</h2>
                   {rooms?.length === 0 ? (
@@ -137,12 +150,9 @@ export default function LobbyPage() {
                   ) : (
                     <ul>
                       {rooms.map((rm) => (
-                        <li
-                          key={rm.id}
-                          className="flex items-center justify-between my-2"
-                        >
+                        <li key={rm.id} className="flex items-center justify-between my-2">
                           <div>
-                            <strong>{rm.name}</strong> ({rm.players?.length})
+                            <strong>{rm.name}</strong> ({rm.players?.length || 0})
                           </div>
                           <button
                             type="button"
@@ -159,16 +169,72 @@ export default function LobbyPage() {
               </div>
             )}
 
-            {/* If user is in a room, show room details + Start/Leave buttons */}
+            {/* If in a room, show room details */}
             {userInRoom && currentRoom && (
               <div className="border border-[#5F4B32] p-4 bg-white">
                 <h2 className="text-xl font-bold mb-2 underline">Room: {currentRoom.name}</h2>
+
+                {/* Show size changer only if you're the creator/host */}
+                {currentRoom.creator === username && (
+                  <div className="mb-4">
+                    <label className="font-semibold mr-2">Room Size:</label>
+                    <select
+                      value={currentRoom.capacity ?? 2}
+                      onChange={handleRoomSizeChange}
+                      className="border p-1"
+                    >
+                      {[2, 3, 4, 5].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <p className="font-semibold">Players in this room:</p>
-                <ul className="list-disc list-inside mb-4 ml-4">
-                  {currentRoom.players?.map((p) => (
-                    <li key={p}>{p}</li>
-                  ))}
-                </ul>
+                <div className="mb-4">
+                  {/* We still call .map so we can preserve the real index,
+                      but we conditionally render only if p is valid. */}
+                  {currentRoom.players?.map((p, idx) => {
+                    if (!p || !p.trim().length) {
+                      return null; // skip rendering
+                    }
+                    return (
+                      <div key={p} className="bg-[#EED5B7] mb-2 p-2 flex items-center rounded-lg">
+                        {/* Show the player's original index plus name */}
+                        <span className="flex-1 font-semibold">
+                          {idx+1}: {p}
+                        </span>
+
+                        {/* If you're the creator, you can move/kick players */}
+                        {currentRoom && currentRoom.creator === username && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleMoveUp(p)}
+                              className="px-2 py-1 bg-[#8B4513] text-white rounded"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={() => handleMoveDown(p)}
+                              className="px-2 py-1 bg-[#8B4513] text-white rounded"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              onClick={() => handleKickPlayer(p)}
+                              className="px-2 py-1 bg-red-600 text-white rounded"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
                 <div>
                   {currentRoom.creator === username && (
                     <button
@@ -192,7 +258,7 @@ export default function LobbyPage() {
           </div>
         </div>
 
-        {/* Right Column: Display saved game IDs */}
+        {/* Right column: Saved Games */}
         <div className="w-1/3 h-full border border-[#5F4B32] bg-[#FDF5E6] flex flex-col">
           <div className="p-4 border-b border-[#5F4B32]">
             <h2 className="text-2xl font-bold underline">Saved Games</h2>
@@ -214,7 +280,9 @@ export default function LobbyPage() {
               ) : (
                 <p>No saved games available.</p>
               )
-            ) : <p>You are not the owner</p>}
+            ) : (
+              <p>You are not the owner</p>
+            )}
           </div>
         </div>
       </div>

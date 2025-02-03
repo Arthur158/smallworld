@@ -12,7 +12,8 @@ func CreateGameStatesTable() {
 	query := `
 	CREATE TABLE IF NOT EXISTS game_states (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		state_json TEXT NOT NULL
+		state_json TEXT NOT NULL,
+                saver_index INTEGER
 	);`
 	_, err := db.Exec(query)
 	if err != nil {
@@ -343,7 +344,7 @@ func parsePhase(s string) gamestate.Phase {
     }
 }
 
-func SaveGameState(state *gamestate.GameState) (int64, error) {
+func SaveGameState(state *gamestate.GameState, saverIndex int) (int64, error) {
 	copy := transformGameState(state)
 	jsonData, err := json.Marshal(copy)
 	if err != nil {
@@ -352,8 +353,8 @@ func SaveGameState(state *gamestate.GameState) (int64, error) {
 		return 0, err
 	}
 
-	query := "INSERT INTO game_states (state_json) VALUES (?);"
-	result, err := db.Exec(query, string(jsonData))
+	query := "INSERT INTO game_states (state_json, saver_index) VALUES (?, ?);"
+	result, err := db.Exec(query, string(jsonData), saverIndex)
 	if err != nil {
 		log.Println("Error saving game state:", err)
 		return 0, err
@@ -368,26 +369,27 @@ func SaveGameState(state *gamestate.GameState) (int64, error) {
 	return id, nil
 }
 
-func LoadGameState(id int64) (*gamestate.GameState, error) {
-	query := "SELECT state_json FROM game_states WHERE id = ?;"
+func LoadGameState(id int64) (*gamestate.GameState, int, error) {
+	query := `SELECT state_json, "saver_index" FROM game_states WHERE id = ?;`
 	row := db.QueryRow(query, id)
 
 	var jsonStr string
-	err := row.Scan(&jsonStr)
+	var index int
+	err := row.Scan(&jsonStr, &index)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("game state not found")
+			return nil, 0, errors.New("game state not found")
 		}
-		return nil, err
+		return nil, 0, err
 	}
 
 	var statecp GameStateCopy
 	err = json.Unmarshal([]byte(jsonStr), &statecp)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var state = reverseTransformGameState(statecp)
 
-	return state, nil
+	return state, index, nil
 }

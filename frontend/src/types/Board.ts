@@ -42,6 +42,7 @@ export interface Room {
   name: string;
   creator: string;
   players: string[];
+  capacity: number
 }
 
 
