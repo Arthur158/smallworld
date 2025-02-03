@@ -68,7 +68,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	entry := gs.TribeList[entryIndex]
 	// Enact changes
-	tempActiveTribe, err := createTribe(entry.Race, entry.Trait)
+	tempActiveTribe, err := CreateTribe(entry.Race, entry.Trait)
 	if err != nil {
 		return fmt.Errorf("Could not create tribe:", err)
 	}

@@ -53,6 +53,7 @@ func Start() {
 
 	// Create users table
 	CreateUsersTable()
+	CreateGameStatesTable()
 
 	// Start WebSocket server
 	http.HandleFunc("/ws", handleWebSocket)

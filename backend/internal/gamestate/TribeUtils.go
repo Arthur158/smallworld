@@ -7,8 +7,8 @@ import (
         "log"
 )
 
-func createTribe(race Race, trait Trait) (*Tribe, error) {
-    tribe := createBaseTribe()
+func CreateTribe(race Race, trait Trait) (*Tribe, error) {
+    tribe := CreateBaseTribe()
     tribe.Race = race
     tribe.Trait = trait
     pieceCount := 0
@@ -61,7 +61,7 @@ func createTribeList() ([]*TribeEntry, error) {
     return tribeEntries, nil
 }
 
-func createBaseTribe() *Tribe {
+func CreateBaseTribe() *Tribe {
     tribe := Tribe{
         Race: "Unknown",
         Trait: "Unknown",

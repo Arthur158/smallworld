@@ -1,0 +1,145 @@
+{
+  "Players": [
+    {
+      "ActiveTribe": {
+        "race": "Orc",
+        "trait": "Fortified",
+        "is_active": true,
+        "state": {}
+      },
+      "PassiveTribes": [],
+      "CoinPile": 9,
+      "PieceStacks": [
+        {
+          "Type": "Orc",
+          "Amount": 5
+        }
+      ],
+      "HasActiveTribe": true,
+      "PointsEachTurn": [5, 5, 9]
+    },
+    {
+      "ActiveTribe": {
+        "race": "Elf",
+        "trait": "Berserk",
+        "is_active": true,
+        "state": {
+          "diceroll": 0
+        }
+      },
+      "PassiveTribes": [],
+      "CoinPile": 13,
+      "PieceStacks": [
+        {
+          "Type": "Elf",
+          "Amount": 1
+        }
+      ],
+      "HasActiveTribe": true,
+      "PointsEachTurn": [1, 6, 13]
+    }
+  ],
+  "TribeList": [
+    {
+      "Race": "Shrubman",
+      "Trait": "Dragon Master",
+      "CoinPile": 1,
+      "PiecePile": 11
+    },
+    {
+      "Race": "Khan",
+      "Trait": "Bivouacking",
+      "CoinPile": 1,
+      "PiecePile": 10
+    },
+    {
+      "Race": "Goblin",
+      "Trait": "Underworld",
+      "CoinPile": 1,
+      "PiecePile": 11
+    },
+    {
+      "Race": "Skeletton",
+      "Trait": "Heroic",
+      "CoinPile": 1,
+      "PiecePile": 11
+    }
+  ],
+  "TileList": [
+    {
+      "Id": "24",
+      "AdjacentTiles": ["23", "25", "26", "27"],
+      "PieceStacks": null,
+      "OwningPlayer": -1,
+      "OwningTribe": "",
+      "Biome": "Mountain",
+      "Attributes": [],
+      "Presence": "None",
+      "IsEdge": true
+    },
+    {
+      "Id": "10",
+      "AdjacentTiles": ["1", "8", "9", "12", "0"],
+      "PieceStacks": [
+        {
+          "Type": "Orc",
+          "Amount": 1
+        }
+      ],
+      "OwningPlayer": 0,
+      "OwningTribe": "Orc",
+      "Biome": "Field",
+      "Attributes": ["Magic"],
+      "Presence": "Active",
+      "IsEdge": true
+    },
+    {
+      "Id": "11",
+      "AdjacentTiles": ["6", "3", "4", "26", "27"],
+      "PieceStacks": [
+        {
+          "Type": "Lost Tribe",
+          "Amount": 1
+        }
+      ],
+      "OwningPlayer": -1,
+      "OwningTribe": "Lost Tribe",
+      "Biome": "Forest",
+      "Attributes": ["Mine"],
+      "Presence": "Passive",
+      "IsEdge": true
+    },
+    {
+      "Id": "21",
+      "AdjacentTiles": ["19", "20", "23", "22", "5", "25"],
+      "PieceStacks": [
+        {
+          "Type": "Elf",
+          "Amount": 3
+        }
+      ],
+      "OwningPlayer": 1,
+      "OwningTribe": "Elf",
+      "Biome": "Field",
+      "Attributes": [],
+      "Presence": "Active",
+      "IsEdge": false
+    },
+    {
+      "Id": "14",
+      "AdjacentTiles": ["13", "17", "15", "29"],
+      "PieceStacks": null,
+      "OwningPlayer": -1,
+      "OwningTribe": "",
+      "Biome": "Forest",
+      "Attributes": ["Mine"],
+      "Presence": "None",
+      "IsEdge": true
+    }
+  ],
+  "TurnInfo": {
+    "TurnIndex": 3,
+    "PlayerIndex": 0,
+    "Phase": "DeclineChoice"
+  }
+}

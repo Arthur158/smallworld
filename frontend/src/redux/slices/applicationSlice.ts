@@ -28,7 +28,8 @@ const initialState: ApplicationState = {
   name: "",
   gameStarted: false,
   mapImageUrl: null,
-  isAuthenticated: false
+  isAuthenticated: false,
+  saveGames: [],
 };
 
 const applicationSlice = createSlice({
@@ -110,6 +111,9 @@ const applicationSlice = createSlice({
           state.name = ""
           break;
         }
+        case 'loadIds' : 
+          state.saveGames = parsedData.saveids
+          break;
         case 'roomEntriesUpdate': {
           if (parsedData != null) {
             state.rooms = parsedData;
@@ -122,6 +126,10 @@ const applicationSlice = createSlice({
           break;
         case 'roomid':
           state.roomid = parsedData.roomid;
+          break;
+        case 'lobby':
+          state.roomid = ""
+          state.gameStarted = false
           break;
 
         case 'error':

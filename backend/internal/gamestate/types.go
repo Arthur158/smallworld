@@ -4,49 +4,34 @@ type Race string;
 type Trait string;
 
 type Tribe struct {
-	Race Race;
-	Trait Trait;
-	IsActive bool;
-	State map[string]interface{};
+	Race      Race                  `json:"race"`
+	Trait     Trait                 `json:"trait"`
+	IsActive  bool                  `json:"is_active"`
+	State     map[string]interface{} `json:"state"`
 
-	giveInitialStacks func() []PieceStack;
-
-	//abandonment
-	canTileBeAbandoned func(*Tile) bool;
-	receiveAbandonment func(*Tile) []PieceStack;
-
-	// receive for conquest
-	getStacksForConquest func(*Tile, *Player);
-
-	// conquest checks
-	IsStackValid func(string) bool;
-	checkZoneAccess func(*Tile) error;
-	checkAdjacency func(*Tile, *GameState) error;
-
-	// conquest for attacker
-	countAttack func(*Tile, int, string) ([]PieceStack, int, int);
-	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
-	calculateRemainingAttackingStacks func([]PieceStack, []PieceStack) ([]PieceStack, []PieceStack, bool, error)
-
-	//conquest for defender
-	countDefense func(*Tile) (int, int, int, error);
-	countReturningStacks func(*Tile) ([]PieceStack, []PieceStack);
-
-	// redeployment
-	startRedeployment func(*GameState) []PieceStack;
-	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
-	canBeRedeployedIn func(*Tile, string) bool;
-
-	// end of turn
-	countPoints func(*Tile) int;
-	countExtrapoints func() int;
-
-	// decline
-	countPiecesRemaining func(*Tile) []PieceStack;
-	countRemainingAttackingStacks func(*Player) []PieceStack;
-	canGoIntoDecline func(*GameState) bool;
-	goIntoDecline func(*GameState);
-	prepareRemoval func(*GameState) bool;
+	// All function fields get json:"-" to exclude them
+	giveInitialStacks                 func() []PieceStack          `json:"-"`
+	canTileBeAbandoned                func(*Tile) bool             `json:"-"`
+	receiveAbandonment                func(*Tile) []PieceStack     `json:"-"`
+	getStacksForConquest              func(*Tile, *Player)         `json:"-"`
+	IsStackValid                      func(string) bool            `json:"-"`
+	checkZoneAccess                   func(*Tile) error            `json:"-"`
+	checkAdjacency                    func(*Tile, *GameState) error `json:"-"`
+	countAttack                       func(*Tile, int, string) ([]PieceStack, int, int) `json:"-"`
+	countNewTileStacks                func([]PieceStack, *Tile) []PieceStack `json:"-"`
+	calculateRemainingAttackingStacks func([]PieceStack, []PieceStack) ([]PieceStack, []PieceStack, bool, error) `json:"-"`
+	countDefense                      func(*Tile) (int, int, int, error) `json:"-"`
+	countReturningStacks              func(*Tile) ([]PieceStack, []PieceStack) `json:"-"`
+	startRedeployment                 func(*GameState) []PieceStack `json:"-"`
+	getStacksOutRedeployment          func(*Tile, string) ([]PieceStack, error) `json:"-"`
+	canBeRedeployedIn                 func(*Tile, string) bool     `json:"-"`
+	countPoints                       func(*Tile) int              `json:"-"`
+	countExtrapoints                  func() int                   `json:"-"`
+	countPiecesRemaining              func(*Tile) []PieceStack     `json:"-"`
+	countRemainingAttackingStacks     func(*Player) []PieceStack   `json:"-"`
+	canGoIntoDecline                  func(*GameState) bool        `json:"-"`
+	goIntoDecline                     func(*GameState)            `json:"-"`
+	prepareRemoval                    func(*GameState) bool        `json:"-"`
 }
 
 type TribeEntry struct {

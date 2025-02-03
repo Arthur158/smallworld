@@ -177,6 +177,10 @@ func (client *Client) handleFinishTurn () {
 	if err := client.Room.Gamestate.HandleFinishTurn(client.Index); err != nil {
 		client.sendError(err.Error())
 	} else {
+		// index, _ := SaveGameState(&client.Room.Gamestate)
+		// state, err := LoadGameState(index)
+		// log.Println(err)
+		// client.Room.Gamestate = *state
 		client.Room.sendPlayerUpdate()
 		client.Room.sendTurnUpdate()
 		client.Room.sendAllTileUpdate()
@@ -192,6 +196,7 @@ func (client *Client) handleFinishTurn () {
 
 		if client.Room.Gamestate.TurnInfo.Phase == gamestate.GameFinished {
 			client.Room.sendGameFinishedUpdate()
+			client.Room.InProgress = false
 		} 
 	}
 }

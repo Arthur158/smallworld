@@ -1,5 +1,7 @@
 package gamestate;
 
+import "log"
+
 func CountDefense(tile *Tile) int {
     price := 2
     if tile.Biome == Mountain {
@@ -10,6 +12,16 @@ func CountDefense(tile *Tile) int {
 
 func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
     for _, tile := range gs.TileList {
+        log.Println(tile.Id)
+        log.Println(tile.Presence)
+        log.Println(tile.OwningTribe)
+        log.Println(tile.OwningPlayer)
+    }
+    for _, tile := range gs.TileList {
+        log.Println(tile.Id)
+        log.Println(tile.Presence)
+        log.Println(tile.OwningTribe)
+        log.Println(tile.OwningPlayer)
         if tile.Presence != None && tile.OwningTribe.Race == race {
             return true
         }

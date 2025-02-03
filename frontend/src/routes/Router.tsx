@@ -21,7 +21,7 @@ export default function AppRouter(): JSX.Element {
     } else {
       navigate("/", { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, gameStarted, navigate]);
 
   return (
     <Routes>

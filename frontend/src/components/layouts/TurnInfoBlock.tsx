@@ -35,6 +35,15 @@ export default function TurnInfoBlock() {
     dispatch(setSelectedTile(null))
     dispatch(setSelectedStack(null))
   }
+  const handleLeaveGame = () => {
+    sendMessageToBackend("leaveroom", {})
+    dispatch(setIsStackFromBank(false))
+    dispatch(setSelectedTile(null))
+    dispatch(setSelectedStack(null))
+  }
+  const handleSaveGame = () => {
+    sendMessageToBackend("savegame", {})
+  }
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -74,6 +83,12 @@ export default function TurnInfoBlock() {
         </button>
         <button onClick={handleEndTurn} className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors">
           End Turn
+        </button>
+        <button onClick={handleSaveGame} className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors">
+          Save Game
+        </button>
+        <button onClick={handleLeaveGame} className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors">
+          Leave Game
         </button>
       </div>
     </div>

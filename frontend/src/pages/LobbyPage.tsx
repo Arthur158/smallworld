@@ -1,32 +1,37 @@
 // src/pages/LobbyPage.tsx
+
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import { sendMessageToBackend } from '../services/backendService';
 import { setTiles, reset } from '../redux/slices/applicationSlice';
-import { parseAreaFile } from '../utility/MapParser';
 import { Room } from '../types/Board';
 
 export default function LobbyPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // We no longer allow user to type username; we read it from Redux
-  const { name: username, isAuthenticated, rooms, roomid, gameStarted } = useSelector(
-    (state: RootState) => state.application
-  );
+  // Redux state
+  const {
+    name: username,
+    isAuthenticated,
+    rooms,
+    roomid,
+    gameStarted,
+    saveGames,
+  } = useSelector((state: RootState) => state.application);
 
-  // If we have multiple players, we might store them differently, but let's follow your original code:
+  // Local state
   const [roomName, setRoomName] = useState('');
 
-  // This is the room that the user is currently in
+  // Identify current room (if any)
   let currentRoom: Room | null = null;
   if (rooms) {
     currentRoom = rooms.find((r) => r.id === roomid) || null;
   }
 
-  // If user is not authenticated, redirect to "/"
+  // If user not authenticated, redirect home
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/');
@@ -37,8 +42,7 @@ export default function LobbyPage() {
     }
   }, [isAuthenticated, gameStarted, navigate]);
 
-  // Connect WebSocket on mount
-  // On page refresh, request updated room list
+  // Handle page refresh
   useEffect(() => {
     const handlePageRefresh = () => {
       dispatch(reset());
@@ -81,91 +85,139 @@ export default function LobbyPage() {
     sendMessageToBackend('leaveroom', {});
   };
 
-  // Are we in a room?
+  // Placeholder for handling clicks on game IDs
+  // Replace with your own logic as needed
+  const handleGameIdClick = (gameId: number) => {
+    sendMessageToBackend('loadgame', {saveId: gameId});
+  };
+
+  // Check if user is in a room
   const userInRoom = !!currentRoom;
 
   return (
-    <div className="flex flex-col items-center min-h-screen p-5 space-y-6">
-      <h1 className="text-2xl font-bold">Welcome to the Lobby</h1>
-      <div className="mb-4">Logged in as: <strong>{username}</strong></div>
-
-      {/* If user not in a room, show available rooms + create room form */}
-      {!userInRoom && (
-        <>
-          <div className="border p-4 w-full max-w-md space-y-3 bg-gray-100">
-            <h2 className="font-bold">Create a Room</h2>
-            <div className="flex flex-col items-start">
-              <label className="mb-1">Room Name:</label>
-              <input
-                type="text"
-                className="border p-1"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-              />
+    <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
+      <div className="flex w-full h-full">
+        {/* Left Column */}
+        <div className="w-2/3 h-full flex flex-col border border-[#5F4B32] bg-[#FDF5E6]">
+          <div className="flex-1 overflow-y-auto p-4">
+            <h1 className="text-3xl font-bold mb-4">Welcome to the Lobby</h1>
+            <div className="mb-4">
+              <span className="font-semibold">Logged in as:</span> {username}
             </div>
-            <button
-              type="button"
-              onClick={handleCreateRoom}
-              className="btn btn-primary mt-2"
-            >
-              Create Room
-            </button>
-          </div>
 
-          <div className="border p-4 w-full max-w-md bg-gray-100">
-            <h2 className="font-bold">Available Rooms</h2>
-            {rooms?.length === 0 ? (
-              <p>No rooms available. Create one!</p>
-            ) : (
-              <ul>
-                {rooms.map((rm) => (
-                  <li key={rm.id} className="flex items-center justify-between my-2">
-                    <div>
-                      <strong>{rm.name}</strong> ({rm.players?.length})
-                    </div>
+            {/* If user is not in a room, show Create Room + Available Rooms */}
+            {!userInRoom && (
+              <div className="space-y-6">
+                {/* Create Room Section */}
+                <div className="border border-[#5F4B32] p-4 bg-white">
+                  <h2 className="text-xl font-bold mb-2 underline">Create a Room</h2>
+                  <div className="flex flex-col mb-2">
+                    <label className="font-semibold mb-1">Room Name:</label>
+                    <input
+                      type="text"
+                      className="border p-2"
+                      value={roomName}
+                      onChange={(e) => setRoomName(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateRoom}
+                    className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
+                  >
+                    Create Room
+                  </button>
+                </div>
+
+                {/* Available Rooms Section */}
+                <div className="border border-[#5F4B32] p-4 bg-white">
+                  <h2 className="text-xl font-bold mb-2 underline">Available Rooms</h2>
+                  {rooms?.length === 0 ? (
+                    <p>No rooms available. Create one!</p>
+                  ) : (
+                    <ul>
+                      {rooms.map((rm) => (
+                        <li
+                          key={rm.id}
+                          className="flex items-center justify-between my-2"
+                        >
+                          <div>
+                            <strong>{rm.name}</strong> ({rm.players?.length})
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleJoinRoom(rm.id)}
+                            className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors ml-2"
+                          >
+                            Join
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* If user is in a room, show room details + Start/Leave buttons */}
+            {userInRoom && currentRoom && (
+              <div className="border border-[#5F4B32] p-4 bg-white">
+                <h2 className="text-xl font-bold mb-2 underline">Room: {currentRoom.name}</h2>
+                <p className="font-semibold">Players in this room:</p>
+                <ul className="list-disc list-inside mb-4 ml-4">
+                  {currentRoom.players?.map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                </ul>
+                <div>
+                  {currentRoom.creator === username && (
                     <button
                       type="button"
-                      onClick={() => handleJoinRoom(rm.id)}
-                      className="btn btn-secondary ml-2"
+                      onClick={handleStartGame}
+                      className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors mr-2"
                     >
-                      Join
+                      Start Game
                     </button>
-                  </li>
-                ))}
-              </ul>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleLeaveRoom}
+                    className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
+                  >
+                    Leave Room
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-        </>
-      )}
-
-      {/* If user is in a room, show room details and Start Game if host */}
-      {userInRoom && currentRoom && (
-        <div className="border p-4 w-full max-w-md bg-gray-100">
-          <h2 className="font-bold">Room: {currentRoom.name}</h2>
-          <p>Players in this room:</p>
-          <ul className="list-disc list-inside mb-4">
-            {currentRoom.players?.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
-          {currentRoom.creator === username && (
-            <button
-              type="button"
-              onClick={handleStartGame}
-              className="btn btn-primary"
-            >
-              Start Game
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleLeaveRoom}
-            className="btn btn-primary ml-2"
-          >
-            Leave Room
-          </button>
         </div>
-      )}
+
+        {/* Right Column: Display saved game IDs */}
+        <div className="w-1/3 h-full border border-[#5F4B32] bg-[#FDF5E6] flex flex-col">
+          <div className="p-4 border-b border-[#5F4B32]">
+            <h2 className="text-2xl font-bold underline">Saved Games</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            {userInRoom && currentRoom && currentRoom.creator === username ? (
+              saveGames && saveGames.length > 0 ? (
+                <ul>
+                  {saveGames.map((gameId) => (
+                    <li
+                      key={gameId}
+                      className="mb-2 p-2 cursor-pointer hover:bg-[#FFF5EE] transition-colors"
+                      onClick={() => handleGameIdClick(gameId)}
+                    >
+                      Game ID: {gameId}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No saved games available.</p>
+              )
+            ) : <p>You are not the owner</p>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

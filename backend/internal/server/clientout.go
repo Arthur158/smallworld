@@ -75,6 +75,7 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 
 	case "leaveroom":
 		client.Room.removePlayer(client)
+		client.sendMessage("lobby", nil)
 		sendRoomsUpdateToAll()
 	case "requestrefresh":
 		sendRoomsUpdateToAll()
@@ -128,9 +129,42 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.handleLogin(data.UserName, data.Password)
-		log.Println("here")
 		log.Println(client.Room)
 		sendRoomsUpdateToAll()
+	case "savegame":
+		id, err := SaveGameState(&client.Room.Gamestate)
+		if err != nil {
+			log.Println("Error saving game", err)
+			client.sendError("error saving game")
+			return
+		}
+		err = AddGameIDToUser(client.Username, id)
+		if err != nil {
+			log.Println("Error adding game", err)
+			client.sendError("error adding game")
+			return
+		}
+		client.sendMessage("message", json.RawMessage([]byte(`{"message": "Game successfully saved"}`)))
+	case "loadgame":
+		var data struct {
+			SaveId int64 `json:"saveId"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+
+		// Load game state using SaveId
+		newstate, err := LoadGameState(data.SaveId)
+		if err != nil {
+			log.Println("Error loading game", err)
+			client.sendError("error loading game")
+			return
+		}
+		client.Room.Gamestate = *newstate
+		client.Room.loaded = true
 
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
@@ -171,7 +205,22 @@ func (client *Client) handleLogin(userName string, password string) {
 		client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 	}
 
-
+	saveIds, err := GetUserSaveGameIDs(client.Username)
+	if err != nil {
+		log.Println("unable to load save ids")
+	} else {
+		// Marshal the list of integers into JSON under the key "saveids"
+		saveIdsJSON, err := json.Marshal(map[string]interface{}{
+			"saveids": saveIds,
+		})
+		if err != nil {
+			log.Println("unable to marshal saveIds:", err)
+			return
+		}
+		
+		// Send the message of type "loadIds" with the saveIds
+		client.sendMessage("loadIds", json.RawMessage(saveIdsJSON))
+	}
 }
 
 func removeClient(client *Client) {
@@ -179,8 +228,6 @@ func removeClient(client *Client) {
 	defer connectedClientsMu.Unlock()
 
 	delete(nameSet, client.Username)
-	log.Println("name delete from nameset", client.Username)
-	log.Println(client.Username)
 	if (client.Room != nil) {
 		disconnectedUsers[client.Username] = client.Room
 	}

@@ -163,11 +163,12 @@ func Map1() map[string]*Tile {
         result[id] = tile // Dereference pointer to get a Tile value
     }
 
-    lostTribe := createBaseTribe()
+    lostTribe := CreateBaseTribe()
     lostTribe.Race = "Lost Tribe"
     lostTribe.Trait = "Lost"
     lostPlayer := Player{
         PieceStacks : []PieceStack{},
+        ActiveTribe: lostTribe,
     }
 
     for _, id := range []string{ "22", "21", "4", "3", "11", "26", "1", "13", "16", "0"} {

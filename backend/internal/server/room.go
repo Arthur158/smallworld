@@ -25,6 +25,7 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 		InProgress:   false,
 		Gamestate:    gamestate.GameState{},
 		Map: Map1,
+		loaded: false,
 	}
 	rooms[roomID] = newRoom
 
@@ -101,6 +102,12 @@ func (room *Room) removePlayer(client *Client) {
 	if room.HostUsername == client.Username && len(room.Players) != 0 {
 		room.HostUsername = room.Players[0].Username
 	}
+	if room.InProgress {
+		room.sendStateMessage("A player left the game, game ended!") // in the future replace with a bot
+		// also allow for players to juggle between multiple games in the future.
+		room.sendGameFinishedUpdate()
+		room.InProgress = false
+	}
 	// If all players left, remove the room or handle as you wish
 	if len(room.Players) == 0 {
 		delete(rooms, room.ID)
@@ -131,16 +138,18 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	// Mark the room as in-progress
 	room.InProgress = true
 	
-	tempState, err := gamestate.New(len(room.Players), room.Map.Name)
-	if err != nil {
-		log.Println("Error creating game:", err)
-		room.sendToRoomPlayers(messages.Message{
-			Type: "error",
-			Data: json.RawMessage([]byte(`{"message": "Could not create game"}`)),
-		})
-		return
+	if !room.loaded {
+		tempState, err := gamestate.New(len(room.Players), room.Map.Name)
+		if err != nil {
+			log.Println("Error creating game:", err)
+			room.sendToRoomPlayers(messages.Message{
+				Type: "error",
+				Data: json.RawMessage([]byte(`{"message": "Could not create game"}`)),
+			})
+			return
+		}
+		room.Gamestate = *tempState
 	}
-	room.Gamestate = *tempState
 	room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
 	for i, client := range room.Players {
 		client.sendMessage("index", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(i) + `"}`)))
