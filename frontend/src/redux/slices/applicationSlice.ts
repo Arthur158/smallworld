@@ -1,7 +1,7 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { ApplicationState } from '../../types/redux';
 import { Language } from '../../types/misc';
-import { Player, TribeEntry, Room, Tile } from '../../types/Board';
+import { Player, TribeEntry, Room, Tile, SaveGameInfo } from '../../types/Board';
 
 
 const initialState: ApplicationState = {
@@ -12,6 +12,7 @@ const initialState: ApplicationState = {
     { race: 'giants', trait: 'fortunate', pieceCount: 0, coinCount: 0 },
   ], // dummy
   tiles: {},
+  offsetMapTiles: 1,
   players: [],
   playerIndex: 1,
   turnNumber: 1,
@@ -30,6 +31,7 @@ const initialState: ApplicationState = {
   mapImageUrl: null,
   isAuthenticated: false,
   saveGames: [],
+  saveSelectionId: -1,
 };
 
 const applicationSlice = createSlice({
@@ -80,7 +82,7 @@ const applicationSlice = createSlice({
       const { tile_id, new_stacks } = action.payload;
       const tile = state.tiles[tile_id];
       if (!tile) {
-        throw new Error(`Tile with ID ${tile_id} does not exist.`);
+        throw new Error(`Tile with ID ${tile_id} does not exist.${state.tiles}`);
       }
       tile.pieceStack = new_stacks;
     },
@@ -111,8 +113,11 @@ const applicationSlice = createSlice({
           state.name = ""
           break;
         }
-        case 'loadIds' : 
-          state.saveGames = parsedData.saveids
+        case 'loadSaves' : 
+          state.saveGames = parsedData.saves
+          break;
+        case 'saveSelection' : 
+          state.saveSelectionId = parsedData.index
           break;
         case 'roomEntriesUpdate': {
           if (parsedData != null) {
@@ -154,6 +159,7 @@ const applicationSlice = createSlice({
 
             state.mapImageUrl = imgUrl;
           }
+          state.offsetMapTiles = parsedData.offset
 
           const newTiles: Record<string, Tile> = {};
           data.zones.forEach((tileData: any, index: number) => {

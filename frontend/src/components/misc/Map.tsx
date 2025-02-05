@@ -9,6 +9,7 @@ export default function Map() {
   const dispatch = useDispatch();
 
   const tiles: Record<string, Tile> = useSelector((state: RootState) => state.application.tiles);
+  const offsetMapTiles: number = useSelector((state: RootState) => state.application.offsetMapTiles);
   const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
@@ -48,7 +49,7 @@ export default function Map() {
   useEffect(() => {
     if (!mapImageUrl) return;
     const image = new Image();
-    image.src = mapImageUrl;  // <--- the blob URL
+    image.src = mapImageUrl;  // the blob URL
     image.onload = () => {
       setImageDimensions({ width: image.width, height: image.height });
     };
@@ -63,14 +64,11 @@ export default function Map() {
   }
 
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
-    console.log("getting here")
-    console.log(tileID)
     if (
       (phase === "Conquest" || phase === "TileAbandonment" || phase === "DeclineChoice") &&
       isStackFromBank &&
       selectedStack != null
     ) {
-      console.log("trying here")
       sendMessageToBackend("Conquest", { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
     } else if (
       (phase === 'Redeployment' || phase === 'TileAbandonment') &&
@@ -221,8 +219,9 @@ export default function Map() {
   };
 
   return (
+    // Changed overflow-hidden to overflow-auto so that the map can always be scrolled vertically if needed
     <div
-      className="flex justify-center items-center overflow-hidden relative"
+      className="flex justify-center items-center overflow-auto relative"
       style={{ width: '100%', height: '100%' }}
       onMouseLeave={handleMouseLeaveContainer}
       onMouseOver={handleMouseOver}
@@ -230,6 +229,8 @@ export default function Map() {
     >
       <svg
         ref={svgRef}
+        // Added preserveAspectRatio to ensure the entire vertical extent is displayed within the given viewBox
+        preserveAspectRatio="xMidYMid meet"
         width={imageDimensions.width}
         height={imageDimensions.height}
         viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
@@ -251,7 +252,7 @@ export default function Map() {
 
           {Object.values(tiles).map((tile) => {
             const scaledCoords = tile.polygon.coords.map(
-              (coord: number) => coord * (imageDimensions.width / baseWidth)
+              (coord: number) => coord * (imageDimensions.width / baseWidth) * offsetMapTiles
             );
             const points: string[] = [];
             for (let i = 0; i < scaledCoords.length; i += 2) {
@@ -293,8 +294,6 @@ export default function Map() {
                   const isSelected =
                     selectedTile === tile.id && selectedStack === stack.type && isStackFromBank === false;
 
-                  // We create multiple images (or "layers") to visually stack them
-                  // Each piece moves slightly bottom-right, so we see the "pile".
                   return (
                     <g
                       key={`piece-${tile.id}-${index}`}
@@ -309,8 +308,8 @@ export default function Map() {
                           <g key={`piece-layer-${i}`}>
                             <image
                               href={imageSrc}
-                              x={pieceX}
-                              y={pieceY - baseSize}
+                              x={pieceX * offsetMapTiles}
+                              y={pieceY * offsetMapTiles - baseSize}
                               width={baseSize}
                               height={baseSize}
                               style={{
@@ -323,11 +322,10 @@ export default function Map() {
                             {/* If it's the top piece, show type, amount and (optionally) a flashing border */}
                             {isTopPiece && (
                               <>
-                                {/* A stroke behind the image to show selection (flash) */}
                                 {isSelected && (
                                   <rect
-                                    x={pieceX}
-                                    y={pieceY - baseSize}
+                                    x={pieceX * offsetMapTiles}
+                                    y={pieceY * offsetMapTiles - baseSize}
                                     width={baseSize}
                                     height={baseSize}
                                     fill="none"
@@ -337,8 +335,8 @@ export default function Map() {
                                   />
                                 )}
                                 <text
-                                  x={pieceX + baseSize / 2}
-                                  y={pieceY - baseSize / 2}
+                                  x={pieceX * offsetMapTiles + baseSize / 2}
+                                  y={pieceY * offsetMapTiles - baseSize / 2}
                                   fill="white"
                                   fontSize="8"
                                   fontWeight="bold"
@@ -348,8 +346,8 @@ export default function Map() {
                                   {stack.type}
                                 </text>
                                 <text
-                                  x={pieceX + baseSize - 3}
-                                  y={pieceY - baseSize + 45}
+                                  x={pieceX * offsetMapTiles + baseSize - 3}
+                                  y={pieceY * offsetMapTiles - baseSize + 45}
                                   fill="black"
                                   fontSize="18"
                                   fontWeight="bold"

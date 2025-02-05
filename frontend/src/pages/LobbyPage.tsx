@@ -6,20 +6,31 @@ import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import { sendMessageToBackend } from '../services/backendService';
 import { reset } from '../redux/slices/applicationSlice';
-import { Room } from '../types/Board';
+import { Room, SaveGameInfo } from '../types/Board';
 
 export default function LobbyPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const {
-    name: username,
-    isAuthenticated,
-    rooms,
-    roomid,
-    gameStarted,
-    saveGames,
-  } = useSelector((state: RootState) => state.application);
+const {
+  name: username,
+  isAuthenticated,
+  rooms,
+  roomid,
+  gameStarted,
+  saveGames,
+  error,
+  saveSelectionId,
+} = useSelector((state: RootState) => ({
+  name: state.application.name,
+  isAuthenticated: state.application.isAuthenticated,
+  rooms: state.application.rooms,
+  roomid: state.application.roomid,
+  gameStarted: state.application.gameStarted,
+  saveGames: state.application.saveGames as SaveGameInfo[], // Explicitly typed
+  error: state.application.error,
+  saveSelectionId: state.application.saveSelectionId
+}));
 
   const [roomName, setRoomName] = useState('');
 
@@ -267,13 +278,16 @@ export default function LobbyPage() {
             {userInRoom && currentRoom && currentRoom.creator === username ? (
               saveGames && saveGames.length > 0 ? (
                 <ul>
-                  {saveGames.map((gameId) => (
+                  {saveGames.map((gameSave) => (
                     <li
-                      key={gameId}
-                      className="mb-2 p-2 cursor-pointer hover:bg-[#FFF5EE] transition-colors"
-                      onClick={() => handleGameIdClick(gameId)}
+                      key={gameSave.saveId}
+                      className={`mb-2 p-2 cursor-pointer hover:bg-[#FFF5EE] transition-colors border-2 ${
+                        gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
+                      }`}
+                      onClick={() => handleGameIdClick(gameSave.saveId)}
                     >
-                      Game ID: {gameId}
+                      <div className="font-bold">Game ID: {gameSave.saveId}</div>
+                      <div>Summary: {gameSave.summary}</div>
                     </li>
                   ))}
                 </ul>
@@ -286,6 +300,13 @@ export default function LobbyPage() {
           </div>
         </div>
       </div>
+        {/* Error Banner at the Bottom */}
+      {error && (
+        <div className="fixed bottom-0 left-0 w-full bg-red-500 text-white text-center py-2 z-50">
+          {error}
+        </div>
+      )}
+
     </div>
   );
 }

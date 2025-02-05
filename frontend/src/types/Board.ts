@@ -17,6 +17,11 @@ export interface PieceStack {
   isActive: boolean
 }
 
+export interface SaveGameInfo {
+  saveId: number;
+  summary: string;
+}
+
 export interface Tribe {
   race: string;
   trait: string;

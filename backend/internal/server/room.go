@@ -14,6 +14,11 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
+	gameMap, ok := mapMap[maxPlayers]
+	if !ok {
+		log.Println("Problem logging map")
+	}
+
 	room := &Room{
 		ID:           uuid.New().String(),
 		Name:         roomName,
@@ -22,7 +27,7 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 		MaxPlayers:   maxPlayers,
 		InProgress:   false,
 		Gamestate:    gamestate.GameState{},
-		Map:          Map1,
+		Map:          gameMap,
 	}
 	rooms[room.ID] = room
 
@@ -54,7 +59,6 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 // ChangeSize modifies the room size while preserving existing players
 func (room *Room) ChangeSize(newSize int) {
 	// Ensure the new size is between 2 and 5
-	log.Println(newSize)
 	if newSize < 2 || newSize > 5 {
 		log.Println("Invalid room size. Must be between 2 and 5.")
 		return
@@ -63,13 +67,30 @@ func (room *Room) ChangeSize(newSize int) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
+	gameMap, ok := mapMap[newSize]
+	if !ok {
+		log.Println("Problem logging map")
+	}
+
+	room.Map = gameMap
+
+	// First, remove any nil players from the slice
+	cleanedPlayers := make([]*Client, 0, len(room.Players))
+	for _, p := range room.Players {
+		if p != nil {
+			cleanedPlayers = append(cleanedPlayers, p)
+		}
+	}
+	room.Players = cleanedPlayers
+
 	currentPlayers := len(room.Players)
 
+	// Now adjust the slice length
 	if newSize < currentPlayers {
-		// Truncate the list if the new size is smaller
+		// Truncate if the new size is smaller
 		room.Players = room.Players[:newSize]
 	} else {
-		// Expand the list with nil values if the new size is larger
+		// Expand with nil slots if the new size is larger
 		for len(room.Players) < newSize {
 			room.Players = append(room.Players, nil)
 		}
@@ -78,7 +99,7 @@ func (room *Room) ChangeSize(newSize int) {
 	// Assign new max size
 	room.MaxPlayers = newSize
 
-	// Ensure the host is still valid
+	// Ensure there is still a valid host
 	if len(room.Players) > 0 && room.HostUsername == "" {
 		for _, player := range room.Players {
 			if player != nil {
@@ -87,12 +108,6 @@ func (room *Room) ChangeSize(newSize int) {
 			}
 		}
 	}
-
-	// Notify all players in the room about the update
-	room.sendToRoomPlayers(messages.Message{
-		Type: "roomupdate",
-		Data: json.RawMessage([]byte(`{"maxPlayers": ` + strconv.Itoa(newSize) + `}`)),
-	})
 
 	log.Printf("Room %s resized to %d players.\n", room.ID, newSize)
 
@@ -198,7 +213,7 @@ func (room *Room) removePlayer(username string) {
 		delete(rooms, room.ID)
 	}
 
-	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": ""}`)))
+	client.sendMessage("lobby", nil)
 
 }
 
@@ -228,6 +243,13 @@ func (r *Room) MovePlayer(username string, direction string) bool {
 func (room *Room) startLobbyGame(client *Client, roomID string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
+
+	for _, player := range room.Players {
+		if player == nil {
+			log.Println("The room is not full")
+			client.sendError("The room is not full")
+		}
+	}
 
 	room, exists := rooms[roomID]
 	if !exists {
@@ -327,6 +349,9 @@ func (room *Room) sendPlayerUpdate () {
 	playerInfo := []Player{}
 	for i, p := range room.Gamestate.Players {
 		var playerData Player
+		if p == nil {
+			continue
+		}
 		playerData.Name = room.Players[i].Username
 		if p.HasActiveTribe {
 			playerData.ActiveTribe = Tribe{
@@ -451,5 +476,39 @@ func (room *Room) sendGameFinishedUpdate () {
 }
 
 
+// Function that sends map updates to all players
+func (room *Room) sendMapUpdate() {
+	type mapUpdateData struct {
+		Picture string    `json:"picture"`
+		Zones   []TileData `json:"zones"`
+		OffSet float64 `json:"offset"`
+	}
+
+	zones := room.Map.populateMap()
+
+	// Load the image from disk
+	imgPath := room.Map.ImagePath("./assets/maps") // base path for images
+	base64Img, err := getMapImageAsBase64(imgPath)
+	if err != nil {
+		// handle error; you might default to an empty string or log
+		base64Img = ""
+	}
+
+	update := mapUpdateData{
+		// Leave the path or stream data blank (or assign appropriately)
+		Picture: base64Img,
+		Zones:   zones,
+		OffSet: room.Map.Offset,
+	}
+
+	jsonData, _ := json.MarshalIndent(update, "", "  ")
+	room.sendToRoomPlayers(struct {
+		Type string          `json:"type"`
+		Data json.RawMessage `json:"data"`
+	}{
+		Type: "mapupdate",
+		Data: jsonData,
+	})
+}
 
 

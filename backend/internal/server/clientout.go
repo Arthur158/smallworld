@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"backend/internal/messages"
+	"backend/internal/gamestate"
 	"fmt"
 	"strconv"
 )
@@ -72,10 +73,10 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		createRoom(client, data.RoomName, client.Username, data.MaxPlayers)
+		client.sendUserSaves()
 
 	case "leaveroom":
 		client.Room.removePlayer(client.Username)
-		client.sendMessage("lobby", nil)
 		sendRoomsUpdateToAll()
 	case "requestrefresh":
 		sendRoomsUpdateToAll()
@@ -129,7 +130,6 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.handleLogin(data.UserName, data.Password)
-		log.Println(client.Room)
 		sendRoomsUpdateToAll()
 	case "moveUp":
 		var data struct {
@@ -201,14 +201,22 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		log.Println("Successfully parsed:", data)
 
 		// Load game state using SaveId
-		newstate, _, err := LoadGameState(data.SaveId)
-		if err != nil {
-			log.Println("Error loading game", err)
-			client.sendError("error loading game")
-			return
+		if data.SaveId == -1 {
+			newstate, err := gamestate.New(client.Room.MaxPlayers, client.Room.Map.Name)
+			if err != nil {
+				log.Println("error creating state")
+			}
+			client.Room.Gamestate = *newstate
+		} else {
+			newstate, _, err := LoadGameState(data.SaveId)
+			if err != nil {
+				log.Println("Error loading game", err)
+				client.sendError("error loading game")
+				return
+			}
+			client.Room.Gamestate = *newstate
 		}
-		client.Room.Gamestate = *newstate
-
+		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
 	}
@@ -248,22 +256,48 @@ func (client *Client) handleLogin(userName string, password string) {
 		client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 	}
 
+}
+
+func (client *Client) sendUserSaves() {
 	saveIds, err := GetUserSaveGameIDs(client.Username)
 	if err != nil {
-		log.Println("unable to load save ids")
-	} else {
-		// Marshal the list of integers into JSON under the key "saveids"
-		saveIdsJSON, err := json.Marshal(map[string]interface{}{
-			"saveids": saveIds,
-		})
-		if err != nil {
-			log.Println("unable to marshal saveIds:", err)
-			return
-		}
-		
-		// Send the message of type "loadIds" with the saveIds
-		client.sendMessage("loadIds", json.RawMessage(saveIdsJSON))
+		log.Println("unable to load save ids:", err)
+		return
 	}
+
+	type SaveInfo struct {
+		SaveID  int64  `json:"saveId"`
+		Summary string `json:"summary"`
+	}
+
+	saves := []SaveInfo{{SaveID: -1, Summary: "New game"}}
+
+	for _, id := range saveIds {
+		// For each save ID, retrieve the summary from the database
+		var summary string
+		row := db.QueryRow("SELECT summary FROM game_states WHERE id = ?", id)
+		if err := row.Scan(&summary); err != nil {
+			log.Printf("Could not retrieve summary for save ID %d: %v\n", id, err)
+			continue
+		}
+
+		saves = append(saves, SaveInfo{
+			SaveID:  id,
+			Summary: summary,
+		})
+	}
+
+	// Marshal the slice of saves (each with { saveId, summary }) into JSON
+	savesJSON, err := json.Marshal(map[string]interface{}{
+		"saves": saves,
+	})
+	if err != nil {
+		log.Println("unable to marshal saves:", err)
+		return
+	}
+
+	// Send the message of type "loadSaves" with the save info
+	client.sendMessage("loadSaves", json.RawMessage(savesJSON))
 }
 
 func removeClient(client *Client) {

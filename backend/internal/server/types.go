@@ -28,6 +28,7 @@ type Room struct {
 type Map struct {
 	Name	string
 	populateMap   func() []TileData
+	Offset float64
 }
 
 type TilePolygon struct {

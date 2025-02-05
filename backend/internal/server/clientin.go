@@ -7,38 +7,6 @@ import (
 	"fmt"
 )
 
-// Function that sends map updates to all players
-func (room *Room) sendMapUpdate() {
-	type mapUpdateData struct {
-		Picture string    `json:"picture"`
-		Zones   []TileData `json:"zones"`
-	}
-
-	zones := room.Map.populateMap()
-
-	// Load the image from disk
-	imgPath := room.Map.ImagePath("./assets/maps") // base path for images
-	base64Img, err := getMapImageAsBase64(imgPath)
-	if err != nil {
-		// handle error; you might default to an empty string or log
-		base64Img = ""
-	}
-
-	update := mapUpdateData{
-		// Leave the path or stream data blank (or assign appropriately)
-		Picture: base64Img,
-		Zones:   zones,
-	}
-
-	jsonData, _ := json.MarshalIndent(update, "", "  ")
-	room.sendToRoomPlayers(struct {
-		Type string          `json:"type"`
-		Data json.RawMessage `json:"data"`
-	}{
-		Type: "mapupdate",
-		Data: jsonData,
-	})
-}
 
 
 func (client *Client) handleTribePick (msg messages.Message) {
@@ -98,12 +66,14 @@ func (client *Client) handleConquest (msg messages.Message) {
 }
 
 func (client *Client) handleStartRedeployment () {
-	if err := client.Room.Gamestate.HandleStartRedeployment(client.Index); err != nil {
-		client.sendError(err.Error())
-	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendTurnUpdate()
-		client.Room.sendAllTileUpdate()
+	if client.Room != nil {
+		if err := client.Room.Gamestate.HandleStartRedeployment(client.Index); err != nil {
+			client.sendError(err.Error())
+		} else {
+			client.Room.sendPlayerUpdate()
+			client.Room.sendTurnUpdate()
+			client.Room.sendAllTileUpdate()
+		}
 	}
 }
 

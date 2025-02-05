@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"backend/internal/gamestate"
+        "fmt"
 )
 
 func CreateGameStatesTable() {
@@ -13,7 +14,8 @@ func CreateGameStatesTable() {
 	CREATE TABLE IF NOT EXISTS game_states (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		state_json TEXT NOT NULL,
-                saver_index INTEGER
+                saver_index INTEGER,
+                summary TEXT NOT NULL
 	);`
 	_, err := db.Exec(query)
 	if err != nil {
@@ -345,28 +347,48 @@ func parsePhase(s string) gamestate.Phase {
 }
 
 func SaveGameState(state *gamestate.GameState, saverIndex int) (int64, error) {
-	copy := transformGameState(state)
-	jsonData, err := json.Marshal(copy)
-	if err != nil {
-		log.Println("are we here")
-		log.Println(err)
-		return 0, err
-	}
+    // Transform the state to the serializable copy
+    copy := transformGameState(state)
 
-	query := "INSERT INTO game_states (state_json, saver_index) VALUES (?, ?);"
-	result, err := db.Exec(query, string(jsonData), saverIndex)
-	if err != nil {
-		log.Println("Error saving game state:", err)
-		return 0, err
-	}
+    // Build the summary
+    //
+    // 1. Get the saver player's active tribe (Trait + Race).
+    //    Make sure to handle cases where the player might not have an active tribe.
+    saverActiveTribe := copy.Players[saverIndex].ActiveTribe
+    tribeString := fmt.Sprintf("%s %s", saverActiveTribe.Trait, saverActiveTribe.Race)
+    // 2. Grab the turn index
+    turnIndex := copy.TurnInfo.TurnIndex
+    // 3. Hardcode the map name for now
+    mapName := "mapname"
+    // 4. Get the number of players
+    playerCount := len(copy.Players)
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
+    // Format the summary as desired (you can adjust to whatever structure you prefer)
+    summary := fmt.Sprintf("%s | TurnIndex: %d | Map: %s | Players: %d", 
+                           tribeString, turnIndex, mapName, playerCount)
 
-	log.Println("Game state saved successfully with id:", id)
-	return id, nil
+    // Marshal the transformed state to JSON
+    jsonData, err := json.Marshal(copy)
+    if err != nil {
+        log.Println(err)
+        return 0, err
+    }
+
+    // Insert into DB with the summary
+    query := "INSERT INTO game_states (state_json, saver_index, summary) VALUES (?, ?, ?);"
+    result, err := db.Exec(query, string(jsonData), saverIndex, summary)
+    if err != nil {
+        log.Println("Error saving game state:", err)
+        return 0, err
+    }
+
+    id, err := result.LastInsertId()
+    if err != nil {
+        return 0, err
+    }
+
+    log.Println("Game state saved successfully with id:", id)
+    return id, nil
 }
 
 func LoadGameState(id int64) (*gamestate.GameState, int, error) {

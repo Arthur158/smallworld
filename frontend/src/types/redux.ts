@@ -1,5 +1,5 @@
 import { Language } from './misc';
-import { TribeEntry, Tile, Player, Room } from './Board'
+import { TribeEntry, Tile, Player, Room, SaveGameInfo } from './Board'
 
 
 export interface ApplicationState {
@@ -7,6 +7,7 @@ export interface ApplicationState {
   error: string | null;
   availableTribes: TribeEntry[];
   tiles: Record<string, Tile>;
+  offsetMapTiles: number;
   players: Player[];
   playerIndex: number;
   turnNumber: number;
@@ -23,7 +24,8 @@ export interface ApplicationState {
   gameStarted: boolean
   mapImageUrl: string | null;
   isAuthenticated: boolean;
-  saveGames: number[]
+  saveGames: SaveGameInfo[]
+  saveSelectionId: number
 }
 
 export type RootState = {
