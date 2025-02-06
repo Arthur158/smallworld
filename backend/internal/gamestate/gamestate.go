@@ -9,6 +9,7 @@ type GameState struct {
 	TribeList []*TribeEntry
 	TileList map[string]*Tile
 	TurnInfo *TurnInfo
+	Messages []string
 }
 
 func New(playerCount int, mapName string) (*GameState, error) {
@@ -177,7 +178,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 
 	attackCostStacks, moneyGainAttacker, moneyLossDefender := attackingTribe.countAttack(tile, tileCost, attackingStackType)
 	newTileStacks := attackingTribe.countNewTileStacks(attackCostStacks, tile)
-	newStacks, stacksToRemove, hasDiceBeenUsed, err := attackingTribe.calculateRemainingAttackingStacks(attacker.PieceStacks, attackCostStacks)
+	newStacks, stacksToRemove, hasDiceBeenUsed, err := attackingTribe.calculateRemainingAttackingStacks(attacker.PieceStacks, attackCostStacks, gs)
 	if err != nil && hasDiceBeenUsed {
 		return gs.HandleStartRedeployment(attackerIndex)
 	} else if err != nil {
@@ -187,7 +188,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	defenderRemainingStacks	:= []PieceStack{}
 	// Enact changes
 	if tile.Presence != None {
-		defenderReturningStacks, tempDefenderRemainingStacks := defendingTribe.countReturningStacks(tile)
+		defenderReturningStacks, tempDefenderRemainingStacks := defendingTribe.countReturningStacks(tile, gs)
 		tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, defenderReturningStacks)
 		defenderRemainingStacks = tempDefenderRemainingStacks
 		tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender

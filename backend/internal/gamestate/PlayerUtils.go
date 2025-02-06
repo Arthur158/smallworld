@@ -30,25 +30,21 @@ func GetPlayerTribe(stackType string, player *Player) (*Tribe, error) {
 }
 
 func AddPieceStacks(first, second []PieceStack) []PieceStack {
-    result := make([]PieceStack, 0)
-    pieceMap := make(map[string]int)
+    result := append([]PieceStack{}, first...) // Copy first slice
 
-    // Combine amounts from the first slice
-    for _, stack := range first {
-        pieceMap[stack.Type] += stack.Amount
-    }
-
-    // Combine amounts from the second slice
+    // Merge second slice into the result
     for _, stack := range second {
-        pieceMap[stack.Type] += stack.Amount
-    }
-
-    // Construct the result slice
-    for pieceType, totalAmount := range pieceMap {
-        result = append(result, PieceStack{
-            Type:   pieceType,
-            Amount: totalAmount,
-        })
+        merged := false
+        for i := range result {
+            if result[i].Type == stack.Type {
+                result[i].Amount += stack.Amount
+                merged = true
+                break
+            }
+        }
+        if !merged && stack.Amount > 0 {
+            result = append(result, stack)
+        }
     }
 
     return result

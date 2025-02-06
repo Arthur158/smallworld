@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -275,6 +276,31 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 	}
 
+	go func() {
+		for {
+			// Lock to safely access Messages
+			// room.mu.Lock()
+
+			if len(room.Gamestate.Messages) > 0 {
+				log.Println("Sending messages to players...")
+				
+				// Send messages to all players
+				for _, msg := range room.Gamestate.Messages {
+					log.Println("Message:", msg)
+					room.sendStateMessage(msg)
+				}
+
+				// Clear messages after sending (without setting it to nil)
+				room.Gamestate.Messages = room.Gamestate.Messages[:0]
+			}
+
+			// room.mu.Unlock()
+
+			// Sleep to avoid busy-waiting
+			time.Sleep(100 * time.Millisecond)
+		}
+	}()
+
 	room.sendMapUpdate()
 	room.sendEntriesUpdate()
 	room.sendPlayerUpdate()
@@ -285,6 +311,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 func (room *Room) sendToRoomPlayers (msg messages.Message) {
 	for _, player := range room.Players {
+		log.Println(player)
 		if player != nil {
 			room.mu.Lock()
 			err := player.Conn.WriteJSON(msg)

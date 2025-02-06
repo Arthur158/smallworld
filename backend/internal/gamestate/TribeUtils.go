@@ -91,7 +91,7 @@ func CreateBaseTribe() *Tribe {
         return price, 0, 0, nil
     }
 
-    tribe.countReturningStacks = func(tile *Tile) ([]PieceStack, []PieceStack) {
+    tribe.countReturningStacks = func(tile *Tile, gs *GameState) ([]PieceStack, []PieceStack) {
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 return []PieceStack{{Type: stack.Type, Amount: stack.Amount - 1}}, nil
@@ -213,7 +213,7 @@ func CreateBaseTribe() *Tribe {
     }
 
     // probs the ugliest piece of code of this project
-    tribe.calculateRemainingAttackingStacks = func(reserves []PieceStack, expanses []PieceStack) ([]PieceStack, []PieceStack, bool, error) {
+    tribe.calculateRemainingAttackingStacks = func(reserves []PieceStack, expanses []PieceStack, gs *GameState) ([]PieceStack, []PieceStack, bool, error) {
         result := []PieceStack{} // Start with an empty list
         stacksToRemove := []PieceStack{}
         hasDiceBeenUsed := false
@@ -231,10 +231,12 @@ func CreateBaseTribe() *Tribe {
                                         diceThrow := RollDice()
                                         println(diceThrow)
                                         if stack1.Amount + diceThrow >= stack2.Amount {
+                                            gs.Messages = append(gs.Messages, fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow))
                                             hasDiceBeenUsed = true
                                             stacksToRemove = append(stacksToRemove, PieceStack{Type: stack1.Type, Amount: stack2.Amount - stack1.Amount})
                                             log.Println(stacksToRemove)
                                         } else {
+                                            gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow))
                                             return nil, nil, true, fmt.Errorf("The dice was not enough")
                                         }
                                         
