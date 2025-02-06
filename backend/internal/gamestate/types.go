@@ -8,6 +8,7 @@ type Tribe struct {
 	Trait Trait;
 	IsActive bool;
 	State map[string]interface{};
+	Minimum int;
 
 	giveInitialStacks func() []PieceStack;
 
@@ -16,6 +17,7 @@ type Tribe struct {
 	receiveAbandonment func(*Tile) []PieceStack;
 
 	// receive for conquest
+	getStacksForConquestTurn func(*Player);
 	getStacksForConquest func(*Tile, *Player);
 
 	// conquest checks
@@ -26,7 +28,8 @@ type Tribe struct {
 	// conquest for attacker
 	countAttack func(*Tile, int, string) ([]PieceStack, int, int);
 	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
-	calculateRemainingAttackingStacks func([]PieceStack, []PieceStack, *GameState) ([]PieceStack, []PieceStack, bool, error)
+	calculateRemainingAttackingStacks func([]PieceStack, []PieceStack, *GameState) ([]PieceStack, []PieceStack, bool, string)
+	specialConquest func(*GameState, *Tile, string, *Player) (bool, error);
 
 	//conquest for defender
 	countDefense func(*Tile) (int, int, int, error);
@@ -39,7 +42,7 @@ type Tribe struct {
 
 	// end of turn
 	countPoints func(*Tile) int;
-	countExtrapoints func() int;
+	countExtrapoints func(*GameState) int;
 
 	// decline
 	countPiecesRemaining func(*Tile) []PieceStack;

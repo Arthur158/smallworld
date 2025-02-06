@@ -66,6 +66,7 @@ func CreateBaseTribe() *Tribe {
         Race: "Unknown",
         Trait: "Unknown",
         IsActive: true,
+        Minimum: 1,
         State: make(map[string]interface{}),
     }
 
@@ -75,7 +76,7 @@ func CreateBaseTribe() *Tribe {
 
     tribe.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
         if stackType == string(tribe.Race) {
-            return []PieceStack{{Type: string(tribe.Race), Amount: max(1, cost)}}, 0, 0
+            return []PieceStack{{Type: string(tribe.Race), Amount: max(tribe.Minimum, cost)}}, 0, 0
         } else {
             return []PieceStack{{Type: string(tribe.Race), Amount: 1000 + cost}}, 0, 0
         }
@@ -105,16 +106,11 @@ func CreateBaseTribe() *Tribe {
     }
 
     tribe.canTileBeAbandoned = func(tile *Tile) bool {
-        return tribe.IsActive
+        return tribe.IsActive && tile.OwningTribe.Race == tribe.Race
     }
 
     tribe.receiveAbandonment = func(tile *Tile) []PieceStack {
-        for _, stack := range tile.PieceStacks {
-            if stack.Type == string(tribe.Race) {
-                return []PieceStack{{Type: stack.Type, Amount: stack.Amount }}
-            }
-        }
-        return []PieceStack{}
+        return []PieceStack{{Type: string(tribe.Race), Amount: tribe.Minimum }}
     }
 
     tribe.startRedeployment = func(gs *GameState) []PieceStack {
@@ -125,7 +121,7 @@ func CreateBaseTribe() *Tribe {
         if stackType == string(tribe.Race) {
             for _, stack := range tile.PieceStacks {
                 if stack.Type == stackType {
-                    if stack.Amount == 1 {
+                    if stack.Amount == tribe.Minimum {
                         return nil, fmt.Errorf("cannot take off single tribe")
                     } else {
                         stack.Amount -= 1
@@ -165,7 +161,7 @@ func CreateBaseTribe() *Tribe {
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 // Making sure the action is atomic
-                movingStack := []PieceStack{{Type: stack.Type, Amount: stack.Amount - 1}}
+                movingStack := []PieceStack{{Type: stack.Type, Amount: stack.Amount - tribe.Minimum}}
                 tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, movingStack)
                 player.PieceStacks = AddPieceStacks(player.PieceStacks, movingStack)
             }
@@ -182,6 +178,14 @@ func CreateBaseTribe() *Tribe {
 
     tribe.countPiecesRemaining = func(tile *Tile) []PieceStack {
         return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: 1}}
+    }
+
+    tribe.specialConquest = func(gs *GameState, tile *Tile, s string, attacker *Player) (bool, error) {
+        return false, nil
+    }
+
+    tribe.getStacksForConquestTurn = func(*Player) {
+        return
     }
     
 
@@ -208,12 +212,12 @@ func CreateBaseTribe() *Tribe {
         return nil
     }
 
-    tribe.countExtrapoints = func() int {
+    tribe.countExtrapoints = func(gs *GameState) int {
         return 0
     }
 
     // probs the ugliest piece of code of this project
-    tribe.calculateRemainingAttackingStacks = func(reserves []PieceStack, expanses []PieceStack, gs *GameState) ([]PieceStack, []PieceStack, bool, error) {
+    tribe.calculateRemainingAttackingStacks = func(reserves []PieceStack, expanses []PieceStack, gs *GameState) ([]PieceStack, []PieceStack, bool, string) {
         result := []PieceStack{} // Start with an empty list
         stacksToRemove := []PieceStack{}
         hasDiceBeenUsed := false
@@ -226,18 +230,18 @@ func CreateBaseTribe() *Tribe {
 			if stack1.Type == stack2.Type {
 				if stack1.Amount + 3 < stack2.Amount {
 					// Not enough quantity to subtract
-					return nil, nil, false, fmt.Errorf("Even the dice can't help")
+					return nil, nil, false, "Even the dice can't help"
 				} else if stack1.Amount < stack2.Amount {
                                         diceThrow := RollDice()
                                         println(diceThrow)
                                         if stack1.Amount + diceThrow >= stack2.Amount {
-                                            gs.Messages = append(gs.Messages, fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow))
+                                            // gs.Messages = append(gs.Messages, fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow))
                                             hasDiceBeenUsed = true
                                             stacksToRemove = append(stacksToRemove, PieceStack{Type: stack1.Type, Amount: stack2.Amount - stack1.Amount})
                                             log.Println(stacksToRemove)
                                         } else {
-                                            gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow))
-                                            return nil, nil, true, fmt.Errorf("The dice was not enough")
+                                            // gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow))
+                                            return nil, nil, true, "The dice was not enough"
                                         }
                                         
                                 }
@@ -268,11 +272,11 @@ func CreateBaseTribe() *Tribe {
 			}
 		}
 		if !found {
-			return nil, nil, false, fmt.Errorf("A stack is missing")
+			return nil, nil, false, "A stack is missing"
 		}
 	}
 
-	return result, stacksToRemove, hasDiceBeenUsed, nil
+	return result, stacksToRemove, hasDiceBeenUsed, ""
 
     }
 

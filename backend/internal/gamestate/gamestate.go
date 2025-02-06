@@ -84,6 +84,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, []PieceStack{{Type: string(entry.Race), Amount: entry.PiecePile}})
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
+	chooser.ActiveTribe.getStacksForConquestTurn(chooser)
 
 	gs.TurnInfo.Phase = Conquest
 
@@ -115,14 +116,16 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
 		return fmt.Errorf("Stack cannot be removed!")
 	}
 
+	tile.PieceStacks = []PieceStack{}
+	tile.Presence = None
+
 	stacks := tile.OwningTribe.receiveAbandonment(tile)
 
 	tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, stacks)
+	gs.TurnInfo.Phase = TileAbandonment
+
 	tile.OwningTribe = nil
 	tile.OwningPlayer = nil
-	tile.PieceStacks = []PieceStack{}
-	tile.Presence = None
-	gs.TurnInfo.Phase = TileAbandonment
 
 	return nil
 	
@@ -155,6 +158,11 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return fmt.Errorf("Could not create retrieve attacker's tribe", err)
 	}
 
+	ok, err = attackingTribe.specialConquest(gs, tile, attackingStackType, attacker)
+	if ok {
+		return err
+	}
+
 	if tile.OwningTribe == attackingTribe {
 		return fmt.Errorf("tribe cannot attack itself")
 	}
@@ -178,8 +186,9 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 
 	attackCostStacks, moneyGainAttacker, moneyLossDefender := attackingTribe.countAttack(tile, tileCost, attackingStackType)
 	newTileStacks := attackingTribe.countNewTileStacks(attackCostStacks, tile)
-	newStacks, stacksToRemove, hasDiceBeenUsed, err := attackingTribe.calculateRemainingAttackingStacks(attacker.PieceStacks, attackCostStacks, gs)
-	if err != nil && hasDiceBeenUsed {
+	newStacks, stacksToRemove, hasDiceBeenUsed, msg := attackingTribe.calculateRemainingAttackingStacks(attacker.PieceStacks, attackCostStacks, gs)
+	if msg != "" && hasDiceBeenUsed {
+		gs.Messages = append(gs.Messages, msg)
 		return gs.HandleStartRedeployment(attackerIndex)
 	} else if err != nil {
 		return fmt.Errorf("Failure", err)
@@ -319,6 +328,12 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
+	if gs.TurnInfo.Phase != Redeployment {
+		if err := gs.HandleStartRedeployment(playerIndex); err != nil {
+			return fmt.Errorf("Error in redeployment phase:", err)
+		}
+	}
+
 	player := gs.Players[playerIndex]
 
 	player.CoinPile += gs.countPoints(player)
@@ -383,10 +398,10 @@ func (gs *GameState) countPoints(player *Player) int {
 		}
 	}
 	if player.HasActiveTribe {
-		total += player.ActiveTribe.countExtrapoints()
+		total += player.ActiveTribe.countExtrapoints(gs)
 	}
 	for _, passiveTribe := range player.PassiveTribes {
-		total += passiveTribe.countExtrapoints()
+		total += passiveTribe.countExtrapoints(gs)
 	}
 
 	return total

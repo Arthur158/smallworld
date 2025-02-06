@@ -427,10 +427,14 @@ func (room *Room) sendTileUpdate (tileID string) {
 	}
 	tile := room.Gamestate.TileList[tileID]
 	for _, stack := range tile.PieceStacks {
+		act := false
+		if tile.Presence != gamestate.None {
+			act = tile.OwningTribe.IsActive
+		} 
 		tileUpdate.Stacks = append(tileUpdate.Stacks, PieceStack{
 		Type:     stack.Type,
 		Amount:   stack.Amount,
-		IsActive: tile.OwningTribe.IsActive,
+		IsActive: act,
 	})
 	}
 

@@ -1,6 +1,9 @@
 package gamestate
 
-import "fmt"
+import (
+	"fmt"
+)
+
 
 type TraitValue struct {
     Transform func(*Tribe)
@@ -88,8 +91,8 @@ var TraitMap = map[Trait]TraitValue {
 	// "Wealthy": {Transform: func(t *Tribe) {
 	// 	t.State["hasreceivedalready"] = false
 	// 	oldCountExtraPoints := t.countExtrapoints
-	// 	t.countExtrapoints = func() int {
-	// 		count := oldCountExtraPoints()
+	// 	t.countExtrapoints = func(gs *Gamestate) int {
+	// 		count := oldCountExtraPoints(gs)
 	// 		if hasReceivedAlready, ok := t.State["hasreceivedalready"].(bool); ok && !hasReceivedAlready {
 	// 			count += 7
 	// 			t.State["hasreceivedalready"] = true
@@ -127,8 +130,13 @@ var TraitMap = map[Trait]TraitValue {
 	"Hordes of": {Transform: func(t *Tribe) {
 		}, Count: 7},
 	"Seafaring": {Transform: func(t *Tribe) {
-		t.checkZoneAccess = func(t *Tile) error {
-			return nil
+		oldCheckZoneAccess := t.checkZoneAccess
+		t.checkZoneAccess = func(tile *Tile) error {
+			old := oldCheckZoneAccess(tile)
+			if old != nil && tile.Biome == Water {
+				return nil
+			}
+			return old
 		}
 		}, Count: 4},
 	"Mounted": {Transform: func(t *Tribe) {
@@ -197,17 +205,17 @@ var TraitMap = map[Trait]TraitValue {
 		}
 
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
-		t.calculateRemainingAttackingStacks = func(ps1, ps2 []PieceStack, gs *GameState) ([]PieceStack, []PieceStack, bool, error) {
-			stacks, stacksToRemove, diceUsed, err := oldCalculateRemainingAttackingStacks(ps1, ps2, gs)
+		t.calculateRemainingAttackingStacks = func(ps1, ps2 []PieceStack, gs *GameState) ([]PieceStack, []PieceStack, bool, string) {
+			stacks, stacksToRemove, diceUsed, msg := oldCalculateRemainingAttackingStacks(ps1, ps2, gs)
 			if diceUsed {
-				return nil, nil ,false, fmt.Errorf("Berserk tribe cannot use the dice twice!")
+				return nil, nil , true, "Berserk tribe cannot use the dice twice!"
 			}
-			if err == nil {
+			if msg == "" {
 				val := RollDice()
 				t.State["diceroll"] = val
 				gs.Messages = append(gs.Messages, fmt.Sprintf("New throw of dice for berserk tribe: %d", val))
 			}
-			return stacks, stacksToRemove, false, err
+			return stacks, stacksToRemove, false, msg
 		}
 		}, Count: 4},
 	// "Fortified": {Transform: func(t *Tribe) {
