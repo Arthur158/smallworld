@@ -138,7 +138,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return old
 		}
-		}, Count: 4},
+		}, Count: 5},
 	"Mounted": {Transform: func(t *Tribe) {
 		oldCountAttack := t.countAttack
 		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {

@@ -5,6 +5,46 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { sendMessageToBackend } from '../../services/backendService';
 
+function ImageOrBlueSquare({
+  imageSrc,
+  x,
+  y,
+  width,
+  height,
+  isGray,
+}: {
+  imageSrc: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isGray: boolean;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  return hasError ? (
+    <rect
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      fill="blue"
+    />
+  ) : (
+    <image
+      href={imageSrc}
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      style={{
+        filter: isGray ? 'grayscale(100%)' : 'none',
+      }}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 export default function Map() {
   const dispatch = useDispatch();
 
@@ -16,7 +56,10 @@ export default function Map() {
   const mapImageUrl = useSelector((state: RootState) => state.application.mapImageUrl);
   const phase = useSelector((state: RootState) => state.application.phase);
 
-  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
 
   // Pan & Zoom state
   const [scale, setScale] = useState(1);
@@ -30,7 +73,6 @@ export default function Map() {
 
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // Inject the keyframes into the document once
   useEffect(() => {
     const styles = document.createElement('style');
     styles.innerHTML = `
@@ -49,7 +91,7 @@ export default function Map() {
   useEffect(() => {
     if (!mapImageUrl) return;
     const image = new Image();
-    image.src = mapImageUrl;  // the blob URL
+    image.src = mapImageUrl;
     image.onload = () => {
       setImageDimensions({ width: image.width, height: image.height });
     };
@@ -58,7 +100,6 @@ export default function Map() {
     };
   }, [mapImageUrl]);
 
-  // If no image is loaded or no tiles, show a "Loading" message
   if (!mapImageUrl || imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
     return <div className="text-center text-[#5F4B32] font-bold">Loading map...</div>;
   }
@@ -87,7 +128,7 @@ export default function Map() {
       sendMessageToBackend("deploymentthrough", {
         tileFromId: selectedTile.toString(),
         tileToId: tileID.toString(),
-        stackType: selectedStack
+        stackType: selectedStack,
       });
     } else if (phase === 'Redeployment' && selectedStack == null && stackType != null) {
       dispatch(setSelectedStack(stackType));
@@ -142,7 +183,6 @@ export default function Map() {
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-
     const { deltaY } = e;
     const scaleAmount = 1.1;
     let newScale = scale;
@@ -219,7 +259,6 @@ export default function Map() {
   };
 
   return (
-    // Changed overflow-hidden to overflow-auto so that the map can always be scrolled vertically if needed
     <div
       className="flex justify-center items-center overflow-auto relative"
       style={{ width: '100%', height: '100%' }}
@@ -229,7 +268,6 @@ export default function Map() {
     >
       <svg
         ref={svgRef}
-        // Added preserveAspectRatio to ensure the entire vertical extent is displayed within the given viewBox
         preserveAspectRatio="xMidYMid meet"
         width={imageDimensions.width}
         height={imageDimensions.height}
@@ -252,7 +290,10 @@ export default function Map() {
 
           {Object.values(tiles).map((tile) => {
             const scaledCoords = tile.polygon.coords.map(
-              (coord: number) => coord * (imageDimensions.width / baseWidth) * offsetMapTiles
+              (coord: number) =>
+                coord *
+                (imageDimensions.width / baseWidth) *
+                offsetMapTiles
             );
             const points: string[] = [];
             for (let i = 0; i < scaledCoords.length; i += 2) {
@@ -292,7 +333,9 @@ export default function Map() {
 
                   const isGray = !stack.isActive;
                   const isSelected =
-                    selectedTile === tile.id && selectedStack === stack.type && isStackFromBank === false;
+                    selectedTile === tile.id &&
+                    selectedStack === stack.type &&
+                    isStackFromBank === false;
 
                   return (
                     <g
@@ -306,20 +349,14 @@ export default function Map() {
 
                         return (
                           <g key={`piece-layer-${i}`}>
-                            <image
-                              href={imageSrc}
+                            <ImageOrBlueSquare
+                              imageSrc={imageSrc}
                               x={pieceX * offsetMapTiles}
                               y={pieceY * offsetMapTiles - baseSize}
                               width={baseSize}
                               height={baseSize}
-                              style={{
-                                filter: isGray ? 'grayscale(100%)' : 'none',
-                              }}
-                              onError={(e) => {
-                                (e.target as SVGImageElement).style.display = 'none';
-                              }}
+                              isGray={isGray}
                             />
-                            {/* If it's the top piece, show type, amount and (optionally) a flashing border */}
                             {isTopPiece && (
                               <>
                                 {isSelected && (

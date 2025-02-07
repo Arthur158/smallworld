@@ -49,18 +49,18 @@ var RaceMap = map[Race]RaceValue {
 	// 		return count
 	// 	}
 	// 	}, Count: 5},
-	"Khan": {Transform: func(t *Tribe) {
-		oldCountPoints := t.countPoints
-		t.countPoints = func(tile *Tile) int {
-			count := oldCountPoints(tile)
-			if t.IsActive && (tile.Biome == Field || tile.Biome == Hill) {
-				count += 1
-			} else if t.IsActive {
-				count -= 1
-			}
-			return max(0, count)
-		}
-		}, Count: 5},
+	// "Khan": {Transform: func(t *Tribe) {
+	// 	oldCountPoints := t.countPoints
+	// 	t.countPoints = func(tile *Tile) int {
+	// 		count := oldCountPoints(tile)
+	// 		if t.IsActive && (tile.Biome == Field || tile.Biome == Hill) {
+	// 			count += 1
+	// 		} else if t.IsActive {
+	// 			count -= 1
+	// 		}
+	// 		return max(0, count)
+	// 	}
+	// 	}, Count: 5},
 	// "Human": {Transform: func(t *Tribe) {
 	// 	oldCountPoints := t.countPoints
 	// 	t.countPoints = func(tile *Tile) int {
@@ -283,124 +283,124 @@ var RaceMap = map[Race]RaceValue {
 	// 		return stacks, err
 	// 	}
 	// 	}, Count: 9},
-	"Sorcerer": {Transform: func(t *Tribe) {
-		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
-		t.getStacksForConquestTurn = func(player *Player) {
-			oldgetStacksForConquestTurn(player)
-			newstacks := []PieceStack{}
-			for _, stack := range(player.PieceStacks) {
-				if stack.Type != "Staff" {
-					newstacks = append(newstacks, stack)
-				}
-			}
-			newstacks = append(newstacks, PieceStack{Type: "Staff", Amount: 1})
-			player.PieceStacks = newstacks
-		}
-		oldIsStackValid := t.IsStackValid
-		t.IsStackValid = func(s string) bool {
-			return oldIsStackValid(s) || s == "Staff"
-		}
-		oldSpecialConquest := t.specialConquest
-		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player) (bool, error) {
-			ok, err := oldSpecialConquest(gs, tile, stackType, attacker)
-			if ok {
-				return ok, err
-			}
-			if stackType != "Staff" {
-				return false, nil
-			}
-
-			if err := t.checkZoneAccess(tile); err != nil {
-				return true, fmt.Errorf("cannot access zone", err)
-			}
-			if err := t.checkAdjacency(tile, gs); err != nil {
-				return true, fmt.Errorf("cannot reach zone", err)
-			}
-
-			if !gs.IsTribePresentOnTheBoard(t.Race) {
-				return true, fmt.Errorf("you need to be already present on the board")
-			}
-
-
-			// var tileCost, moneyGainDefender, moneyLossAttacker int
-			if tile.Presence == Active {
-				// Maybe do something with those, in case this is actually considered a conquest
-				_, _, _, err := tile.OwningTribe.countDefense(tile)
-				if err != nil {
-					return true, fmt.Errorf("Impossible to attack", err)
-				}
-			} else {
-				return true, fmt.Errorf("This tile does not contain an active tribe")
-			}
-
-			for _, stack := range(tile.PieceStacks) {
-				if stack.Type == string(tile.OwningTribe.Race) && stack.Amount > 1 {
-					return true, fmt.Errorf("This tile contains more than one active pawn!")
-				}
-			}
-
-			returnStacks, stayStacks := tile.OwningTribe.countReturningStacks(tile, gs)
-			tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, returnStacks)
-			tile.PieceStacks = AddPieceStacks([]PieceStack{{Type: string(t.Race), Amount: 1}}, stayStacks)
-			tile.OwningPlayer = attacker
-			tile.OwningTribe = t
-			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Staff", Amount: 1}})
-			return true, nil
-		}
-		}, Count: 5},
-	"Wendigo": {Transform: func(t *Tribe) {
-		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
-		t.getStacksForConquestTurn = func(player *Player) {
-			oldgetStacksForConquestTurn(player)
-			newstacks := []PieceStack{}
-			for _, stack := range(player.PieceStacks) {
-				if stack.Type != "Power" {
-					newstacks = append(newstacks, stack)
-				}
-			}
-			newstacks = append(newstacks, PieceStack{Type: "Power", Amount: 1})
-			player.PieceStacks = newstacks
-		}
-		oldIsStackValid := t.IsStackValid
-		t.IsStackValid = func(s string) bool {
-			return oldIsStackValid(s) || s == "Power"
-		}
-		oldSpecialConquest := t.specialConquest
-		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player) (bool, error) {
-			ok, err := oldSpecialConquest(gs, tile, stackType, attacker)
-			if ok {
-				return ok, err
-			}
-			if stackType != "Power" {
-				return false, nil
-			}
-
-			if tile.Biome != Forest {
-				return true, fmt.Errorf("This is not a forest!")
-			}
-
-			// var tileCost, moneyGainDefender, moneyLossAttacker int
-			if tile.Presence == Active {
-				// Maybe do something with those, in case this is actually considered a conquest
-				_, _, _, err := tile.OwningTribe.countDefense(tile)
-				if err != nil {
-					return true, fmt.Errorf("Impossible to attack", err)
-				}
-			} 
-
-			if tile.Presence != None {
-				returnStacks, stayStacks := tile.OwningTribe.countReturningStacks(tile, gs)
-				tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, returnStacks)
-				tile.PieceStacks = stayStacks
-			}
-			tile.OwningPlayer = nil
-			tile.OwningTribe = nil
-			tile.Presence = None
-			attacker.PieceStacks = AddPieceStacks(attacker.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
-			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Power", Amount: 1}})
-			return true, nil
-		}
-		}, Count: 6},
+	// "Sorcerer": {Transform: func(t *Tribe) {
+	// 	oldgetStacksForConquestTurn := t.getStacksForConquestTurn
+	// 	t.getStacksForConquestTurn = func(player *Player) {
+	// 		oldgetStacksForConquestTurn(player)
+	// 		newstacks := []PieceStack{}
+	// 		for _, stack := range(player.PieceStacks) {
+	// 			if stack.Type != "Staff" {
+	// 				newstacks = append(newstacks, stack)
+	// 			}
+	// 		}
+	// 		newstacks = append(newstacks, PieceStack{Type: "Staff", Amount: 1})
+	// 		player.PieceStacks = newstacks
+	// 	}
+	// 	oldIsStackValid := t.IsStackValid
+	// 	t.IsStackValid = func(s string) bool {
+	// 		return oldIsStackValid(s) || s == "Staff"
+	// 	}
+	// 	oldSpecialConquest := t.specialConquest
+	// 	t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player) (bool, error) {
+	// 		ok, err := oldSpecialConquest(gs, tile, stackType, attacker)
+	// 		if ok {
+	// 			return ok, err
+	// 		}
+	// 		if stackType != "Staff" {
+	// 			return false, nil
+	// 		}
+	//
+	// 		if err := t.checkZoneAccess(tile); err != nil {
+	// 			return true, fmt.Errorf("cannot access zone", err)
+	// 		}
+	// 		if err := t.checkAdjacency(tile, gs); err != nil {
+	// 			return true, fmt.Errorf("cannot reach zone", err)
+	// 		}
+	//
+	// 		if !gs.IsTribePresentOnTheBoard(t.Race) {
+	// 			return true, fmt.Errorf("you need to be already present on the board")
+	// 		}
+	//
+	//
+	// 		// var tileCost, moneyGainDefender, moneyLossAttacker int
+	// 		if tile.Presence == Active {
+	// 			// Maybe do something with those, in case this is actually considered a conquest
+	// 			_, _, _, err := tile.OwningTribe.countDefense(tile)
+	// 			if err != nil {
+	// 				return true, fmt.Errorf("Impossible to attack", err)
+	// 			}
+	// 		} else {
+	// 			return true, fmt.Errorf("This tile does not contain an active tribe")
+	// 		}
+	//
+	// 		for _, stack := range(tile.PieceStacks) {
+	// 			if stack.Type == string(tile.OwningTribe.Race) && stack.Amount > 1 {
+	// 				return true, fmt.Errorf("This tile contains more than one active pawn!")
+	// 			}
+	// 		}
+	//
+	// 		returnStacks, stayStacks := tile.OwningTribe.countReturningStacks(tile, gs)
+	// 		tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, returnStacks)
+	// 		tile.PieceStacks = AddPieceStacks([]PieceStack{{Type: string(t.Race), Amount: 1}}, stayStacks)
+	// 		tile.OwningPlayer = attacker
+	// 		tile.OwningTribe = t
+	// 		attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Staff", Amount: 1}})
+	// 		return true, nil
+	// 	}
+	// 	}, Count: 5},
+	// "Wendigo": {Transform: func(t *Tribe) {
+	// 	oldgetStacksForConquestTurn := t.getStacksForConquestTurn
+	// 	t.getStacksForConquestTurn = func(player *Player) {
+	// 		oldgetStacksForConquestTurn(player)
+	// 		newstacks := []PieceStack{}
+	// 		for _, stack := range(player.PieceStacks) {
+	// 			if stack.Type != "Power" {
+	// 				newstacks = append(newstacks, stack)
+	// 			}
+	// 		}
+	// 		newstacks = append(newstacks, PieceStack{Type: "Power", Amount: 1})
+	// 		player.PieceStacks = newstacks
+	// 	}
+	// 	oldIsStackValid := t.IsStackValid
+	// 	t.IsStackValid = func(s string) bool {
+	// 		return oldIsStackValid(s) || s == "Power"
+	// 	}
+	// 	oldSpecialConquest := t.specialConquest
+	// 	t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player) (bool, error) {
+	// 		ok, err := oldSpecialConquest(gs, tile, stackType, attacker)
+	// 		if ok {
+	// 			return ok, err
+	// 		}
+	// 		if stackType != "Power" {
+	// 			return false, nil
+	// 		}
+	//
+	// 		if tile.Biome != Forest {
+	// 			return true, fmt.Errorf("This is not a forest!")
+	// 		}
+	//
+	// 		// var tileCost, moneyGainDefender, moneyLossAttacker int
+	// 		if tile.Presence == Active {
+	// 			// Maybe do something with those, in case this is actually considered a conquest
+	// 			_, _, _, err := tile.OwningTribe.countDefense(tile)
+	// 			if err != nil {
+	// 				return true, fmt.Errorf("Impossible to attack", err)
+	// 			}
+	// 		} 
+	//
+	// 		if tile.Presence != None {
+	// 			returnStacks, stayStacks := tile.OwningTribe.countReturningStacks(tile, gs)
+	// 			tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, returnStacks)
+	// 			tile.PieceStacks = stayStacks
+	// 		}
+	// 		tile.OwningPlayer = nil
+	// 		tile.OwningTribe = nil
+	// 		tile.Presence = None
+	// 		attacker.PieceStacks = AddPieceStacks(attacker.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
+	// 		attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Power", Amount: 1}})
+	// 		return true, nil
+	// 	}
+	// 	}, Count: 6},
 	"Gypsy": {Transform: func(t *Tribe) {
 		t.State["abandonedTiles"] = []string{}
 		oldReceiveAbandonment := t.receiveAbandonment
@@ -455,11 +455,119 @@ var RaceMap = map[Race]RaceValue {
 	"Kobold": {Transform: func(t *Tribe) {
 		t.Minimum = 2
 		}, Count: 11},
+	"Leprechaun": {Transform: func(t *Tribe) {
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Cauldron", Amount: 16}})
+			return stacks
+		}
+		oldCanBeRedeployedIn := t.canBeRedeployedIn
+		t.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
+			if oldCanBeRedeployedIn(tile, stackType) {
+				return true
+			}
+			if stackType == "Cauldron" {
+				for _, stack := range(tile.PieceStacks) {
+					if stack.Type == "Cauldron" {
+						return false
+					}
+				}
+				return true
+			}
+			return false
+		}
+		oldGetStacksForConquest := t.getStacksForConquest
+		t.getStacksForConquest = func(tile *Tile, p *Player) {
+			oldGetStacksForConquest(tile, p)
+			for i, stack := range tile.PieceStacks {
+				if stack.Type == "Cauldron" {
+					tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+					p.CoinPile += 1
+				}
+			}
+		}
+		oldCountDefense:= t.countDefense
+		t.countDefense = func(tile *Tile) (int, int, int, error) {
+			a, b, c, err := oldCountDefense(tile)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Cauldron" {
+					c = c - 1
+				}
+			}
+			return a, b, c, err
+		}
+		}, Count: 6},
+	"Drakon": {Transform: func(t *Tribe) {
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Drakon's Dragon", Amount: 3}})
+			return stacks
+		}
+		oldGetStacksForConquest := t.getStacksForConquest
+		t.getStacksForConquest = func(tile *Tile, p *Player) {
+			oldGetStacksForConquest(tile, p)
+			for i, stack := range tile.PieceStacks {
+				if stack.Type == "Drakon's Dragon" {
+					tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+					p.PieceStacks = AddPieceStacks(p.PieceStacks, []PieceStack{stack})
+				}
+			}
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range tile.PieceStacks {
+				if stack.Type == "Drakon's Dragon" {
+					return 1000, g, l, fmt.Errorf("A tile with a drakon's dragon cannot be conquered")
+				}
+			}
+			return old, g, l, nil
+		}
+
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(stackType string) bool {
+			return stackType == "Drakon's Dragon" || oldIsStackValid(stackType)
+		}
+
+
+		oldCountAttack := t.countAttack
+		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
+			old, g, l := oldCountAttack(tile, cost, stackType)
+			if stackType == "Drakon's Dragon" {
+				return []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Drakon's Dragon", Amount: 1}}, g, l
+			}
+			return old, g, l
+		}
+		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
+		t.calculateRemainingAttackingStacks = func(ps1, ps2 []PieceStack, gs *GameState) ([]PieceStack, []PieceStack, bool, string) {
+			stacks, stacksToRemove, diceUsed, msg := oldCalculateRemainingAttackingStacks(ps1, ps2, gs)
+			log.Println(stacks)
+			if msg != "" {
+				return stacks, stacksToRemove, diceUsed, msg
+			}
+			for _, stack := range(ps2) {
+				if stack.Type == "Drakon's Dragon" {
+					log.Println("we here though")
+					ok := false
+					stacks, ok = SubtractPieceStacks(stacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
+					log.Println(stacks)
+					if !ok {
+						return stacks, stacksToRemove, false, "Does not a pawn to convert"
+					}
+				}
+			}
+			log.Println(stacks)
+			return stacks, stacksToRemove, diceUsed, msg
+		}
+		}, Count: 6},
 	// "Scavenger": {Transform: func(t *Tribe) {
 	// 	}, Count: 6},
 	// "Priestess": {Transform: func(t *Tribe) {
-	// 	}, Count: 6},
-	// "Leprechaun": {Transform: func(t *Tribe) {
 	// 	}, Count: 6},
 	// "Faun": {Transform: func(t *Tribe) {
 	// 	}, Count: 6},
