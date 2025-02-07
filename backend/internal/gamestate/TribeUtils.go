@@ -74,11 +74,11 @@ func CreateBaseTribe() *Tribe {
         return  s == string(tribe.Race) && tribe.IsActive
     }
 
-    tribe.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
+    tribe.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
         if stackType == string(tribe.Race) {
-            return []PieceStack{{Type: string(tribe.Race), Amount: max(tribe.Minimum, cost)}}, 0, 0
+            return []PieceStack{{Type: string(tribe.Race), Amount: max(tribe.Minimum, cost)}}, 0, 0, 1
         } else {
-            return []PieceStack{{Type: string(tribe.Race), Amount: 1000 + cost}}, 0, 0
+            return []PieceStack{{Type: string(tribe.Race), Amount: 1000 + cost}}, 0, 0, 1
         }
     }
 
@@ -92,10 +92,10 @@ func CreateBaseTribe() *Tribe {
         return price, 0, 0, nil
     }
 
-    tribe.countReturningStacks = func(tile *Tile, gs *GameState) ([]PieceStack, []PieceStack) {
+    tribe.countReturningStacks = func(tile *Tile, gs *GameState, pawnKill int) ([]PieceStack, []PieceStack) {
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
-                return []PieceStack{{Type: stack.Type, Amount: stack.Amount - 1}}, nil
+                return []PieceStack{{Type: stack.Type, Amount: stack.Amount - pawnKill}}, nil
             }
         }
         return nil, nil

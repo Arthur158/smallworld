@@ -11,44 +11,44 @@ type RaceValue struct {
 }
 
 var RaceMap = map[Race]RaceValue {
-	// "Troll": {Transform: func(t *Tribe) {
-	// 	// Make a newly conquered region contain a lair
-	// 	oldCountNewTileStacks := t.countNewTileStacks
-	// 	t.countNewTileStacks = func(stacks []PieceStack, tile *Tile) []PieceStack {
-	// 		oldstacks := oldCountNewTileStacks(stacks, tile)
-	// 		return AddPieceStacks(oldstacks, []PieceStack{{Type: "Lair", Amount: 1}})
-	// 	}
-	//
-	// 	// Make the defense of the tile + 1
-	// 	oldCountDefense := t.countDefense
-	// 	t.countDefense = func(tile *Tile) (int, int, int, error) {
-	// 		old, g, l, err := oldCountDefense(tile)
-	// 		if err != nil {
-	// 			return old, g, l, err
-	// 		}
-	// 		return old+1, g, l, nil
-	// 	}
-	//
-	// 	oldCountPiecesRemaining := t.countPiecesRemaining
-	// 	t.countPiecesRemaining = func(tile *Tile) []PieceStack {
-	// 		oldstacks := oldCountPiecesRemaining(tile)
-	// 		return AddPieceStacks(oldstacks, []PieceStack{{Type: "Lair", Amount: 1}})
-	// 	}
-	// 	}, Count: 5},
-	// "Wizard": {Transform: func(t *Tribe) {
-	// 	oldCountPoints := t.countPoints
-	// 	t.countPoints = func(tile *Tile) int {
-	// 		count := oldCountPoints(tile)
-	// 		if t.IsActive {
-	// 			for _, attr := range tile.Attributes {
-	// 				if attr == Magic {
-	// 					count += 1
-	// 				}
-	// 			}
-	// 		}
-	// 		return count
-	// 	}
-	// 	}, Count: 5},
+	"Troll": {Transform: func(t *Tribe) {
+		// Make a newly conquered region contain a lair
+		oldCountNewTileStacks := t.countNewTileStacks
+		t.countNewTileStacks = func(stacks []PieceStack, tile *Tile) []PieceStack {
+			oldstacks := oldCountNewTileStacks(stacks, tile)
+			return AddPieceStacks(oldstacks, []PieceStack{{Type: "Lair", Amount: 1}})
+		}
+
+		// Make the defense of the tile + 1
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile)
+			if err != nil {
+				return old, g, l, err
+			}
+			return old+1, g, l, nil
+		}
+
+		oldCountPiecesRemaining := t.countPiecesRemaining
+		t.countPiecesRemaining = func(tile *Tile) []PieceStack {
+			oldstacks := oldCountPiecesRemaining(tile)
+			return AddPieceStacks(oldstacks, []PieceStack{{Type: "Lair", Amount: 1}})
+		}
+		}, Count: 5},
+	"Wizard": {Transform: func(t *Tribe) {
+		oldCountPoints := t.countPoints
+		t.countPoints = func(tile *Tile) int {
+			count := oldCountPoints(tile)
+			if t.IsActive {
+				for _, attr := range tile.Attributes {
+					if attr == Magic {
+						count += 1
+					}
+				}
+			}
+			return count
+		}
+		}, Count: 5},
 	// "Khan": {Transform: func(t *Tribe) {
 	// 	oldCountPoints := t.countPoints
 	// 	t.countPoints = func(tile *Tile) int {
@@ -71,44 +71,44 @@ var RaceMap = map[Race]RaceValue {
 	// 		return max(0, count)
 	// 	}
 	// 	}, Count: 5},
-	// "Halfling": {Transform: func(t *Tribe) {
-	// 	t.State["holesleft"] = 2
-	// 	t.State["startedalready"] = false
-	// 	oldCheckAdjacency := t.checkAdjacency
-	// 	t.checkAdjacency = func(tile *Tile, gs *GameState) error {
-	// 		err := oldCheckAdjacency(tile, gs)
-	// 		if err != nil && !gs.IsTribePresentOnTheBoard(t.Race) && t.State["startedalready"] == false {
-	// 			t.State["startedalready"] = true
-	// 			return nil
-	// 		} else {
-	// 			t.State["startedalready"] = true
-	// 			return err
-	// 		}
-	// 	}
-	//
-	// 	oldCountNewTileStacks := t.countNewTileStacks
-	// 	t.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
-	// 		stacks := oldCountNewTileStacks(ps, tile)
-	// 		if value, ok := t.State["holesleft"].(int); ok && value > 0 {
-	// 			t.State["holesleft"] = value - 1
-	// 			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Hole", Amount: 1}})
-	// 		}
-	// 		return stacks
-	// 	}
-	// 	oldCountDefense := t.countDefense
-	// 	t.countDefense = func(tile *Tile) (int, int, int, error) {
-	// 		count, g, l, err := oldCountDefense(tile)
-	// 		if err != nil {
-	// 			return count, g, l, err
-	// 		}
-	// 		for _, stack := range tile.PieceStacks {
-	// 			if stack.Type == "Hole" {
-	// 				return 1000, g, l, fmt.Errorf("A hole in the ground cannot be conquered!")
-	// 			}
-	// 		}
-	// 		return count, g, l, err
-	// 	}
-	// 	}, Count: 6},
+	"Halfling": {Transform: func(t *Tribe) {
+		t.State["holesleft"] = 2
+		t.State["startedalready"] = false
+		oldCheckAdjacency := t.checkAdjacency
+		t.checkAdjacency = func(tile *Tile, gs *GameState) error {
+			err := oldCheckAdjacency(tile, gs)
+			if err != nil && !gs.IsTribePresentOnTheBoard(t.Race) && t.State["startedalready"] == false {
+				t.State["startedalready"] = true
+				return nil
+			} else {
+				t.State["startedalready"] = true
+				return err
+			}
+		}
+
+		oldCountNewTileStacks := t.countNewTileStacks
+		t.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
+			stacks := oldCountNewTileStacks(ps, tile)
+			if value, ok := t.State["holesleft"].(int); ok && value > 0 {
+				t.State["holesleft"] = value - 1
+				stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Hole", Amount: 1}})
+			}
+			return stacks
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile) (int, int, int, error) {
+			count, g, l, err := oldCountDefense(tile)
+			if err != nil {
+				return count, g, l, err
+			}
+			for _, stack := range tile.PieceStacks {
+				if stack.Type == "Hole" {
+					return 1000, g, l, fmt.Errorf("A hole in the ground cannot be conquered!")
+				}
+			}
+			return count, g, l, err
+		}
+		}, Count: 6},
 	// "White Lady": {Transform: func(t *Tribe) {
 	// 	oldCountDefense := t.countDefense
 	// 	t.countDefense = func(tile *Tile) (int, int, int, error) {
@@ -124,8 +124,8 @@ var RaceMap = map[Race]RaceValue {
 	// 	}, Count: 2},
 	// "Triton": {Transform: func(t *Tribe) {
 	// 	oldCountAttack := t.countAttack
-	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
-	// 		stacks, g, l := oldCountAttack(tile, cost, stackType)
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+	// 		stacks, g, l, k := oldCountAttack(tile, cost, stackType)
 	// 		isNextToWater := false
 	// 		for _, neighbour := range tile.AdjacentTiles {
 	// 			if neighbour.Biome == Water {
@@ -139,7 +139,7 @@ var RaceMap = map[Race]RaceValue {
 	// 				}
 	// 			}
 	// 		}
-	// 		return stacks, g, l
+	// 		return stacks, g, l, k
 	// 	}
 	// 	}, Count: 6},
 	// "Shrubman": {Transform: func(t *Tribe) {
@@ -159,8 +159,8 @@ var RaceMap = map[Race]RaceValue {
 	// 	}, Count: 8},
 	// "Goblin": {Transform: func(t *Tribe) {
 	// 	oldCountAttack := t.countAttack
-	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
-	// 		stacks, g, l := oldCountAttack(tile, cost, stackType)
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+	// 		stacks, g, l, k := oldCountAttack(tile, cost, stackType)
 	// 		if tile.Presence == Passive {
 	// 			for i, stack := range stacks {
 	// 				if stack.Type == string(t.Race) {
@@ -168,13 +168,13 @@ var RaceMap = map[Race]RaceValue {
 	// 				}
 	// 			}
 	// 		}
-	// 		return stacks, g, l
+	// 		return stacks, g, l, k
 	// 	}
 	// 	}, Count: 6},
 	// "Giant": {Transform: func(t *Tribe) {
 	// 	oldCountAttack := t.countAttack
-	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
-	// 		stacks, g, l := oldCountAttack(tile, cost, stackType)
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+	// 		stacks, g, l, k := oldCountAttack(tile, cost, stackType)
 	// 		possessAdjacentMountain := false
 	// 		for _, neighbour := range tile.AdjacentTiles {
 	// 			if neighbour.Biome == Mountain && neighbour.Presence != None && neighbour.OwningTribe.Race == t.Race {
@@ -188,33 +188,31 @@ var RaceMap = map[Race]RaceValue {
 	// 				}
 	// 			}
 	// 		}
-	// 		return stacks, g, l
+	// 		return stacks, g, l, k
 	// 	}
 	// 	}, Count: 6},
 	// "Orc": {Transform: func(t *Tribe) {
 	// 	oldCountAttack := t.countAttack
-	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
-	// 		old, g, l := oldCountAttack(tile, cost, stackType)
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+	// 		old, g, l, k := oldCountAttack(tile, cost, stackType)
 	// 		if tile.Presence != None {
 	// 			g += 1
 	// 		}
-	// 		return old, g , l
+	// 		return old, g , l, k
 	// 	}
 	// 	}, Count: 5},
 	// "Skeletton": {Transform: func(t *Tribe) {
 	// 	t.State["killcount"] = 0
 	// 	oldCountAttack := t.countAttack
-	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
 	// 		println("are we here")
-	// 		old, g, l := oldCountAttack(tile, cost, stackType)
+	// 		old, g, l, k := oldCountAttack(tile, cost, stackType)
 	// 		if tile.Presence != None {
 	// 			if killCount, ok := t.State["killcount"].(int); ok {
-	// 				println("here right now")
 	// 				t.State["killcount"] = killCount + 1
-	// 				println(t.State["killcount"])
 	// 			}
 	// 		}
-	// 		return old, g , l
+	// 		return old, g , l, k
 	// 	}
 	// 	oldStartRedeployment := t.startRedeployment
 	// 	t.startRedeployment = func(gs *GameState) []PieceStack {
@@ -228,20 +226,20 @@ var RaceMap = map[Race]RaceValue {
 	// 	}, Count: 6},
 	// "Pygmy": {Transform: func(t *Tribe) {
 	// 	oldCountReturningStacks := t.countReturningStacks
-	// 	t.countReturningStacks = func(tile *Tile, gs *GameState) ([]PieceStack, []PieceStack) {
-	// 		a, b := oldCountReturningStacks(tile, gs)
+	// 	t.countReturningStacks = func(tile *Tile, gs *GameState, pk int) ([]PieceStack, []PieceStack) {
+	// 		a, b := oldCountReturningStacks(tile, gs, pk)
 	// 		diceThrow := RollDice()
 	// 		gs.Messages = append(gs.Messages, fmt.Sprintf("Pygmies got back: %d Pawns!", diceThrow))
 	// 		
-	// 		a = AddPieceStacks(a, []PieceStack{{Type: string(t.Race), Amount: diceThrow}})
+	// 		a = AddPieceStacks(a, []PieceStack{{Type: string(t.Race), Amount: diceThrow - (1 - pk)}})
 	// 		return a, b
 	// 	}
 	// 	}, Count: 6},
 	// "Elf": {Transform: func(t *Tribe) {
 	// 	oldCountReturningStacks := t.countReturningStacks
-	// 	t.countReturningStacks = func(tile *Tile, gs *GameState) ([]PieceStack, []PieceStack) {
-	// 		a, b := oldCountReturningStacks(tile, gs)
-	// 		a = AddPieceStacks(a, []PieceStack{{Type: string(t.Race), Amount: 1}})
+	// 	t.countReturningStacks = func(tile *Tile, gs *GameState, pk int) ([]PieceStack, []PieceStack) {
+	// 		a, b := oldCountReturningStacks(tile, gs, pk)
+	// 		a = AddPieceStacks(a, []PieceStack{{Type: string(t.Race), Amount: pk}})
 	// 		return a, b
 	// 	}
 	// 	}, Count: 6},
@@ -339,7 +337,7 @@ var RaceMap = map[Race]RaceValue {
 	// 			}
 	// 		}
 	//
-	// 		returnStacks, stayStacks := tile.OwningTribe.countReturningStacks(tile, gs)
+	// 		returnStacks, stayStacks := tile.OwningTribe.countReturningStacks(tile, gs, 1)
 	// 		tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, returnStacks)
 	// 		tile.PieceStacks = AddPieceStacks([]PieceStack{{Type: string(t.Race), Amount: 1}}, stayStacks)
 	// 		tile.OwningPlayer = attacker
@@ -389,7 +387,7 @@ var RaceMap = map[Race]RaceValue {
 	// 		} 
 	//
 	// 		if tile.Presence != None {
-	// 			returnStacks, stayStacks := tile.OwningTribe.countReturningStacks(tile, gs)
+	// 			returnStacks, stayStacks := tile.OwningTribe.countReturningStacks(tile, gs, 1)
 	// 			tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, returnStacks)
 	// 			tile.PieceStacks = stayStacks
 	// 		}
@@ -401,50 +399,50 @@ var RaceMap = map[Race]RaceValue {
 	// 		return true, nil
 	// 	}
 	// 	}, Count: 6},
-	"Gypsy": {Transform: func(t *Tribe) {
-		t.State["abandonedTiles"] = []string{}
-		oldReceiveAbandonment := t.receiveAbandonment
-		t.receiveAbandonment = func(tile *Tile) []PieceStack {
-			oldStacks := oldReceiveAbandonment(tile)
-			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Coin", Amount: 1}})
-			log.Println(tile.PieceStacks)
-			if abandonedTiles, ok := t.State["abandonedTiles"].([]string); ok {
-				t.State["abandonedTiles"] = append(abandonedTiles, tile.Id)
-			} else {
-				// If it's not a slice of strings, reinitialize it
-				t.State["abandonedTiles"] = []string{tile.Id}
-			}
-			return oldStacks
-		}
-		oldCheckZoneAccess := t.checkZoneAccess
-		t.checkZoneAccess = func(tile *Tile) error {
-			old := oldCheckZoneAccess(tile)
-			if old == nil {
-				if abandonedTileIds, ok := t.State["abandonedTiles"].([]string); ok {
-					for _, id := range(abandonedTileIds) {
-						if id == tile.Id {
-							return fmt.Errorf("Abandoned zone cannot be reconquered")
-						}
-					}
-				}
-			}
-			return old
-		}
-		oldCountExtrapoints := t.countExtrapoints
-		t.countExtrapoints = func(gs *GameState) int {
-			total := oldCountExtrapoints(gs)
-			if abandonedTiles, ok := t.State["abandonedTiles"].([]string); ok {
-				for _, tileId := range(abandonedTiles) {
-					if tile, ok := gs.TileList[tileId]; ok {
-						tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type:"Coin", Amount:1}})
-						total += 1
-					}
-				}
-			} 
-			t.State["abandonedTiles"] = []string{}
-			return total
-		}
-		}, Count: 6},
+	// "Gypsy": {Transform: func(t *Tribe) {
+	// 	t.State["abandonedTiles"] = []string{}
+	// 	oldReceiveAbandonment := t.receiveAbandonment
+	// 	t.receiveAbandonment = func(tile *Tile) []PieceStack {
+	// 		oldStacks := oldReceiveAbandonment(tile)
+	// 		tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Coin", Amount: 1}})
+	// 		log.Println(tile.PieceStacks)
+	// 		if abandonedTiles, ok := t.State["abandonedTiles"].([]string); ok {
+	// 			t.State["abandonedTiles"] = append(abandonedTiles, tile.Id)
+	// 		} else {
+	// 			// If it's not a slice of strings, reinitialize it
+	// 			t.State["abandonedTiles"] = []string{tile.Id}
+	// 		}
+	// 		return oldStacks
+	// 	}
+	// 	oldCheckZoneAccess := t.checkZoneAccess
+	// 	t.checkZoneAccess = func(tile *Tile) error {
+	// 		old := oldCheckZoneAccess(tile)
+	// 		if old == nil {
+	// 			if abandonedTileIds, ok := t.State["abandonedTiles"].([]string); ok {
+	// 				for _, id := range(abandonedTileIds) {
+	// 					if id == tile.Id {
+	// 						return fmt.Errorf("Abandoned zone cannot be reconquered")
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		return old
+	// 	}
+	// 	oldCountExtrapoints := t.countExtrapoints
+	// 	t.countExtrapoints = func(gs *GameState) int {
+	// 		total := oldCountExtrapoints(gs)
+	// 		if abandonedTiles, ok := t.State["abandonedTiles"].([]string); ok {
+	// 			for _, tileId := range(abandonedTiles) {
+	// 				if tile, ok := gs.TileList[tileId]; ok {
+	// 					tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type:"Coin", Amount:1}})
+	// 					total += 1
+	// 				}
+	// 			}
+	// 		} 
+	// 		t.State["abandonedTiles"] = []string{}
+	// 		return total
+	// 	}
+	// 	}, Count: 6},
 	"Scarecrow": {Transform: func(t *Tribe) {
 		oldCountDefense:= t.countDefense
 		t.countDefense = func(tile *Tile) (int, int, int, error) {
@@ -536,12 +534,12 @@ var RaceMap = map[Race]RaceValue {
 
 
 		oldCountAttack := t.countAttack
-		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int) {
-			old, g, l := oldCountAttack(tile, cost, stackType)
+		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+			old, g, l, k := oldCountAttack(tile, cost, stackType)
 			if stackType == "Drakon's Dragon" {
-				return []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Drakon's Dragon", Amount: 1}}, g, l
+				return []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Drakon's Dragon", Amount: 1}}, g, l, k
 			}
-			return old, g, l
+			return old, g, l, k
 		}
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
 		t.calculateRemainingAttackingStacks = func(ps1, ps2 []PieceStack, gs *GameState) ([]PieceStack, []PieceStack, bool, string) {
@@ -565,11 +563,31 @@ var RaceMap = map[Race]RaceValue {
 			return stacks, stacksToRemove, diceUsed, msg
 		}
 		}, Count: 6},
+	// "Faun": {Transform: func(t *Tribe) {
+	// 	t.State["activecount"] = 0
+	// 	oldCountAttack := t.countAttack
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+	// 		old, g, l, k := oldCountAttack(tile, cost, stackType)
+	// 		if tile.Presence == Active {
+	// 			if activeCount, ok := t.State["activecount"].(int); ok {
+	// 				t.State["activecount"] = activeCount + 1
+	// 			}
+	// 		}
+	// 		return old, g , l, k - 1
+	// 	}
+	// 	oldStartRedeployment := t.startRedeployment
+	// 	t.startRedeployment = func(gs *GameState) []PieceStack {
+	// 		stacks := oldStartRedeployment(gs)
+	// 		if activecount, ok := t.State["activecount"].(int); ok {
+	// 			t.State["activecount"] = 0
+	// 			stacks = AddPieceStacks(stacks, []PieceStack{{Type: string(t.Race), Amount: activecount}})
+	// 		}
+	// 		return stacks
+	// 	}
+	// 	}, Count: 5},
 	// "Scavenger": {Transform: func(t *Tribe) {
 	// 	}, Count: 6},
 	// "Priestess": {Transform: func(t *Tribe) {
-	// 	}, Count: 6},
-	// "Faun": {Transform: func(t *Tribe) {
 	// 	}, Count: 6},
 	// "Ghoul": {Transform: func(t *Tribe) {
 	// 	}, Count: 6},

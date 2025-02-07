@@ -26,14 +26,14 @@ type Tribe struct {
 	checkAdjacency func(*Tile, *GameState) error;
 
 	// conquest for attacker
-	countAttack func(*Tile, int, string) ([]PieceStack, int, int);
+	countAttack func(*Tile, int, string) ([]PieceStack, int, int, int);
 	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
 	calculateRemainingAttackingStacks func([]PieceStack, []PieceStack, *GameState) ([]PieceStack, []PieceStack, bool, string)
 	specialConquest func(*GameState, *Tile, string, *Player) (bool, error);
 
 	//conquest for defender
 	countDefense func(*Tile) (int, int, int, error);
-	countReturningStacks func(*Tile, *GameState) ([]PieceStack, []PieceStack);
+	countReturningStacks func(*Tile, *GameState, int) ([]PieceStack, []PieceStack);
 
 	// redeployment
 	startRedeployment func(*GameState) []PieceStack;
