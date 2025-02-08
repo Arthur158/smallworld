@@ -84,7 +84,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, []PieceStack{{Type: string(entry.Race), Amount: entry.PiecePile}})
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
-	chooser.ActiveTribe.getStacksForConquestTurn(chooser)
+	gs.GetPieceStackForConquest(gs.Players[gs.TurnInfo.PlayerIndex])
 
 	gs.TurnInfo.Phase = Conquest
 
@@ -280,7 +280,7 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 	return nil
 }
 
-func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackType string) error {
+func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackType string, amount int) error {
 	if gs.TurnInfo.PlayerIndex != playerIndex {
 		return fmt.Errorf("It is not this player's turn!")
 	}
@@ -304,7 +304,7 @@ func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackT
 		return fmt.Errorf("Cannot redeploy here")
 	}
 
-	movingStack := []PieceStack{{Type: stackType, Amount: 1}}
+	movingStack := []PieceStack{{Type: stackType, Amount: amount}}
 
 	// Subtract  from player stacks
 	newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
@@ -367,16 +367,15 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 
 	player.ActiveTribe.goIntoDecline(gs)
 
-	player.PieceStacks = player.ActiveTribe.countRemainingAttackingStacks(player)
-
 	// iterate over the tiles and remove pieces accordingly if the tribe is the one going into decline
 	for _, tile := range gs.TileList {
             if tile.Presence != None && tile.OwningTribe.Race == player.ActiveTribe.Race {
-                tile.PieceStacks = tile.OwningTribe.countPiecesRemaining(tile)
+                tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, tile.OwningTribe.countRemovablePieces(tile))
                 tile.Presence = Passive
             }
         }
 
+	player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, player.ActiveTribe.countRemovableAttackingStacks(player))
 
 	player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
 	player.ActiveTribe = nil

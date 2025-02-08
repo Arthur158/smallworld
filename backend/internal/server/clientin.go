@@ -88,7 +88,7 @@ func (client *Client) handleRedeploymentIn (msg messages.Message) {
 		return
 	}
 
-	if err := client.Room.Gamestate.HandleRedeploymentIn(client.Index, deployData.TileID, deployData.StackType); err != nil {
+	if err := client.Room.Gamestate.HandleRedeploymentIn(client.Index, deployData.TileID, deployData.StackType, 1); err != nil {
 		client.sendError(err.Error())
 	} else {
 		client.Room.sendPlayerUpdate()
@@ -132,7 +132,7 @@ func (client *Client) handleRedeploymentThrough (msg messages.Message) {
 
 	if err := client.Room.Gamestate.HandleRedeploymentOut(client.Index, deployData.TileFromID, deployData.StackType); err != nil {
 		client.sendError(err.Error())
-	} else if err := client.Room.Gamestate.HandleRedeploymentIn(client.Index, deployData.TileToID, deployData.StackType); err != nil {
+	} else if err := client.Room.Gamestate.HandleRedeploymentIn(client.Index, deployData.TileToID, deployData.StackType, 1); err != nil {
 		client.sendError(err.Error())
 	} else {
 		client.Room.sendPlayerUpdate()

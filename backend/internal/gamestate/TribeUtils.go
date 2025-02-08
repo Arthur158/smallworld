@@ -172,12 +172,24 @@ func CreateBaseTribe() *Tribe {
         return 1
     }
 
-    tribe.countRemainingAttackingStacks = func(player *Player) []PieceStack {
-        return []PieceStack{}
+    tribe.countRemovableAttackingStacks = func(player *Player) []PieceStack {
+        newstacks := []PieceStack{}
+        for _, stack := range(player.PieceStacks) {
+            if stack.Type == string(tribe.Race) {
+                newstacks = append(newstacks, stack)
+            }
+        }
+        return newstacks
     }
 
-    tribe.countPiecesRemaining = func(tile *Tile) []PieceStack {
-        return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: 1}}
+    tribe.countRemovablePieces = func(tile *Tile) []PieceStack {
+        amount := 1
+        for _, stack := range(tile.PieceStacks) {
+            if stack.Type == string(tribe.Race) {
+                amount = stack.Amount
+            }
+        }
+        return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: amount - 1}}
     }
 
     tribe.specialConquest = func(gs *GameState, tile *Tile, s string, attacker *Player) (bool, error) {
