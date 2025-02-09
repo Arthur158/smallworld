@@ -454,9 +454,9 @@ var RaceMap = map[Race]RaceValue {
 	// 		return a, b, c-1, err
 	// 	}
 	// 	}, Count: 11},
-	"Kobold": {Transform: func(t *Tribe) {
-		t.Minimum = 2
-		}, Count: 11},
+	// "Kobold": {Transform: func(t *Tribe) {
+	// 	t.Minimum = 2
+	// 	}, Count: 11},
 	"Leprechaun": {Transform: func(t *Tribe) {
 		oldgiveInitialStacks := t.giveInitialStacks
 		t.giveInitialStacks = func() []PieceStack {
@@ -520,6 +520,16 @@ var RaceMap = map[Race]RaceValue {
 			stacks := oldgiveInitialStacks()
 			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Drakon's Dragon", Amount: 3}})
 			return stacks
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Drakon's Dragon" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
 		}
 		oldGetStacksForConquest := t.getStacksForConquest
 		t.getStacksForConquest = func(tile *Tile, p *Player) {
@@ -611,6 +621,7 @@ var RaceMap = map[Race]RaceValue {
 			newstacks := []PieceStack{}
 			for _, stack := range(oldStacks) {
 				if stack.Type != string(t.Race) {
+					stack.Tribe  = t
 					newstacks = append(newstacks, stack)
 				}
 			}
@@ -622,6 +633,7 @@ var RaceMap = map[Race]RaceValue {
 			newstacks := []PieceStack{}
 			for _, stack := range(oldStacks) {
 				if stack.Type != string(t.Race) {
+					stack.Tribe = t
 					newstacks = append(newstacks, stack)
 				}
 			}
@@ -642,25 +654,19 @@ var RaceMap = map[Race]RaceValue {
 		}
 		oldGetStacksForConquest := t.getStacksForConquest
 		t.getStacksForConquest = func(tile *Tile, p *Player) {
-			pawns, ok := t.State["deploy"].(map[string]int)
-			log.Println(ok)
+			pawns, _ := t.State["deploy"].(map[string]int)
 			for _, stack := range(tile.PieceStacks) {
-				log.Println(stack.Type)
-				log.Println(stack.Amount)
 				if stack.Type == string(t.Race) {
-					log.Println(stack.Amount)
 					pawns[tile.Id] = stack.Amount - 1
 				}
 			}
 			oldGetStacksForConquest(tile, p)
-			// amount, yes := pawns[tile.Id]
 
 		}
 		oldgoIntoDecline := t.goIntoDecline
 		t.goIntoDecline = func(gs *GameState) {
 			oldgoIntoDecline(gs)
-			pawns, ok := t.State["deploy"].(map[string]int)
-			log.Println(ok)
+			pawns, _ := t.State["deploy"].(map[string]int)
 			for id, amount := range(pawns) {
 				movingStack := []PieceStack{{Type: string(t.Race), Amount: amount}}
 				tile, _ := gs.TileList[id]
@@ -695,14 +701,9 @@ var RaceMap = map[Race]RaceValue {
 				return true, fmt.Errorf("cannot reach zone", err)
 			}
 
-			var tileCost, moneyGainDefender, moneyLossAttacker int
-			if tile.Presence == Passive || tile.Presence == Active {
-				tileCost, moneyGainDefender, moneyLossAttacker, err = defendingTribe.countDefense(tile)
-				if err != nil {
-					return true, fmt.Errorf("Impossible to attack", err)
-				}
-			} else {
-				tileCost = CountDefense(tile)
+			tileCost, moneyGainDefender, moneyLossAttacker, err := defendingTribe.countDefense(tile)
+			if err != nil {
+				return true, fmt.Errorf("Impossible to attack", err)
 			}
 
 			attackCostStacks, moneyGainAttacker, moneyLossDefender, _ := t.countAttack(tile, tileCost, stackType)
@@ -716,6 +717,9 @@ var RaceMap = map[Race]RaceValue {
 			}
 
 			tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender
+			for i := range tile.PieceStacks {
+			    tile.PieceStacks[i].Tribe = tile.OwningTribe
+			}
 			tile.PieceStacks, _ = SubtractPieceStacks(AddPieceStacks(tile.PieceStacks, newTileStacks), stacksToRemove)
 			attacker.PieceStacks = newStacks
 			attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
@@ -737,6 +741,19 @@ var RaceMap = map[Race]RaceValue {
 			}
 
 			return true, nil
+		}
+		oldcheckPresence := t.checkPresence
+		t.checkPresence = func(tile *Tile, race Race) bool {
+			old := oldcheckPresence(tile, race)
+			log.Println(race)
+			log.Println(tile.PieceStacks)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Tribe != nil && stack.Tribe.Race == race {
+					log.Println(stack.Tribe.Race)
+					return true
+				}
+			}
+			return old
 		}
 		}, Count: 6},
 	// "Priestess": {Transform: func(t *Tribe) {

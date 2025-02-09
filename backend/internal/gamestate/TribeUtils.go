@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+        "log"
 )
 
 func CreateTribe(race Race, trait Trait) (*Tribe, error) {
@@ -169,6 +170,7 @@ func CreateBaseTribe() *Tribe {
                 player.PieceStacks = AddPieceStacks(player.PieceStacks, movingStack)
             }
         }
+        log.Println(tile.PieceStacks)
     }
 
     tribe.countPoints = func(tile *Tile) int {
@@ -252,7 +254,7 @@ func CreateBaseTribe() *Tribe {
                                         if stack1.Amount + diceThrow >= stack2.Amount {
                                             message = "Success: the result of the dice throw was: %d"
                                             hasDiceBeenUsed = true
-                                            stacksToRemove = append(stacksToRemove, PieceStack{Type: stack1.Type, Amount: stack2.Amount - stack1.Amount})
+                                            stacksToRemove = append(stacksToRemove, PieceStack{Type: stack1.Type, Amount: stack2.Amount - stack1.Amount, Tribe: stack1.Tribe})
                                         } else {
                                             // gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow))
                                             return nil, nil, true, "The dice was not enough"
@@ -263,7 +265,7 @@ func CreateBaseTribe() *Tribe {
 				remainingAmount := stack1.Amount - stack2.Amount
 				if remainingAmount > 0 {
 					// Only add to result if the remaining amount is greater than 0
-					result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount})
+					result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount, Tribe: stack1.Tribe})
 				}
 				subtracted = true
 				break

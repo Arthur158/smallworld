@@ -398,7 +398,7 @@ func (room *Room) sendPlayerUpdate () {
 			playerData.PieceStacks = append(playerData.PieceStacks, PieceStack{
 				Type:     stack.Type,
 				Amount:   stack.Amount,
-				IsActive: true,
+				IsActive: *copyOrDefault(stack.Tribe, true),
 			})
 		}
 		playerInfo = append(playerInfo, playerData)
@@ -427,14 +427,10 @@ func (room *Room) sendTileUpdate (tileID string) {
 	}
 	tile := room.Gamestate.TileList[tileID]
 	for _, stack := range tile.PieceStacks {
-		act := false
-		if tile.Presence != gamestate.None {
-			act = tile.OwningTribe.IsActive
-		} 
 		tileUpdate.Stacks = append(tileUpdate.Stacks, PieceStack{
 		Type:     stack.Type,
 		Amount:   stack.Amount,
-		IsActive: act,
+		IsActive: *copyOrDefault(stack.Tribe, tile.Presence == gamestate.Active),
 	})
 	}
 
@@ -466,9 +462,9 @@ func (room *Room) sendAllTileUpdate() {
 		}
 		for _, stack := range tile.PieceStacks {
 			tu.Stacks = append(tu.Stacks, PieceStack{
-				Type:     stack.Type,
-				Amount:   stack.Amount,
-				IsActive: tile.Presence == gamestate.Active,
+			Type:     stack.Type,
+			Amount:   stack.Amount,
+			IsActive: *copyOrDefault(stack.Tribe, tile.Presence == gamestate.Active),
 			})
 		}
 		tileUpdates = append(tileUpdates, tu)
@@ -542,4 +538,9 @@ func (room *Room) sendMapUpdate() {
 	})
 }
 
-
+func copyOrDefault(t *gamestate.Tribe, defaultVal bool) *bool {
+    if t == nil {
+        return &defaultVal
+    }
+    return &t.IsActive
+}

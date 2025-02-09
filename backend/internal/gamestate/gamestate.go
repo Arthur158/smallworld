@@ -17,6 +17,7 @@ func New(playerCount int, mapName string) (*GameState, error) {
 	players := make([]*Player, playerCount)
 	for i := 0; i < playerCount; i++ {
 		players[i] = &Player{
+			Index: i,
 			ActiveTribe:    nil,
 			PassiveTribes:  []*Tribe{}, // Initialize as empty slice
 			CoinPile: 5,
@@ -74,6 +75,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 		return fmt.Errorf("Could not create tribe:", err)
 	}
 	chooser.ActiveTribe = tempActiveTribe
+	chooser.ActiveTribe.Owner = chooser
 	chooser.HasActiveTribe = true
 	chooser.CoinPile += entry.CoinPile - entryIndex 
 	chooser.PointsEachTurn[len(chooser.PointsEachTurn) - 1] += entry.CoinPile - entryIndex

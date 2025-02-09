@@ -315,6 +315,16 @@ var TraitMap = map[Trait]TraitValue {
 				}
 			}
 		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Encampment" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
 		oldGetStacksOutRedeployment := t.getStacksOutRedeployment
 		t.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
 			stacks, err := oldGetStacksOutRedeployment(tile, stackType)

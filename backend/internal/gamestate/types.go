@@ -4,6 +4,7 @@ type Race string;
 type Trait string;
 
 type Tribe struct {
+	Owner *Player
 	Race Race;
 	Trait Trait;
 	IsActive bool;
@@ -150,10 +151,11 @@ type Tile struct {
 type PieceStack struct {
 	Type string;
 	Amount int;
+	Tribe *Tribe
 }
 
 type Player struct {
-	// Name string;
+	Index int;
 	ActiveTribe *Tribe;
 	PassiveTribes []*Tribe;
 	CoinPile int
