@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
-        "log"
 )
 
 func CreateTribe(race Race, trait Trait) (*Tribe, error) {
@@ -70,6 +69,10 @@ func CreateBaseTribe() *Tribe {
         State: make(map[string]interface{}),
     }
 
+    tribe.checkPresence = func(tile *Tile, race Race) bool {
+        return tile.OwningTribe.Race == race
+    }
+
     tribe.IsStackValid = func(s string) bool {
         return  s == string(tribe.Race) && tribe.IsActive
     }
@@ -106,7 +109,7 @@ func CreateBaseTribe() *Tribe {
     }
 
     tribe.canTileBeAbandoned = func(tile *Tile) bool {
-        return tribe.IsActive && tile.OwningTribe.Race == tribe.Race
+        return tribe.IsActive && tile.OwningTribe.checkPresence(tile, tribe.Race)
     }
 
     tribe.receiveAbandonment = func(tile *Tile) []PieceStack {
@@ -192,7 +195,7 @@ func CreateBaseTribe() *Tribe {
         return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: amount - 1}}
     }
 
-    tribe.specialConquest = func(gs *GameState, tile *Tile, s string, attacker *Player) (bool, error) {
+    tribe.specialConquest = func(gs *GameState, tile *Tile, s string, attacker *Player, attackerIndex int) (bool, error) {
         return false, nil
     }
 
@@ -233,6 +236,7 @@ func CreateBaseTribe() *Tribe {
         result := []PieceStack{} // Start with an empty list
         stacksToRemove := []PieceStack{}
         hasDiceBeenUsed := false
+        message := ""
 
 	for _, stack1 := range reserves {
 		subtracted := false
@@ -245,12 +249,10 @@ func CreateBaseTribe() *Tribe {
 					return nil, nil, false, "Even the dice can't help"
 				} else if stack1.Amount < stack2.Amount {
                                         diceThrow := RollDice()
-                                        println(diceThrow)
                                         if stack1.Amount + diceThrow >= stack2.Amount {
-                                            // gs.Messages = append(gs.Messages, fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow))
+                                            message = "Success: the result of the dice throw was: %d"
                                             hasDiceBeenUsed = true
                                             stacksToRemove = append(stacksToRemove, PieceStack{Type: stack1.Type, Amount: stack2.Amount - stack1.Amount})
-                                            log.Println(stacksToRemove)
                                         } else {
                                             // gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow))
                                             return nil, nil, true, "The dice was not enough"
@@ -284,17 +286,22 @@ func CreateBaseTribe() *Tribe {
 			}
 		}
 		if !found {
-			return nil, nil, false, "A stack is missing"
+			return nil, nil, false, ""
 		}
 	}
 
-	return result, stacksToRemove, hasDiceBeenUsed, ""
+	return result, stacksToRemove, hasDiceBeenUsed, message
 
     }
 
     tribe.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
         return stackType == string(tribe.Race)
     }
+
+    tribe.canBeRedeployedOut = func(tile *Tile, stackType string) bool {
+        return stackType == string(tribe.Race)
+    }
+
 
     return &tribe
 }

@@ -225,6 +225,10 @@ var TraitMap = map[Trait]TraitValue {
 			stacks = append(stacks, PieceStack{Type:"Fortress", Amount: 1})
 			return stacks
 		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Fortress"
+		}
 		oldCountDefense := t.countDefense
 		t.countDefense = func(tile *Tile) (int, int, int, error) {
 			old, g, l, err := oldCountDefense(tile)
@@ -232,7 +236,7 @@ var TraitMap = map[Trait]TraitValue {
 				return old, g, l, err
 			}
 			for _, stack := range tile.PieceStacks {
-				if stack.Type == "Encampment" {
+				if stack.Type == "Fortress" {
 					old += stack.Amount
 				}
 			}
@@ -245,7 +249,6 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			if stackType == "Fortress" {
 				for _, stack := range tile.PieceStacks {
-					println(stack.Type)
 					if stack.Type == "Fortress" {
 						return false
 					}
@@ -295,6 +298,13 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return stackType == "Encampment"
 		}
+		oldCanBeRedeployedOut := t.canBeRedeployedOut
+		t.canBeRedeployedOut = func(tile *Tile, stackType string) bool {
+			if oldCanBeRedeployedOut(tile, stackType) {
+				return true
+			}
+			return stackType == "Encampment"
+		}
 		oldGetStacksForConquest := t.getStacksForConquest
 		t.getStacksForConquest = func(tile *Tile, p *Player) {
 			oldGetStacksForConquest(tile, p)
@@ -320,6 +330,10 @@ var TraitMap = map[Trait]TraitValue {
 				}
 			}
 			return stacks, err
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Encampment"
 		}
 		oldcountRemovablePieces := t.countRemovablePieces
 		t.countRemovablePieces = func(tile *Tile) []PieceStack {

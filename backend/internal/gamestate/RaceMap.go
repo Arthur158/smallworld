@@ -464,6 +464,20 @@ var RaceMap = map[Race]RaceValue {
 			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Cauldron", Amount: 16}})
 			return stacks
 		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Cauldron" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(stackType string) bool {
+			return stackType == "Cauldron" || oldIsStackValid(stackType)
+		}
 		oldCanBeRedeployedIn := t.canBeRedeployedIn
 		t.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
 			if oldCanBeRedeployedIn(tile, stackType) {
@@ -646,7 +660,6 @@ var RaceMap = map[Race]RaceValue {
 		t.goIntoDecline = func(gs *GameState) {
 			oldgoIntoDecline(gs)
 			pawns, ok := t.State["deploy"].(map[string]int)
-			log.Println("go into decline")
 			log.Println(ok)
 			for id, amount := range(pawns) {
 				movingStack := []PieceStack{{Type: string(t.Race), Amount: amount}}
@@ -657,8 +670,75 @@ var RaceMap = map[Race]RaceValue {
 
 		}
 		}, Count: 5},
-	// "Scavenger": {Transform: func(t *Tribe) {
-	// 	}, Count: 6},
+	"Scavenger": {Transform: func(t *Tribe) {
+		oldSpecialConquest := t.specialConquest
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
+			if ok {
+				return ok, err
+			}
+			if tile.Presence != Passive {
+				return false, nil
+			}
+
+			defendingTribe := tile.OwningTribe
+
+
+			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				return true, fmt.Errorf("tribe cannot attack itself")
+			}
+
+			if err := t.checkZoneAccess(tile); err != nil {
+				return true, fmt.Errorf("cannot access zone", err)
+			}
+			if err := t.checkAdjacency(tile, gs); err != nil {
+				return true, fmt.Errorf("cannot reach zone", err)
+			}
+
+			var tileCost, moneyGainDefender, moneyLossAttacker int
+			if tile.Presence == Passive || tile.Presence == Active {
+				tileCost, moneyGainDefender, moneyLossAttacker, err = defendingTribe.countDefense(tile)
+				if err != nil {
+					return true, fmt.Errorf("Impossible to attack", err)
+				}
+			} else {
+				tileCost = CountDefense(tile)
+			}
+
+			attackCostStacks, moneyGainAttacker, moneyLossDefender, _ := t.countAttack(tile, tileCost, stackType)
+			newTileStacks := t.countNewTileStacks(attackCostStacks, tile)
+			newStacks, stacksToRemove, hasDiceBeenUsed, msg := t.calculateRemainingAttackingStacks(attacker.PieceStacks, attackCostStacks, gs)
+			if msg != "" && hasDiceBeenUsed {
+				gs.Messages = append(gs.Messages, msg)
+				return true, gs.HandleStartRedeployment(attackerIndex)
+			} else if err != nil {
+				return true, fmt.Errorf("Failure", err)
+			}
+
+			tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender
+			tile.PieceStacks, _ = SubtractPieceStacks(AddPieceStacks(tile.PieceStacks, newTileStacks), stacksToRemove)
+			attacker.PieceStacks = newStacks
+			attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
+			// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
+			tile.OwningTribe = t
+			tile.OwningPlayer = attacker
+
+			if tile.OwningTribe != nil && tile.OwningTribe.IsActive {
+				tile.Presence = Active
+			} else if tile.OwningTribe != nil {
+				tile.Presence = Passive
+			} else {
+				tile.Presence = None
+			}
+			if hasDiceBeenUsed {
+				return true, gs.HandleStartRedeployment(attackerIndex)
+			} else {
+				gs.TurnInfo.Phase = Conquest
+			}
+
+			return true, nil
+		}
+		}, Count: 6},
 	// "Priestess": {Transform: func(t *Tribe) {
 	// 	}, Count: 6},
 }

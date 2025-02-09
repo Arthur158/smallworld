@@ -151,19 +151,21 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return fmt.Errorf("No tile with this id!")
 	}
 
-	defendingTribe := tile.OwningTribe
 
 	attackingTribe, err := GetPlayerTribe(attackingStackType, attacker)
 	if err != nil {
 		return fmt.Errorf("Could not create retrieve attacker's tribe", err)
 	}
 
-	ok, err = attackingTribe.specialConquest(gs, tile, attackingStackType, attacker)
+	ok, err = attackingTribe.specialConquest(gs, tile, attackingStackType, attacker, attackerIndex)
 	if ok {
 		return err
 	}
 
-	if tile.OwningTribe == attackingTribe {
+	defendingTribe := tile.OwningTribe
+
+
+	if tile.Presence != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
 		return fmt.Errorf("tribe cannot attack itself")
 	}
 
@@ -174,7 +176,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return fmt.Errorf("cannot reach zone", err)
 	}
 
-	var tileCost, moneyGainDefender, moneyLossAttacker int
+	tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
 	if tile.Presence == Passive || tile.Presence == Active {
 		tileCost, moneyGainDefender, moneyLossAttacker, err = defendingTribe.countDefense(tile)
 		if err != nil {
@@ -184,6 +186,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		tileCost = CountDefense(tile)
 	}
 
+	// counts the cost for the attacker
 	attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := attackingTribe.countAttack(tile, tileCost, attackingStackType)
 	newTileStacks := attackingTribe.countNewTileStacks(attackCostStacks, tile)
 	newStacks, stacksToRemove, hasDiceBeenUsed, msg := attackingTribe.calculateRemainingAttackingStacks(attacker.PieceStacks, attackCostStacks, gs)
@@ -197,6 +200,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	defenderRemainingStacks	:= []PieceStack{}
 	// Enact changes
 	if tile.Presence != None {
+		// here at some point let's change it so that it all happens within countReturningStacks
 		defenderReturningStacks, tempDefenderRemainingStacks := defendingTribe.countReturningStacks(tile, gs, pawnKill)
 		tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, defenderReturningStacks)
 		defenderRemainingStacks = tempDefenderRemainingStacks
@@ -255,14 +259,22 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 	}
 
 	player := gs.Players[playerIndex]
+	tribe, err := GetPlayerTribe(stackType, player)
+	if err != nil {
+		return err
+	}
 
 	tile, ok := gs.TileList[tileId]
 	if !ok {
 		return fmt.Errorf("No tile with this id!")
 	}
 
-	if tile.OwningPlayer != player {
+	if tile.Presence != None && !tile.OwningTribe.checkPresence(tile, tribe.Race) {
 		return fmt.Errorf("This tile does not belong to the player!")
+	}
+
+	if !tile.OwningTribe.canBeRedeployedOut(tile, stackType) {
+		return fmt.Errorf("Cannot redeploy here")
 	}
 
 	stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
@@ -290,13 +302,17 @@ func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackT
 	}
 
 	player := gs.Players[playerIndex]
+	tribe, err := GetPlayerTribe(stackType, player)
+	if err != nil {
+		return err
+	}
 
 	tile, ok := gs.TileList[tileId]
 	if !ok {
 		return fmt.Errorf("No tile with this id!")
 	}
 
-	if tile.OwningPlayer != player {
+	if tile.Presence != None && !tile.OwningTribe.checkPresence(tile, tribe.Race) {
 		return fmt.Errorf("This tile does not belong to the player!")
 	}
 
@@ -392,8 +408,15 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 func (gs *GameState) countPoints(player *Player) int {
 	total := 0
 	for _, tile := range gs.TileList {
-		if tile.OwningPlayer == player {
-			total += tile.OwningTribe.countPoints(tile)
+		if tile.Presence != None {
+			if player.HasActiveTribe && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
+				total += player.ActiveTribe.countPoints(tile)
+			}
+			for _, tribe := range(player.PassiveTribes) {
+			    if tile.OwningTribe.checkPresence(tile, tribe.Race) {
+				total += tribe.countPoints(tile)
+			    }
+			}
 		}
 	}
 	if player.HasActiveTribe {
