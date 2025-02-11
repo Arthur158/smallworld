@@ -42,3 +42,18 @@ func (gs *GameState) GetPieceStackForConquest(player *Player) {
     }
 }
 
+func (gs *GameState) CheckJump(tile *Tile, otherTile *Tile) bool {
+    for _, neighbor := range(tile.AdjacentTiles) {
+        for _, neighbor2 := range(neighbor.AdjacentTiles) {
+            adjacent := false
+            for _, neighbor1bis := range(tile.AdjacentTiles) {
+                adjacent = adjacent || neighbor1bis == neighbor2
+            }
+            if neighbor2 != tile && !adjacent && neighbor2 == otherTile {
+                return true
+            }
+        }
+    }
+    return false
+}
+

@@ -79,10 +79,14 @@ func CreateBaseTribe() *Tribe {
 
     tribe.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
         if stackType == string(tribe.Race) {
-            return []PieceStack{{Type: string(tribe.Race), Amount: max(tribe.Minimum, cost)}}, 0, 0, 1
+            return []PieceStack{{Type: string(tribe.Race), Amount: max(tribe.Minimum, cost - tribe.computeDiscount(stackType, tile))}}, 0, 0, 1
         } else {
             return []PieceStack{{Type: string(tribe.Race), Amount: 1000 + cost}}, 0, 0, 1
         }
+    }
+
+    tribe.computeDiscount = func(s string, tile *Tile) int {
+        return 0
     }
 
     tribe.countDefense = func(tile *Tile) (int, int, int, error) {

@@ -214,7 +214,7 @@ func (client *Client) handleFinishTurn () {
 		pointsList := client.Room.Gamestate.Players[client.Index].PointsEachTurn
 		client.Room.sendStateMessage(
 		    fmt.Sprintf(
-			"player %s made %d points this turn",
+			"%s made %d points this turn",
 			client.Username,
 			pointsList[len(pointsList) - 1]-pointsList[len(pointsList) - 2],
 		    ),

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { setError, setSelectedStack, setIsStackFromBank, setSelectedTile } from '../../redux/slices/applicationSlice';
+import { setSelectedStack, setIsStackFromBank, setSelectedTile } from '../../redux/slices/applicationSlice';
 import { Tile } from '../../types/Board';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
@@ -23,13 +23,7 @@ function ImageOrBlueSquare({
   const [hasError, setHasError] = useState(false);
 
   return hasError ? (
-    <rect
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      fill="blue"
-    />
+    <rect x={x} y={y} width={width} height={height} fill="blue" />
   ) : (
     <image
       href={imageSrc}
@@ -37,9 +31,7 @@ function ImageOrBlueSquare({
       y={y}
       width={width}
       height={height}
-      style={{
-        filter: isGray ? 'grayscale(100%)' : 'none',
-      }}
+      style={{ filter: isGray ? 'grayscale(100%)' : 'none' }}
       onError={() => setHasError(true)}
     />
   );
@@ -61,14 +53,11 @@ export default function Map() {
     height: 0,
   });
 
-  // Pan & Zoom state
   const [scale, setScale] = useState(1);
   const [translateX, setTranslateX] = useState(0);
   const [translateY, setTranslateY] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
-
-  // Track movement to distinguish click vs drag
   const [movedDistance, setMovedDistance] = useState(0);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -100,17 +89,31 @@ export default function Map() {
     };
   }, [mapImageUrl]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'f') {
+        dispatch(setSelectedStack(null));
+        dispatch(setSelectedTile(null));
+        dispatch(setIsStackFromBank(false));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [dispatch]);
+
   if (!mapImageUrl || imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
     return <div className="text-center text-[#5F4B32] font-bold">Loading map...</div>;
   }
 
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
     if (
-      (phase === "Conquest" || phase === "TileAbandonment" || phase === "DeclineChoice") &&
+      (phase === 'Conquest' || phase === 'TileAbandonment' || phase === 'DeclineChoice') &&
       isStackFromBank &&
       selectedStack != null
     ) {
-      sendMessageToBackend("Conquest", { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
+      sendMessageToBackend('Conquest', { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
     } else if (
       (phase === 'Redeployment' || phase === 'TileAbandonment') &&
       selectedStack === stackType &&
@@ -119,13 +122,13 @@ export default function Map() {
       dispatch(setSelectedStack(null));
       dispatch(setSelectedTile(null));
       dispatch(setIsStackFromBank(false));
-    } else if ((phase === "TileAbandonment" || phase === "DeclineChoice") && stackType != null) {
+    } else if ((phase === 'TileAbandonment' || phase === 'DeclineChoice') && stackType != null) {
       dispatch(setSelectedStack(stackType));
       dispatch(setSelectedTile(tileID));
     } else if (phase === 'Redeployment' && isStackFromBank && selectedStack != null) {
-      sendMessageToBackend("deploymentin", { tileId: tileID.toString(), stackType: selectedStack.toString() });
+      sendMessageToBackend('deploymentin', { tileId: tileID.toString(), stackType: selectedStack.toString() });
     } else if (phase === 'Redeployment' && !isStackFromBank && selectedTile != null && selectedStack != null) {
-      sendMessageToBackend("deploymentthrough", {
+      sendMessageToBackend('deploymentthrough', {
         tileFromId: selectedTile.toString(),
         tileToId: tileID.toString(),
         stackType: selectedStack,
@@ -330,7 +333,6 @@ export default function Map() {
                     (tile.polygon.stackY - index * offset) *
                     (imageDimensions.width / baseWidth);
                   const imageSrc = `/stacks/${stack.type}.png`;
-
                   const isGray = !stack.isActive;
                   const isSelected =
                     selectedTile === tile.id &&

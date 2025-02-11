@@ -156,14 +156,14 @@ var RaceMap = map[Race]RaceValue {
 		}
 		}, Count: 2},
 	"Triton": {Transform: func(t *Tribe) {
-		oldcountAttack := t.countAttack
-		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+		oldcomputeDiscount := t.computeDiscount
+		t.computeDiscount = func(stackType string, tile *Tile) int {
 			for _, neighbour := range tile.AdjacentTiles {
 				if neighbour.Biome == Water {
-					return oldcountAttack(tile, cost - 1, stackType)
+					return oldcomputeDiscount(stackType, tile) - 1
 				}
 			}
-			return oldcountAttack(tile, cost, stackType)
+			return oldcomputeDiscount(stackType, tile)
 		}
 		}, Count: 6},
 	"Shrubman": {Transform: func(t *Tribe) {
@@ -182,23 +182,23 @@ var RaceMap = map[Race]RaceValue {
 	"Ratman": {Transform: func(t *Tribe) {
 		}, Count: 8},
 	"Goblin": {Transform: func(t *Tribe) {
-		oldcountAttack := t.countAttack
-		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+		oldcomputeDiscount := t.computeDiscount
+		t.computeDiscount = func(stackType string, tile *Tile) int {
 			if tile.Presence == Passive {
-				return oldcountAttack(tile, cost - 1, stackType)
+				return oldcomputeDiscount(stackType, tile) - 1
 			}
-			return oldcountAttack(tile, cost, stackType)
+			return oldcomputeDiscount(stackType, tile)
 		}
 		}, Count: 6},
 	"Giant": {Transform: func(t *Tribe) {
-		oldcountAttack := t.countAttack
-		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+		oldcomputeDiscount := t.computeDiscount
+		t.computeDiscount = func(stackType string, tile *Tile) int {
 			for _, neighbour := range tile.AdjacentTiles {
 				if neighbour.Biome == Mountain && neighbour.Presence != None && neighbour.OwningTribe.Race == t.Race {
-					return oldcountAttack(tile, cost - 1, stackType)
+					return oldcomputeDiscount(stackType, tile) - 1
 				}
 			}
-			return oldcountAttack(tile, cost, stackType)
+			return oldcomputeDiscount(stackType, tile)
 		}
 		}, Count: 6},
 	"Orc": {Transform: func(t *Tribe) {
@@ -882,6 +882,7 @@ var RaceMap = map[Race]RaceValue {
 			}
 			t.goIntoDecline(gs)
 			player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, player.ActiveTribe.countRemovableAttackingStacks(player))
+			player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, []PieceStack{{Type: "Decline", Amount: 1}})
 
 			player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
 			player.ActiveTribe = nil
