@@ -23,6 +23,7 @@ type Room struct {
 	Gamestate    gamestate.GameState
 	mu	     sync.Mutex
 	Map	     Map
+	saveId	     int64
 }
 
 type Map struct {

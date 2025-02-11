@@ -18,12 +18,20 @@ func (client *Client) handleTribePick (msg messages.Message) {
 		return
 	}
 
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+	}
+
 	if err := client.Room.Gamestate.HandleTribeChoice(client.Index, pickData.PickIndex); err != nil {
 		client.sendError(err.Error())
 	} else {
 		client.Room.sendPlayerUpdate()
 		client.Room.sendTurnUpdate()
 		client.Room.sendEntriesUpdate()
+		client.Room.sendAllTileUpdate()
 	}
 }
 
@@ -34,6 +42,13 @@ func (client *Client) handleAbandonment (msg messages.Message) {
 	if err := json.Unmarshal([]byte(msg.Data), &abandonmentData); err != nil {
 		client.sendError("Invalid abandon data")
 		return
+	}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
 	}
 
 	if err := client.Room.Gamestate.HandleAbandonment(client.Index, abandonmentData.TileID); err != nil {
@@ -55,25 +70,38 @@ func (client *Client) handleConquest (msg messages.Message) {
 		return
 	}
 
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+	}
+
 	if err := client.Room.Gamestate.HandleConquest(conquestData.TileID, client.Index, conquestData.AttackingStackType); err != nil {
 		client.sendError(err.Error())
 		client.Room.sendTurnUpdate()
 	} else {
 		client.Room.sendPlayerUpdate()
-		client.Room.sendTileUpdate(conquestData.TileID)
+		client.Room.sendAllTileUpdate()
 		client.Room.sendTurnUpdate()
 	}
 }
 
 func (client *Client) handleStartRedeployment () {
-	if client.Room != nil {
-		if err := client.Room.Gamestate.HandleStartRedeployment(client.Index); err != nil {
-			client.sendError(err.Error())
-		} else {
-			client.Room.sendPlayerUpdate()
-			client.Room.sendTurnUpdate()
-			client.Room.sendAllTileUpdate()
-		}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+	}
+
+	if err := client.Room.Gamestate.HandleStartRedeployment(client.Index); err != nil {
+		client.sendError(err.Error())
+	} else {
+		client.Room.sendPlayerUpdate()
+		client.Room.sendTurnUpdate()
+		client.Room.sendAllTileUpdate()
 	}
 }
 
@@ -86,6 +114,13 @@ func (client *Client) handleRedeploymentIn (msg messages.Message) {
 	if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
 		client.sendError("Invalid deploy data")
 		return
+	}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
 	}
 
 	if err := client.Room.Gamestate.HandleRedeploymentIn(client.Index, deployData.TileID, deployData.StackType, 1); err != nil {
@@ -106,6 +141,13 @@ func (client *Client) handleRedeploymentOut (msg messages.Message) {
 	if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
 		client.sendError("Invalid deploy data")
 		return
+	}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
 	}
 
 	if err := client.Room.Gamestate.HandleRedeploymentOut(client.Index, deployData.TileID, deployData.StackType); err != nil {
@@ -129,6 +171,12 @@ func (client *Client) handleRedeploymentThrough (msg messages.Message) {
 		return
 	}
 
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+	}
 
 	if err := client.Room.Gamestate.HandleRedeploymentOut(client.Index, deployData.TileFromID, deployData.StackType); err != nil {
 		client.sendError(err.Error())
@@ -144,6 +192,13 @@ func (client *Client) handleRedeploymentThrough (msg messages.Message) {
 
 
 func (client *Client) handleFinishTurn () {
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+	}
+
 	if err := client.Room.Gamestate.HandleFinishTurn(client.Index); err != nil {
 		client.sendError(err.Error())
 	} else {
@@ -152,6 +207,7 @@ func (client *Client) handleFinishTurn () {
 		// log.Println(err)
 		// client.Room.Gamestate = *state
 		client.Room.sendPlayerUpdate()
+
 		client.Room.sendTurnUpdate()
 		client.Room.sendAllTileUpdate()
 
@@ -172,6 +228,13 @@ func (client *Client) handleFinishTurn () {
 }
 
 func (client *Client) handleDecline () {
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+	}
+
 	if err := client.Room.Gamestate.HandleDecline(client.Index); err != nil {
 		client.sendError(err.Error())
 	} else {

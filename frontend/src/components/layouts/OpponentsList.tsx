@@ -37,15 +37,6 @@ export default function OpponentsList() {
               }}
               onClick={() => console.log(`Stack ${stack.type} clicked`)}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  width: baseSize,
-                  height: baseSize,
-                  backgroundColor: 'blue',
-                  border: '1px solid black',
-                }}
-              />
               <img
                 src={imageSrc}
                 onError={(e) => {

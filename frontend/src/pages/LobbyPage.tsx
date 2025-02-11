@@ -12,25 +12,25 @@ export default function LobbyPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-const {
-  name: username,
-  isAuthenticated,
-  rooms,
-  roomid,
-  gameStarted,
-  saveGames,
-  error,
-  saveSelectionId,
-} = useSelector((state: RootState) => ({
-  name: state.application.name,
-  isAuthenticated: state.application.isAuthenticated,
-  rooms: state.application.rooms,
-  roomid: state.application.roomid,
-  gameStarted: state.application.gameStarted,
-  saveGames: state.application.saveGames as SaveGameInfo[], // Explicitly typed
-  error: state.application.error,
-  saveSelectionId: state.application.saveSelectionId
-}));
+  const {
+    name: username,
+    isAuthenticated,
+    rooms,
+    roomid,
+    gameStarted,
+    saveGames,
+    error,
+    saveSelectionId,
+  } = useSelector((state: RootState) => ({
+    name: state.application.name,
+    isAuthenticated: state.application.isAuthenticated,
+    rooms: state.application.rooms,
+    roomid: state.application.roomid,
+    gameStarted: state.application.gameStarted,
+    saveGames: state.application.saveGames as SaveGameInfo[],
+    error: state.application.error,
+    saveSelectionId: state.application.saveSelectionId,
+  }));
 
   const [roomName, setRoomName] = useState('');
 
@@ -62,6 +62,19 @@ const {
       window.removeEventListener('beforeunload', handlePageRefresh);
     };
   }, [dispatch]);
+
+  // Keyboard shortcut for start game: press 'p'
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === 'p' && currentRoom?.creator === username) {
+        handleStartGame();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentRoom, username]);
 
   // Create / Join / Start / Leave
   const handleCreateRoom = () => {
@@ -205,20 +218,15 @@ const {
 
                 <p className="font-semibold">Players in this room:</p>
                 <div className="mb-4">
-                  {/* We still call .map so we can preserve the real index,
-                      but we conditionally render only if p is valid. */}
                   {currentRoom.players?.map((p, idx) => {
                     if (!p || !p.trim().length) {
-                      return null; // skip rendering
+                      return null;
                     }
                     return (
                       <div key={p} className="bg-[#EED5B7] mb-2 p-2 flex items-center rounded-lg">
-                        {/* Show the player's original index plus name */}
                         <span className="flex-1 font-semibold">
-                          {idx+1}: {p}
+                          {idx + 1}: {p}
                         </span>
-
-                        {/* If you're the creator, you can move/kick players */}
                         {currentRoom && currentRoom.creator === username && (
                           <div className="flex space-x-2">
                             <button
@@ -300,13 +308,12 @@ const {
           </div>
         </div>
       </div>
-        {/* Error Banner at the Bottom */}
+      {/* Error Banner at the Bottom */}
       {error && (
         <div className="fixed bottom-0 left-0 w-full bg-red-500 text-white text-center py-2 z-50">
           {error}
         </div>
       )}
-
     </div>
   );
 }

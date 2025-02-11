@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"backend/internal/messages"
-	"backend/internal/gamestate"
 	"fmt"
 	"strconv"
 )
@@ -200,22 +199,8 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		log.Println("Successfully parsed:", data)
 
-		// Load game state using SaveId
-		if data.SaveId == -1 {
-			newstate, err := gamestate.New(client.Room.MaxPlayers, client.Room.Map.Name)
-			if err != nil {
-				log.Println("error creating state")
-			}
-			client.Room.Gamestate = *newstate
-		} else {
-			newstate, _, err := LoadGameState(data.SaveId)
-			if err != nil {
-				log.Println("Error loading game", err)
-				client.sendError("error loading game")
-				return
-			}
-			client.Room.Gamestate = *newstate
-		}
+		// here also need to pull map name and game size to change the room so that it corresponds to the saved game
+		client.Room.saveId = data.SaveId
 		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)

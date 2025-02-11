@@ -2,6 +2,7 @@ package gamestate
 
 import (
 	"fmt"
+	"log"
 )
 
 type GameState struct {
@@ -12,11 +13,12 @@ type GameState struct {
 	Messages []string
 }
 
-func New(playerCount int, mapName string) (*GameState, error) {
+func New(playerNames []string, mapName string) (*GameState, error) {
 	// Create a list of initialized players
-	players := make([]*Player, playerCount)
-	for i := 0; i < playerCount; i++ {
+	players := make([]*Player, len(playerNames))
+	for i, name := range(playerNames) {
 		players[i] = &Player{
+			Name: name,
 			Index: i,
 			ActiveTribe:    nil,
 			PassiveTribes:  []*Tribe{}, // Initialize as empty slice
@@ -118,16 +120,9 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
 		return fmt.Errorf("Stack cannot be removed!")
 	}
 
-	tile.PieceStacks = []PieceStack{}
-	tile.Presence = None
+	tile.OwningTribe.handleAbandonment(tile, gs)
 
-	stacks := tile.OwningTribe.receiveAbandonment(tile)
-
-	tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, stacks)
 	gs.TurnInfo.Phase = TileAbandonment
-
-	tile.OwningTribe = nil
-	tile.OwningPlayer = nil
 
 	return nil
 	
@@ -156,7 +151,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 
 	attackingTribe, err := GetPlayerTribe(attackingStackType, attacker)
 	if err != nil {
-		return fmt.Errorf("Could not create retrieve attacker's tribe", err)
+		return fmt.Errorf("Could not retrieve attacker's tribe", err)
 	}
 
 	ok, err = attackingTribe.specialConquest(gs, tile, attackingStackType, attacker, attackerIndex)
@@ -190,39 +185,33 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 
 	// counts the cost for the attacker
 	attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := attackingTribe.countAttack(tile, tileCost, attackingStackType)
-	newTileStacks := attackingTribe.countNewTileStacks(attackCostStacks, tile)
-	newStacks, stacksToRemove, hasDiceBeenUsed, msg := attackingTribe.calculateRemainingAttackingStacks(attacker.PieceStacks, attackCostStacks, gs)
-	if msg != "" && hasDiceBeenUsed {
-		gs.Messages = append(gs.Messages, msg)
-		return gs.HandleStartRedeployment(attackerIndex)
-	} else if err != nil {
-		return fmt.Errorf("Failure", err)
+	newStacks, hasDiceBeenUsed, ok, err := attackingTribe.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
+	newTileStacks := attackingTribe.countNewTileStacks(newStacks, tile)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
 	}
 
-	defenderRemainingStacks	:= []PieceStack{}
 	// Enact changes
 	if tile.Presence != None {
-		// here at some point let's change it so that it all happens within countReturningStacks
-		defenderReturningStacks, tempDefenderRemainingStacks := defendingTribe.countReturningStacks(tile, gs, pawnKill)
-		tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, defenderReturningStacks)
-		defenderRemainingStacks = tempDefenderRemainingStacks
 		tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender
+		defendingTribe.clearTile(tile, gs, pawnKill)
 		// tile.OwningPlayer.PointsEachTurn[len(tile.OwningPlayer.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	}
-	tile.PieceStacks, _ = SubtractPieceStacks(AddPieceStacks(newTileStacks, defenderRemainingStacks), stacksToRemove)
-	attacker.PieceStacks = newStacks
+	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
+	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
 	attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	tile.OwningTribe = attackingTribe
 	tile.OwningPlayer = attacker
 
-	if tile.OwningTribe != nil && tile.OwningTribe.IsActive {
+	if tile.OwningTribe.IsActive {
 		tile.Presence = Active
-	} else if tile.OwningTribe != nil {
-		tile.Presence = Passive
 	} else {
-		tile.Presence = None
-	}
+		tile.Presence = Passive
+	} 	
 	if hasDiceBeenUsed {
 		return gs.HandleStartRedeployment(attackerIndex)
 	} else {
@@ -275,10 +264,6 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 		return fmt.Errorf("This tile does not belong to the player!")
 	}
 
-	if !tile.OwningTribe.canBeRedeployedOut(tile, stackType) {
-		return fmt.Errorf("Cannot redeploy here")
-	}
-
 	stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
 	if err != nil {
 		return fmt.Errorf("Unable to redeploy", err)
@@ -318,11 +303,12 @@ func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackT
 		return fmt.Errorf("This tile does not belong to the player!")
 	}
 
-	if !tile.OwningTribe.canBeRedeployedIn(tile, stackType) {
+	if !tribe.canBeRedeployedIn(tile, stackType) {
 		return fmt.Errorf("Cannot redeploy here")
 	}
 
-	movingStack := []PieceStack{{Type: stackType, Amount: amount}}
+	movingStack := tribe.getRedeploymentStack(stackType, player.PieceStacks)
+	log.Println(movingStack)
 
 	// Subtract  from player stacks
 	newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
@@ -411,6 +397,8 @@ func (gs *GameState) countPoints(player *Player) int {
 	total := 0
 	for _, tile := range gs.TileList {
 		if tile.Presence != None {
+			// log.Println(tile)
+			// log.Println(tile.OwningTribe)
 			if player.HasActiveTribe && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
 				total += player.ActiveTribe.countPoints(tile)
 			}

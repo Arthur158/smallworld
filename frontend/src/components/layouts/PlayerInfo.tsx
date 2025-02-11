@@ -97,7 +97,7 @@ export default function PlayerInfo() {
                 height: baseSize,
                 cursor: 'pointer',
                 opacity: 1,
-                border: isFlashy ? '3px solid blue' : '1px solid black',
+                border: isFlashy ? '3px solid blue' : '',
                 animation: isFlashy ? 'flash 1s infinite' : undefined,
               }}
               onClick={(e) => {
@@ -105,14 +105,6 @@ export default function PlayerInfo() {
                 handlePieceStackClick(stack.type);
               }}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  width: baseSize,
-                  height: baseSize,
-                  backgroundColor: 'blue',
-                }}
-              />
               <img
                 src={imageSrc}
                 onError={(e) => {

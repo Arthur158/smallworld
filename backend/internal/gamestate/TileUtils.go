@@ -1,4 +1,5 @@
 package gamestate;
+// import "log"
 
 func CountDefense(tile *Tile) int {
     price := 2
@@ -10,7 +11,10 @@ func CountDefense(tile *Tile) int {
 
 func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
     for _, tile := range gs.TileList {
-        if tile.Presence != None && tile.OwningTribe.Race == race {
+        // log.Println(race)
+        // log.Println(tile)
+        // log.Println(tile.OwningTribe)
+        if tile.Presence != None && tile.OwningTribe.checkPresence(tile, race) {
             return true
         }
     }

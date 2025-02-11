@@ -67,7 +67,7 @@ func SubtractPieceStacks(reserves, expanses []PieceStack) ([]PieceStack, bool) {
 				remainingAmount := stack1.Amount - stack2.Amount
 				if remainingAmount > 0 {
 					// Only add to result if the remaining amount is greater than 0
-					result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount})
+					result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount, Tribe: stack1.Tribe})
 				}
 				subtracted = true
 				break

@@ -17,7 +17,7 @@ type Tribe struct {
 
 	//abandonment
 	canTileBeAbandoned func(*Tile) bool;
-	receiveAbandonment func(*Tile) []PieceStack;
+	handleAbandonment func(*Tile, *GameState);
 
 	// receive for conquest
 	getStacksForConquestTurn func(*Player);
@@ -31,18 +31,18 @@ type Tribe struct {
 	// conquest for attacker
 	countAttack func(*Tile, int, string) ([]PieceStack, int, int, int);
 	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
-	calculateRemainingAttackingStacks func([]PieceStack, []PieceStack, *GameState) ([]PieceStack, []PieceStack, bool, string)
+	calculateRemainingAttackingStacks func([]PieceStack, *Tile, *GameState) ([]PieceStack, bool, bool, error)
 	specialConquest func(*GameState, *Tile, string, *Player, int) (bool, error);
 
 	//conquest for defender
 	countDefense func(*Tile) (int, int, int, error);
-	countReturningStacks func(*Tile, *GameState, int) ([]PieceStack, []PieceStack);
+	clearTile func(*Tile, *GameState, int);
 
 	// redeployment
 	startRedeployment func(*GameState) []PieceStack;
 	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
 	canBeRedeployedIn func(*Tile, string) bool;
-	canBeRedeployedOut func(*Tile, string) bool;
+	getRedeploymentStack func(string, []PieceStack) []PieceStack
 
 	// end of turn
 	countPoints func(*Tile) int;
@@ -155,6 +155,7 @@ type PieceStack struct {
 }
 
 type Player struct {
+	Name string
 	Index int;
 	ActiveTribe *Tribe;
 	PassiveTribes []*Tribe;

@@ -29,24 +29,13 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 		InProgress:   false,
 		Gamestate:    gamestate.GameState{},
 		Map:          gameMap,
+		saveId:	      -1,
 	}
 	rooms[room.ID] = room
 
 	for i := range(maxPlayers) {
 		room.Players[i] = nil
 	}
-
-	tempState, err := gamestate.New(len(room.Players), room.Map.Name)
-	if err != nil {
-		log.Println("Error creating game:", err)
-		room.sendToRoomPlayers(messages.Message{
-			Type: "error",
-			Data: json.RawMessage([]byte(`{"message": "Could not create game"}`)),
-		})
-		return
-	}
-	room.Gamestate = *tempState
-
 
 	// Mark this client as the host
 	client.Username = username
@@ -266,6 +255,29 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		return
 	}
 
+	playerNames := make([]string, len(room.Players))
+	for i, client := range(room.Players) {
+		playerNames[i] = client.Username
+	}
+
+	if room.saveId == -1 {
+		newstate, err := gamestate.New(playerNames, client.Room.Map.Name)
+		if err != nil {
+			log.Println("error creating state")
+		}
+		client.Room.Gamestate = *newstate
+	} else {
+		// here dont forget you need to set the size and change the players names.
+		newstate, _, err := LoadGameState(room.saveId)
+		if err != nil {
+			log.Println("Error loading game", err)
+			client.sendError("error loading game")
+			return
+		}
+		client.Room.Gamestate = *newstate
+	}
+
+
 	// Mark the room as in-progress
 	room.InProgress = true
 	
@@ -311,7 +323,6 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 func (room *Room) sendToRoomPlayers (msg messages.Message) {
 	for _, player := range room.Players {
-		log.Println(player)
 		if player != nil {
 			room.mu.Lock()
 			err := player.Conn.WriteJSON(msg)
