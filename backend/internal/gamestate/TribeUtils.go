@@ -90,7 +90,10 @@ func CreateBaseTribe() *Tribe {
     }
 
     tribe.countDefense = func(tile *Tile) (int, int, int, error) {
-        price := CountDefense(tile)
+        price, error := tile.countDefense()
+        if error != nil {
+            return price, 0, 0, error
+        }
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 price += stack.Amount
@@ -154,6 +157,45 @@ func CreateBaseTribe() *Tribe {
         return nil, fmt.Errorf("There is no such stack")
     }
 
+    tribe.handleDeploymentOut = func(tile *Tile, stackType string, i int, gs *GameState) error {
+	stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
+	if err != nil {
+		return fmt.Errorf("Unable to redeploy", err)
+	}
+
+        player := tribe.Owner
+
+        ok := false
+        tile.PieceStacks, ok = SubtractPieceStacks(tile.PieceStacks, stacks)
+	if !ok {
+		return fmt.Errorf("Could not substract the stacks")
+	}
+	
+	player.PieceStacks = AddPieceStacks(player.PieceStacks, stacks)
+
+	return nil
+    }
+
+    tribe.handleDeploymentIn = func(tile *Tile, stackType string, i int, gs *GameState) error {
+	if !tribe.canBeRedeployedIn(tile, stackType, gs) {
+		return fmt.Errorf("Cannot redeploy here")
+	}
+
+        player := tribe.Owner
+
+	movingStack := tribe.getRedeploymentStack(stackType, player.PieceStacks)
+
+	newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
+	if !ok {
+		return fmt.Errorf("Cannot redeploy pieces you don't have")
+	}
+	player.PieceStacks = newStacks
+
+	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
+
+	return nil
+    }
+
     tribe.checkZoneAccess = func(t *Tile) error {
         if t.Biome == Water {
             return fmt.Errorf("Cannot conquer water!")
@@ -192,7 +234,7 @@ func CreateBaseTribe() *Tribe {
     }
 
     tribe.countPoints = func(tile *Tile) int {
-        return 1
+        return tile.countPoints()
     }
 
     tribe.countRemovableAttackingStacks = func(player *Player) []PieceStack {
@@ -219,10 +261,7 @@ func CreateBaseTribe() *Tribe {
         return false, nil
     }
 
-    tribe.getStacksForConquestTurn = func(*Player) {
-        return
-    }
-    
+    tribe.getStacksForConquestTurn = func(*Player, *GameState) {}
 
     tribe.prepareRemoval = func(gs *GameState) bool {
         for _, tile := range gs.TileList {
@@ -230,13 +269,8 @@ func CreateBaseTribe() *Tribe {
                 tribe.clearTile(tile, gs, 0)
             }
         }
-        newstacks := []PieceStack{}
-        for _, stack := range(tribe.Owner.PieceStacks) {
-            if !tribe.IsStackValid(stack.Type) {
-                newstacks = append(newstacks, stack)
-            }
-        }
-        tribe.Owner.PieceStacks = newstacks
+        player := tribe.Owner
+        player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, tribe.countRemovableAttackingStacks(player))
 
         return true
     }
@@ -246,8 +280,31 @@ func CreateBaseTribe() *Tribe {
     }
 
     // This function should be used to undo tribe advantages in certain tribe, although in an ideal world this would also deactivate any illegal actions, but should not be possible in the first place.
-    tribe.goIntoDecline = func(gs *GameState) {
+    tribe.goIntoDecline = func(gs *GameState) int {
+        player := tribe.Owner
+
+	for i, tribe := range player.PassiveTribes {
+		if (tribe.prepareRemoval(gs)) {
+			player.PassiveTribes = append(player.PassiveTribes[:i], player.PassiveTribes[i+1:]...)
+                        player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, tribe.countRemovableAttackingStacks(player))
+		}
+	}
+
+	for _, tile := range gs.TileList {
+            if tile.Presence != None && tile.OwningTribe.Race == player.ActiveTribe.Race {
+                tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, tile.OwningTribe.countRemovablePieces(tile))
+                tile.Presence = Passive
+            }
+        }
+
+	player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, player.ActiveTribe.countRemovableAttackingStacks(player))
         tribe.IsActive = false
+
+	player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
+	player.ActiveTribe = nil
+	player.HasActiveTribe = false
+
+	return gs.countPoints(player)
     }
 
     tribe.giveInitialStacks = func() []PieceStack {
@@ -295,15 +352,12 @@ func CreateBaseTribe() *Tribe {
 	return result, hasDiceBeenUsed, true, nil
     }
 
-    tribe.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
-        return stackType == string(tribe.Race)
+    tribe.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+        return stackType == string(tribe.Race) && tile.Presence != None && !tile.OwningTribe.checkPresence(tile, tribe.Race)
     }
     
     tribe.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {
-        if s == string(tribe.Race) {
-            return []PieceStack{{Type: string(tribe.Race), Amount: 1}}
-        }
-        return []PieceStack{}
+        return []PieceStack{{Type: s, Amount: 1, Tribe: &tribe}}
     }
 
     return &tribe

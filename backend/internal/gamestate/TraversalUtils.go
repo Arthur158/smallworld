@@ -1,19 +1,7 @@
 package gamestate;
-// import "log"
-
-func CountDefense(tile *Tile) int {
-    price := 2
-    if tile.Biome == Mountain {
-        price += 1
-    }
-    return price
-}
 
 func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
     for _, tile := range gs.TileList {
-        // log.Println(race)
-        // log.Println(tile)
-        // log.Println(tile.OwningTribe)
         if tile.Presence != None && tile.OwningTribe.checkPresence(tile, race) {
             return true
         }
@@ -22,11 +10,10 @@ func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
 }
 
 func (gs *GameState) GetPieceStackForConquest(player *Player) {
-    // if player.ActiveTribe != nil {
-    player.ActiveTribe.getStacksForConquestTurn(player)
+    player.ActiveTribe.getStacksForConquestTurn(player, gs)
     // }
     for _, tribe := range(player.PassiveTribes) {
-        tribe.getStacksForConquestTurn(player)
+        tribe.getStacksForConquestTurn(player, gs)
     }
     for _, tile := range gs.TileList {
         if tile.Presence != None {

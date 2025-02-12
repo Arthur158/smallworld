@@ -36,6 +36,11 @@ func Map1() map[string]*Tile {
         "29": {Id: "29", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
     }
 
+    for key := range(tileMap) {
+        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
+        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+    }
+
         // Step 2: Set adjacency by adding pointers to AdjacentTiles
     tileMap["0"].AdjacentTiles = []*Tile{
         tileMap["12"], tileMap["15"], tileMap["16"], tileMap["28"], tileMap["1"], tileMap["10"],
@@ -202,7 +207,7 @@ func Map2() map[string]*Tile {
         "14": {Id: "14", Biome: Water, Attributes: []Attribute{}},
         "15": {Id: "15", Biome: Mountain, Attributes: []Attribute{}},
         "16": {Id: "16", Biome: Field, Attributes: []Attribute{}},
-        "17": {Id: "17", Biome: Forest, Attributes: []Attribute{}, IsEdge: true},
+        "17": {Id: "17", Biome: Forest, Attributes: []Attribute{Magic}, IsEdge: true},
         "18": {Id: "18", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
         "19": {Id: "19", Biome: Field, Attributes: []Attribute{Magic}, IsEdge: true},
         "20": {Id: "20", Biome: Forest, Attributes: []Attribute{Mine}, IsEdge: true},
@@ -210,6 +215,10 @@ func Map2() map[string]*Tile {
         "22": {Id: "22", Biome: Hill, Attributes: []Attribute{}, IsEdge: true},
     }
 
+    for key := range(tileMap) {
+        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
+        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+    }
         // Step 2: Set adjacency by adding pointers to AdjacentTiles
     tileMap["0"].AdjacentTiles = []*Tile{
         tileMap["6"], tileMap["1"], 
@@ -244,7 +253,7 @@ func Map2() map[string]*Tile {
     }
 
     tileMap["8"].AdjacentTiles = []*Tile{
-        tileMap["7"], tileMap["14"], tileMap["15"], tileMap["4"], tileMap["3"], tileMap["2"],
+        tileMap["7"], tileMap["14"], tileMap["15"], tileMap["4"], tileMap["3"], tileMap["2"], tileMap["9"],
     }
 
     tileMap["9"].AdjacentTiles = []*Tile{

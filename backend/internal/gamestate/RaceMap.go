@@ -37,16 +37,6 @@ var RaceMap = map[Race]RaceValue {
 			    }
 			}
 		}
-		// oldhandleAbandonment := t.handleAbandonment
-		// t.handleAbandonment = func(tile *Tile, *) {
-		// 	oldhandleAbandonment(tile)
-		// 	for i, stack := range(tile.PieceStacks) {
-		// 		if stack.Type == "Lair" {
-		// 			tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-		// 			break
-		// 		}
-		// 	}
-		// }
 		}, Count: 5},
 	"Wizard": {Transform: func(t *Tribe) {
 		oldCountPoints := t.countPoints
@@ -268,8 +258,8 @@ var RaceMap = map[Race]RaceValue {
 			return stacks
 		}
 		oldCanBeRedeployedIn := t.canBeRedeployedIn
-		t.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
-			if oldCanBeRedeployedIn(tile, stackType) {
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			if oldCanBeRedeployedIn(tile, stackType, gs) {
 				return stackType != string(t.Race)
 			}
 			return false
@@ -277,8 +267,8 @@ var RaceMap = map[Race]RaceValue {
 		}, Count: 11},
 	"Barbarian": {Transform: func(t *Tribe) {
 		oldCanBeRedeployedIn := t.canBeRedeployedIn
-		t.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
-			if oldCanBeRedeployedIn(tile, stackType) {
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			if oldCanBeRedeployedIn(tile, stackType, gs) {
 				return stackType != string(t.Race)
 			}
 			return false
@@ -296,8 +286,8 @@ var RaceMap = map[Race]RaceValue {
 		}, Count: 9},
 	"Sorcerer": {Transform: func(t *Tribe) {
 		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
-		t.getStacksForConquestTurn = func(player *Player) {
-			oldgetStacksForConquestTurn(player)
+		t.getStacksForConquestTurn = func(player *Player, gs *GameState) {
+			oldgetStacksForConquestTurn(player, gs)
 			newstacks := []PieceStack{}
 			for _, stack := range(player.PieceStacks) {
 				if stack.Type != "Staff" {
@@ -333,7 +323,6 @@ var RaceMap = map[Race]RaceValue {
 			}
 
 
-			// var tileCost, moneyGainDefender, moneyLossAttacker int
 			if tile.Presence == Active {
 				// Maybe do something with those, in case this is actually considered a conquest
 				_, _, _, err := tile.OwningTribe.countDefense(tile)
@@ -360,8 +349,8 @@ var RaceMap = map[Race]RaceValue {
 		}, Count: 5},
 	"Wendigo": {Transform: func(t *Tribe) {
 		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
-		t.getStacksForConquestTurn = func(player *Player) {
-			oldgetStacksForConquestTurn(player)
+		t.getStacksForConquestTurn = func(player *Player, gs *GameState) {
+			oldgetStacksForConquestTurn(player, gs)
 			newstacks := []PieceStack{}
 			for _, stack := range(player.PieceStacks) {
 				if stack.Type != "Power" {
@@ -389,7 +378,6 @@ var RaceMap = map[Race]RaceValue {
 				return true, fmt.Errorf("This is not a forest!")
 			}
 
-			// var tileCost, moneyGainDefender, moneyLossAttacker int
 			if tile.Presence == Active {
 				// Maybe do something with those, in case this is actually considered a conquest
 				_, _, _, err := tile.OwningTribe.countDefense(tile)
@@ -483,8 +471,8 @@ var RaceMap = map[Race]RaceValue {
 			return stackType == "Cauldron" || oldIsStackValid(stackType)
 		}
 		oldCanBeRedeployedIn := t.canBeRedeployedIn
-		t.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
-			if oldCanBeRedeployedIn(tile, stackType) {
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			if oldCanBeRedeployedIn(tile, stackType, gs) {
 				return true
 			}
 			if stackType == "Cauldron" {
@@ -665,8 +653,8 @@ var RaceMap = map[Race]RaceValue {
 			return oldcanTileBeAbandoned(tile) || (tile.OwningTribe.Race == t.Race)
 		}
 		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
-		t.getStacksForConquestTurn = func(player *Player) {
-			oldgetStacksForConquestTurn(player)
+		t.getStacksForConquestTurn = func(player *Player, gs *GameState) {
+			oldgetStacksForConquestTurn(player, gs)
 			t.State["deploy"] = make(map[string]int)
 		}
 		oldGetStacksForConquest := t.getStacksForConquest
@@ -681,8 +669,7 @@ var RaceMap = map[Race]RaceValue {
 
 		}
 		oldgoIntoDecline := t.goIntoDecline
-		t.goIntoDecline = func(gs *GameState) {
-			oldgoIntoDecline(gs)
+		t.goIntoDecline = func(gs *GameState) int {
 			pawns, _ := t.State["deploy"].(map[string]int)
 			for id, amount := range(pawns) {
 				movingStack := []PieceStack{{Type: string(t.Race), Amount: amount}}
@@ -690,6 +677,7 @@ var RaceMap = map[Race]RaceValue {
 				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
 				gs.Players[gs.TurnInfo.PlayerIndex].PieceStacks, _ = SubtractPieceStacks(gs.Players[gs.TurnInfo.PlayerIndex].PieceStacks, movingStack)
 			}
+			return oldgoIntoDecline(gs)
 
 		}
 		}, Count: 5},
@@ -724,8 +712,8 @@ var RaceMap = map[Race]RaceValue {
 			}
 
 			attackCostStacks, moneyGainAttacker, moneyLossDefender, _ := t.countAttack(tile, tileCost, stackType)
-			newTileStacks := t.countNewTileStacks(attackCostStacks, tile)
-			newStacks, hasDiceBeenUsed, ok, err := t.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
+			stacks, hasDiceBeenUsed, ok, err := t.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
+			newTileStacks := t.countNewTileStacks(stacks, tile)
 			if err != nil {
 				return true, err
 			}
@@ -737,7 +725,7 @@ var RaceMap = map[Race]RaceValue {
 			    tile.PieceStacks[i].Tribe = tile.OwningTribe
 			}
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
-			attacker.PieceStacks = newStacks
+			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, stacks)
 			attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
 			// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 			tile.OwningTribe = t
@@ -769,13 +757,13 @@ var RaceMap = map[Race]RaceValue {
 			return old
 		}
 		oldCanBeRedeployedIn := t.canBeRedeployedIn
-		t.canBeRedeployedIn = func(tile *Tile, stackType string) bool {
-			old := oldCanBeRedeployedIn(tile, stackType)
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			old := oldCanBeRedeployedIn(tile, stackType, gs)
 			if old {
 				return old
 			}
 			for _, stack := range(tile.PieceStacks) {
-				if stack.Tribe != nil && stack.Tribe.canBeRedeployedIn(tile, stackType) {
+				if stack.Tribe != nil && stack.Tribe.canBeRedeployedIn(tile, stackType, gs) {
 					return true
 				}
 			}
@@ -913,4 +901,95 @@ var RaceMap = map[Race]RaceValue {
 			return count
 		}
 		}, Count: 4},
+	"Ice Witch": {Transform: func(t *Tribe) {
+		oldStartRedeployment := t.startRedeployment
+		t.startRedeployment = func(gs *GameState) []PieceStack {
+			stacks := oldStartRedeployment(gs)
+			count := 0
+			for _, tile := range(gs.TileList) {
+				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+					for _, attr := range(tile.Attributes) {
+						if attr == Magic {
+							count += 1
+						}
+					}
+				}
+			}
+			stacks = append(stacks, PieceStack{Type:"Winter", Amount: count})
+			return stacks
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Winter"
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range tile.PieceStacks {
+				if stack.Type == "Winter" {
+					old += stack.Amount
+				}
+			}
+			return old, g, l, nil
+		}
+		oldCanBeRedeployedIn := t.canBeRedeployedIn
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			if oldCanBeRedeployedIn(tile, stackType, gs) {
+				return true
+			}
+			if stackType == "Winter" {
+				for _, stack := range tile.PieceStacks {
+					if stack.Type == "Winter" {
+						return false
+					}
+				}
+				return true
+			}
+			return false
+		}
+		oldhandleDeploymentIn := t.handleDeploymentIn
+		t.handleDeploymentIn = func (tile *Tile, stackType string, i int, gs *GameState) error {
+			err := oldhandleDeploymentIn(tile, stackType, i, gs)
+			if err != nil {
+				return err
+			}
+			if stackType == "Winter" {
+				tile.ModifierPoints["Winter"] = func(i int) int {
+					for _, stack := range(tile.PieceStacks) {
+						if stack.Type == "Winter" {
+							return i - 1
+						}
+					}
+					return i
+				}
+			}
+			return err
+		}
+		oldCountPoints := t.countPoints
+		t.countPoints = func(tile *Tile) int {
+			count := oldCountPoints(tile)
+			for _, stack := range tile.PieceStacks {
+				if stack.Type == "Winter" {
+					return count + 1
+				}
+			}
+			return count
+		}
+		oldgoIntoDecline := t.goIntoDecline
+		t.goIntoDecline = func(gs *GameState) int {
+			points := oldgoIntoDecline(gs)
+			for _, tile := range(gs.TileList) {
+				delete(tile.ModifierPoints, "Winter")
+				for i, stack := range(tile.PieceStacks) {
+					if stack.Type == "Winter" {
+						tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+					}
+				}
+			}
+			return points
+		}
+		}, Count: 5},
 }
