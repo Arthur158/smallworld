@@ -540,11 +540,13 @@ func (room *Room) sendSmallMapUpdate() {
 	type mapUpdateData struct {
 		MapName string `json: "mapName"`
 		OffSet float64 `json:"offset"`
+		FontSize int `json:"fontSize`
 	}
 
 	update := mapUpdateData{
 		MapName: room.Map.Name,
 		OffSet: room.Map.Offset,
+		FontSize: room.Map.FontSize,
 	}
 
 

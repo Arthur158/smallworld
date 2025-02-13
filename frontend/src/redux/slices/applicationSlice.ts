@@ -33,7 +33,8 @@ const initialState: ApplicationState = {
   isAuthenticated: false,
   saveGames: [],
   saveSelectionId: -1,
-  mapName: null
+  mapName: null,
+  fontSize: 20
 };
 
 const applicationSlice = createSlice({
@@ -182,6 +183,7 @@ const applicationSlice = createSlice({
         case 'smallmapupdate': {
           state.offsetMapTiles = parsedData.offset;
           state.mapName = parsedData.MapName;
+          state.fontSize = parsedData.FontSize
 
           // Load tile definitions from your local map data
           const mapKey = state.mapName || '';

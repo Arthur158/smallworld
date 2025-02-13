@@ -27,6 +27,7 @@ export interface ApplicationState {
   saveGames: SaveGameInfo[]
   saveSelectionId: number
   mapName: string | null;
+  fontSize: number
 }
 
 export type RootState = {

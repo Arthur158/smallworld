@@ -30,6 +30,7 @@ type Map struct {
 	Name	string
 	populateMap   func() []TileData
 	Offset float64
+	FontSize int
 }
 
 type TilePolygon struct {

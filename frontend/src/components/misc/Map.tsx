@@ -50,6 +50,7 @@ export default function Map() {
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
   const mapName = useSelector((state: RootState) => state.application.mapName);
   const phase = useSelector((state: RootState) => state.application.phase);
+  const fontsize = useSelector((state: RootState) => state.application.fontSize);
 
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({
     width: 0,
@@ -86,12 +87,12 @@ export default function Map() {
   useEffect(() => {
     if (!mapName) return;
     const image = new Image();
-    image.src = `/maps/${mapName}.jpg`;
+    image.src = `/maps/${mapName}.png`;
     image.onload = () => {
       setImageDimensions({ width: image.width, height: image.height });
     };
     image.onerror = () => {
-      console.error(`Failed to load map image: /maps/${mapName}.jpg`);
+      console.error(`Failed to load map image: /maps/${mapName}.png`);
     };
   }, [mapName]);
 
@@ -360,7 +361,7 @@ export default function Map() {
             y={0}
             width={imageDimensions.width}
             height={imageDimensions.height}
-            href={`/maps/${mapName}.jpg`}
+            href={`/maps/${mapName}.png`}
           />
 
           {/* Invisible polygons for tile click detection */}
@@ -368,8 +369,7 @@ export default function Map() {
             const scaledCoords = tile.polygon.coords.map(
               (coord: number) =>
                 coord *
-                (imageDimensions.width / baseWidth) *
-                0.378
+                (imageDimensions.width / baseWidth) * offsetMapTiles
             );
             const points: string[] = [];
             for (let i = 0; i < scaledCoords.length; i += 2) {
@@ -464,7 +464,7 @@ export default function Map() {
                                   x={pieceX * offsetMapTiles + baseSize * 0.97 }
                                   y={pieceY * offsetMapTiles - baseSize * 0.27 }
                                   fill="black"
-                                  fontSize={`${18 / offsetMapTiles}`}
+                                  fontSize={`${fontsize}`}
                                   fontWeight="bold"
                                   textAnchor="end"
                                   dominantBaseline="hanging"
