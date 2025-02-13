@@ -346,6 +346,16 @@ var RaceMap = map[Race]RaceValue {
 			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Staff", Amount: 1}})
 			return true, nil
 		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Staff" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
 		}, Count: 5},
 	"Wendigo": {Transform: func(t *Tribe) {
 		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
@@ -402,7 +412,7 @@ var RaceMap = map[Race]RaceValue {
 		oldhandleAbandonment := t.handleAbandonment
 		t.handleAbandonment = func(tile *Tile, gs *GameState) {
 			oldhandleAbandonment(tile, gs)
-			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Coin", Amount: 1}})
+			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Coin", Amount: 1, Tribe: t}})
 			if abandonedTiles, ok := t.State["abandonedTiles"].([]string); ok {
 				t.State["abandonedTiles"] = append(abandonedTiles, tile.Id)
 			} else {
@@ -863,21 +873,15 @@ var RaceMap = map[Race]RaceValue {
 			}
 			tile.Presence = Passive
 			player := t.Owner
-			for i, tribe := range player.PassiveTribes {
-				if (tribe.prepareRemoval(gs)) {
-					player.PassiveTribes = append(player.PassiveTribes[:i], player.PassiveTribes[i+1:]...)
-				}
-			}
-			t.goIntoDecline(gs)
-			player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, player.ActiveTribe.countRemovableAttackingStacks(player))
-			player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, []PieceStack{{Type: "Decline", Amount: 1}})
+			points := t.goIntoDecline(gs)
+			player.CoinPile += points
 
-			player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
-			player.ActiveTribe = nil
-			player.HasActiveTribe = false
-
-			player.CoinPile += gs.countPoints(player)
 			player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
+			gs.Messages = append(gs.Messages, fmt.Sprintf(
+				"%s went into decline and made %d points this turn",
+				player.Name,
+				player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
+			    ))
 
 			gs.handleNextPlayerTurn()
 			return true, nil

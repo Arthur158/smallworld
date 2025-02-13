@@ -314,6 +314,13 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 	player.CoinPile += gs.countPoints(player)
 	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
 
+	gs.Messages = append(gs.Messages, fmt.Sprintf(
+			"%s made %d points this turn",
+			player.Name,
+			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
+		    ),
+)
+
 	gs.handleNextPlayerTurn()
 
 	return nil
@@ -338,6 +345,12 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 	points := player.ActiveTribe.goIntoDecline(gs)
 	player.CoinPile += points
 	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
+
+	gs.Messages = append(gs.Messages, fmt.Sprintf(
+			"%s went into decline and made %d points this turn",
+			player.Name,
+			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
+		    ))
 
 	gs.handleNextPlayerTurn()
 

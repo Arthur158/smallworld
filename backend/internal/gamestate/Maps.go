@@ -281,7 +281,7 @@ func Map2() map[string]*Tile {
     }
 
     tileMap["15"].AdjacentTiles = []*Tile{
-        tileMap["20"], tileMap["21"], tileMap["20"], tileMap["16"], tileMap["14"], tileMap["8"],
+        tileMap["9"], tileMap["21"], tileMap["20"], tileMap["16"], tileMap["14"], tileMap["8"],
     }
 
     tileMap["16"].AdjacentTiles = []*Tile{

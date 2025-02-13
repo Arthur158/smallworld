@@ -353,7 +353,7 @@ func CreateBaseTribe() *Tribe {
     }
 
     tribe.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
-        return stackType == string(tribe.Race) && tile.Presence != None && !tile.OwningTribe.checkPresence(tile, tribe.Race)
+        return stackType == string(tribe.Race) && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)
     }
     
     tribe.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {

@@ -95,10 +95,10 @@ const applicationSlice = createSlice({
         // ---------------------------------------------------------------------
         // NEW: Rooms Lobby Management
         // ---------------------------------------------------------------------
-        case 'gamestarted': {
-          state.gameStarted = true
-          break;
-        }
+        // case 'gamestarted': {
+        //   state.gameStarted = true
+        //   break;
+        // }
         case 'auth': {
           state.gameStarted = false
           state.isAuthenticated = true
@@ -128,6 +128,7 @@ const applicationSlice = createSlice({
 
         case 'index':
           state.playerIndex = Number(parsedData.index);
+          state.gameStarted = true
           break;
         case 'roomid':
           state.roomid = parsedData.roomid;
@@ -136,7 +137,6 @@ const applicationSlice = createSlice({
           state.roomid = ""
           state.gameStarted = false
           break;
-
         case 'error':
           state.error = parsedData.message;
           state.messages.push(JSON.stringify(parsedData.message));
@@ -276,6 +276,98 @@ const applicationSlice = createSlice({
         case 'message':
           state.messages.push(JSON.stringify(parsedData.message));
           break;
+         case 'megaUpdate': {
+          // This is your combined big update.
+          // Pull out the relevant fields one by one.
+
+          // 1) Turn info
+          state.playerNumber = parsedData.turnInfo.playerNumber;
+          state.turnNumber   = parsedData.turnInfo.turnNumber;
+          state.phase        = parsedData.turnInfo.phase;
+
+          // 2) Players
+          const players: Player[] = [];
+          for (let i = 0; i < parsedData.players.length; i++) {
+            const pData = parsedData.players[i];
+            const tempPlayer: Player = {
+              name: pData.name,
+              activeTribe: {
+                race: pData.activeTribe.race,
+                trait: pData.activeTribe.trait,
+              },
+              passiveTribes: [],
+              pieceStacks: [],
+            };
+
+            // Passive tribes
+            if (pData.passiveTribes && Array.isArray(pData.passiveTribes)) {
+              for (const t of pData.passiveTribes) {
+                tempPlayer.passiveTribes.push({
+                  race: t.race,
+                  trait: t.trait,
+                });
+              }
+            }
+
+            // Piece stacks
+            if (pData.pieceStacks && Array.isArray(pData.pieceStacks)) {
+              for (const stack of pData.pieceStacks) {
+                tempPlayer.pieceStacks.push({
+                  type: stack.type,
+                  amount: stack.amount,
+                  isActive: stack.isActive,
+                });
+              }
+            }
+
+            players.push(tempPlayer);
+          }
+          state.players = players;
+
+          // 3) Tribe entries
+          const newTribeEntries: TribeEntry[] = [];
+          if (Array.isArray(parsedData.tribeEntries)) {
+            parsedData.tribeEntries.forEach((entry: any) => {
+              newTribeEntries.push({
+                race: entry.race,
+                trait: entry.trait,
+                pieceCount: entry.pieceCount || entry.piecePile,  // depending on naming
+                coinCount: entry.coinCount || entry.coinPile,      // depending on naming
+              });
+            });
+          }
+          state.availableTribes = newTribeEntries;
+
+          // 4) All tiles
+          if (Array.isArray(parsedData.allTiles)) {
+            for (const t of parsedData.allTiles) {
+              const tileId = Number(t.tileID);
+              const tileObj = state.tiles[tileId];
+              if (!tileObj) {
+                console.error('Tile does not exist:', tileId);
+                continue;
+              }
+              const stacks = [];
+              for (const stack of t.stacks) {
+                stacks.push({
+                  type: stack.type,
+                  amount: stack.amount,
+                  isActive: stack.isActive,
+                });
+              }
+              tileObj.pieceStack = stacks;
+            }
+          }
+
+          // 5) Next player index (if needed)
+          // e.g., you might store it or do something else with it:
+          // state.playerNumber = parsedData.nextPlayerIndex;
+
+          // 6) Optionally mark the game as started, etc.
+          state.gameStarted = true;
+
+          break;
+        }
 
         default:
           console.warn('Unhandled WebSocket message type:', data);

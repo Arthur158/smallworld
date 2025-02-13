@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"backend/internal/messages"
 	"backend/internal/gamestate"
-	"fmt"
 )
 
 
@@ -28,10 +27,7 @@ func (client *Client) handleTribePick (msg messages.Message) {
 	if err := client.Room.Gamestate.HandleTribeChoice(client.Index, pickData.PickIndex); err != nil {
 		client.sendError(err.Error())
 	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendTurnUpdate()
-		client.Room.sendEntriesUpdate()
-		client.Room.sendAllTileUpdate()
+		client.Room.sendBigUpdate()
 	}
 }
 
@@ -54,8 +50,7 @@ func (client *Client) handleAbandonment (msg messages.Message) {
 	if err := client.Room.Gamestate.HandleAbandonment(client.Index, abandonmentData.TileID); err != nil {
 		client.sendError(err.Error())
 	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendTileUpdate(abandonmentData.TileID)
+		client.Room.sendBigUpdate()
 	}
 }
 
@@ -79,11 +74,8 @@ func (client *Client) handleConquest (msg messages.Message) {
 
 	if err := client.Room.Gamestate.HandleConquest(conquestData.TileID, client.Index, conquestData.AttackingStackType); err != nil {
 		client.sendError(err.Error())
-		client.Room.sendTurnUpdate()
 	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendAllTileUpdate()
-		client.Room.sendTurnUpdate()
+		client.Room.sendBigUpdate()
 	}
 }
 
@@ -99,9 +91,7 @@ func (client *Client) handleStartRedeployment () {
 	if err := client.Room.Gamestate.HandleStartRedeployment(client.Index); err != nil {
 		client.sendError(err.Error())
 	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendTurnUpdate()
-		client.Room.sendAllTileUpdate()
+		client.Room.sendBigUpdate()
 	}
 }
 
@@ -126,9 +116,7 @@ func (client *Client) handleRedeploymentIn (msg messages.Message) {
 	if err := client.Room.Gamestate.HandleRedeploymentIn(client.Index, deployData.TileID, deployData.StackType, 1); err != nil {
 		client.sendError(err.Error())
 	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendTileUpdate(deployData.TileID)
-		client.Room.sendTurnUpdate()
+		client.Room.sendBigUpdate()
 	}
 }
 
@@ -153,9 +141,7 @@ func (client *Client) handleRedeploymentOut (msg messages.Message) {
 	if err := client.Room.Gamestate.HandleRedeploymentOut(client.Index, deployData.TileID, deployData.StackType); err != nil {
 		client.sendError(err.Error())
 	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendTileUpdate(deployData.TileID)
-		client.Room.sendTurnUpdate()
+		client.Room.sendBigUpdate()
 	}
 }
 
@@ -183,10 +169,7 @@ func (client *Client) handleRedeploymentThrough (msg messages.Message) {
 	} else if err := client.Room.Gamestate.HandleRedeploymentIn(client.Index, deployData.TileToID, deployData.StackType, 1); err != nil {
 		client.sendError(err.Error())
 	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendTileUpdate(deployData.TileFromID)
-		client.Room.sendTileUpdate(deployData.TileToID)
-		client.Room.sendTurnUpdate()
+		client.Room.sendBigUpdate()
 	}
 }
 
@@ -206,20 +189,7 @@ func (client *Client) handleFinishTurn () {
 		// state, err := LoadGameState(index)
 		// log.Println(err)
 		// client.Room.Gamestate = *state
-		client.Room.sendPlayerUpdate()
-
-		client.Room.sendTurnUpdate()
-		client.Room.sendAllTileUpdate()
-
-		pointsList := client.Room.Gamestate.Players[client.Index].PointsEachTurn
-		client.Room.sendStateMessage(
-		    fmt.Sprintf(
-			"%s made %d points this turn",
-			client.Username,
-			pointsList[len(pointsList) - 1]-pointsList[len(pointsList) - 2],
-		    ),
-		)
-
+		client.Room.sendBigUpdate()
 		if client.Room.Gamestate.TurnInfo.Phase == gamestate.GameFinished {
 			client.Room.sendGameFinishedUpdate()
 			client.Room.InProgress = false
@@ -238,18 +208,7 @@ func (client *Client) handleDecline () {
 	if err := client.Room.Gamestate.HandleDecline(client.Index); err != nil {
 		client.sendError(err.Error())
 	} else {
-		client.Room.sendPlayerUpdate()
-		client.Room.sendTurnUpdate()
-		client.Room.sendAllTileUpdate()
-
-		pointsList := client.Room.Gamestate.Players[client.Index].PointsEachTurn
-		client.Room.sendStateMessage(
-		    fmt.Sprintf(
-			"player %s made %d points this turn",
-			client.Username,
-			pointsList[len(pointsList) - 1]-pointsList[len(pointsList) - 2],
-		    ),
-		)
+		client.Room.sendBigUpdate()
 
 		if client.Room.Gamestate.TurnInfo.Phase == gamestate.GameFinished {
 			client.Room.sendGameFinishedUpdate()

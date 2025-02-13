@@ -13,7 +13,6 @@ func readMessages(client *Client) {
 	conn := client.Conn
 	for {
 		// Read message from the WebSocket connection
-		log.Println(client.Username)
 		_, messageBytes, err := conn.ReadMessage()
 		if err != nil {
 			// Client has disconnected or an error occurred
@@ -238,6 +237,7 @@ func (client *Client) handleLogin(userName string, password string) {
 			room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
 		}
 		room.sendBigUpdate()
+		room.sendMapUpdate()
 		client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 	}
 

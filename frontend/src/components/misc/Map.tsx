@@ -374,17 +374,6 @@ export default function Map() {
                                   />
                                 )}
                                 <text
-                                  x={pieceX * offsetMapTiles + baseSize / 2}
-                                  y={pieceY * offsetMapTiles - baseSize / 2}
-                                  fill="white"
-                                  fontSize="8"
-                                  fontWeight="bold"
-                                  textAnchor="middle"
-                                  dominantBaseline="middle"
-                                >
-                                  {stack.type}
-                                </text>
-                                <text
                                   x={pieceX * offsetMapTiles + baseSize - 3}
                                   y={pieceY * offsetMapTiles - baseSize + 45}
                                   fill="black"

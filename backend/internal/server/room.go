@@ -281,7 +281,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	// Mark the room as in-progress
 	room.InProgress = true
 	
-	room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
+	// room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
 	for i, client := range room.Players {
 		client.sendMessage("index", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(i) + `"}`)))
 		client.Index = i
@@ -314,9 +314,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	}()
 
 	room.sendMapUpdate()
-	room.sendEntriesUpdate()
-	room.sendPlayerUpdate()
-	room.sendAllTileUpdate()
+	room.sendBigUpdate()
 
 	sendRoomsUpdateToAll()
 }
@@ -334,6 +332,24 @@ func (room *Room) sendToRoomPlayers (msg messages.Message) {
 	}
 }
 
+func (room *Room) sendNextPlayerReady() {
+	if !room.InProgress {
+		log.Println("Game has not started")
+		return
+	}
+	player := room.Players[room.Gamestate.TurnInfo.PlayerIndex]
+	if player == nil {
+		log.Println("Problem with the player")
+		return
+	}
+	room.mu.Lock()
+	err := player.Conn.WriteJSON(messages.Message{Type: "ready"})
+	room.mu.Unlock()
+	if err != nil {
+		log.Println("Error sending message:", err)
+	}
+}
+
 func (room *Room) sendStateMessage (message string) {
 	room.sendToRoomPlayers(messages.Message{
 		Type: "message",
@@ -341,15 +357,21 @@ func (room *Room) sendStateMessage (message string) {
 	})
 }
 
+
+
 func (room *Room) sendBigUpdate() {
-	if (room.InProgress) {
-		room.sendMapUpdate()
-		room.sendAllTileUpdate()
-		room.sendTurnUpdate()
-		room.sendPlayerUpdate()
-		room.sendEntriesUpdate()
+	if room.InProgress {
+		room.sendMegaUpdate()
+		room.sendNextPlayerReady()
 	}
-	sendRoomsUpdateToAll()
+	// if (room.InProgress) {
+	// 	room.sendAllTileUpdate()
+	// 	room.sendTurnUpdate()
+	// 	room.sendPlayerUpdate()
+	// 	room.sendEntriesUpdate()
+	// 	room.sendNextPlayerReady()
+	// }
+	// sendRoomsUpdateToAll()
 }
 
 func (room *Room) sendTurnUpdate() {
@@ -554,4 +576,189 @@ func copyOrDefault(t *gamestate.Tribe, defaultVal bool) *bool {
         return &defaultVal
     }
     return &t.IsActive
+}
+
+
+func (room *Room) sendMegaUpdate() {
+	if !room.InProgress {
+		log.Println("Game has not started, sending MegaUpdate anyway might be pointless.")
+	}
+
+	type MegaUpdate struct {
+		TurnInfo struct {
+			TurnNumber   int    `json:"turnNumber"`
+			PlayerNumber int    `json:"playerNumber"`
+			Phase        string `json:"phase"`
+		} `json:"turnInfo"`
+
+		Players []struct {
+			Name          string `json:"name"`
+			ActiveTribe   struct {
+				Race  string `json:"race"`
+				Trait string `json:"trait"`
+			} `json:"activeTribe"`
+			PassiveTribes []struct {
+				Race  string `json:"race"`
+				Trait string `json:"trait"`
+			} `json:"passiveTribes"`
+			PieceStacks []struct {
+				Type     string `json:"type"`
+				Amount   int    `json:"amount"`
+				IsActive bool   `json:"isActive"`
+			} `json:"pieceStacks"`
+		} `json:"players"`
+
+		TribeEntries []struct {
+			Race      string `json:"race"`
+			Trait     string `json:"trait"`
+			CoinPile  int    `json:"coinCount"`
+			PiecePile int    `json:"pieceCount"`
+		} `json:"tribeEntries"`
+
+		AllTiles []struct {
+			TileID string `json:"tileID"`
+			Stacks []struct {
+				Type     string `json:"type"`
+				Amount   int    `json:"amount"`
+				IsActive bool   `json:"isActive"`
+			} `json:"stacks"`
+		} `json:"allTiles"`
+
+		NextPlayerIndex int `json:"nextPlayerIndex"`
+	}
+
+	var mega MegaUpdate
+
+	// -- Turn Info --
+	mega.TurnInfo.TurnNumber = room.Gamestate.TurnInfo.TurnIndex
+	mega.TurnInfo.PlayerNumber = room.Gamestate.TurnInfo.PlayerIndex
+	mega.TurnInfo.Phase = room.Gamestate.TurnInfo.Phase.String()
+
+	// -- Players --
+	for i, p := range room.Gamestate.Players {
+		if p == nil {
+			continue
+		}
+
+		var playerData struct {
+			Name          string `json:"name"`
+			ActiveTribe   struct {
+				Race  string `json:"race"`
+				Trait string `json:"trait"`
+			} `json:"activeTribe"`
+			PassiveTribes []struct {
+				Race  string `json:"race"`
+				Trait string `json:"trait"`
+			} `json:"passiveTribes"`
+			PieceStacks []struct {
+				Type     string `json:"type"`
+				Amount   int    `json:"amount"`
+				IsActive bool   `json:"isActive"`
+			} `json:"pieceStacks"`
+		}
+		// Make sure empty slices don't become null
+		playerData.PassiveTribes = make([]struct {
+			Race  string `json:"race"`
+			Trait string `json:"trait"`
+		}, 0)
+		playerData.PieceStacks = make([]struct {
+			Type     string `json:"type"`
+			Amount   int    `json:"amount"`
+			IsActive bool   `json:"isActive"`
+		}, 0)
+
+		playerData.Name = room.Players[i].Username
+		if p.HasActiveTribe {
+			playerData.ActiveTribe.Race = string(p.ActiveTribe.Race)
+			playerData.ActiveTribe.Trait = string(p.ActiveTribe.Trait)
+		} else {
+			playerData.ActiveTribe.Race = ""
+			playerData.ActiveTribe.Trait = ""
+		}
+
+		for _, tribe := range p.PassiveTribes {
+			playerData.PassiveTribes = append(playerData.PassiveTribes, struct {
+				Race  string `json:"race"`
+				Trait string `json:"trait"`
+			}{
+				Race:  string(tribe.Race),
+				Trait: string(tribe.Trait),
+			})
+		}
+
+		for _, stack := range p.PieceStacks {
+			isActive := true
+			if stack.Tribe != nil {
+				isActive = stack.Tribe.IsActive
+			}
+			playerData.PieceStacks = append(playerData.PieceStacks, struct {
+				Type     string `json:"type"`
+				Amount   int    `json:"amount"`
+				IsActive bool   `json:"isActive"`
+			}{
+				Type:     stack.Type,
+				Amount:   stack.Amount,
+				IsActive: isActive,
+			})
+		}
+
+		mega.Players = append(mega.Players, playerData)
+	}
+
+	// -- Tribe Entries --
+	for _, entry := range room.Gamestate.TribeList[:5] {
+		mega.TribeEntries = append(mega.TribeEntries, struct {
+			Race      string `json:"race"`
+			Trait     string `json:"trait"`
+			CoinPile  int    `json:"coinCount"`
+			PiecePile int    `json:"pieceCount"`
+		}{
+			Race:      string(entry.Race),
+			Trait:     string(entry.Trait),
+			CoinPile:  entry.CoinPile,
+			PiecePile: entry.PiecePile,
+		})
+	}
+
+	// -- All Tiles --
+	for _, tile := range room.Gamestate.TileList {
+		var tileData struct {
+			TileID string `json:"tileID"`
+			Stacks []struct {
+				Type     string `json:"type"`
+				Amount   int    `json:"amount"`
+				IsActive bool   `json:"isActive"`
+			} `json:"stacks"`
+		}
+		tileData.TileID = tile.Id
+		// Make sure empty slices don't become null
+		tileData.Stacks = make([]struct {
+			Type     string `json:"type"`
+			Amount   int    `json:"amount"`
+			IsActive bool   `json:"isActive"`
+		}, 0)
+
+		for _, stack := range tile.PieceStacks {
+			isActive := (tile.Presence == gamestate.Active)
+			if stack.Tribe != nil {
+				isActive = stack.Tribe.IsActive
+			}
+			tileData.Stacks = append(tileData.Stacks, struct {
+				Type     string `json:"type"`
+				Amount   int    `json:"amount"`
+				IsActive bool   `json:"isActive"`
+			}{
+				Type:     stack.Type,
+				Amount:   stack.Amount,
+				IsActive: isActive,
+			})
+		}
+		mega.AllTiles = append(mega.AllTiles, tileData)
+	}
+
+	jsonData, _ := json.MarshalIndent(mega, "", "  ")
+	room.sendToRoomPlayers(messages.Message{
+		Type: "megaUpdate",
+		Data: jsonData,
+	})
 }
