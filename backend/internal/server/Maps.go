@@ -30,13 +30,18 @@ var Map5 = Map{
 	Offset: 1.185,
 }
 
+var Map4 = Map{
+	Name: "map4players",
+	Offset: 0.378,
+}
+
 var Map2 = Map{
 	Name: "map2players",
 	Offset: 0.728,
 }
 
 var mapMap = map[int]Map {
-	2: Map2,
+	2: Map4,
 	3: Map3,
 	4: Map5,
 	5: Map5,

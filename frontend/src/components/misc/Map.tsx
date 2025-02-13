@@ -40,6 +40,9 @@ function ImageOrBlueSquare({
 export default function Map() {
   const dispatch = useDispatch();
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
   const tiles: Record<string, Tile> = useSelector((state: RootState) => state.application.tiles);
   const offsetMapTiles: number = useSelector((state: RootState) => state.application.offsetMapTiles);
   const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
@@ -59,8 +62,10 @@ export default function Map() {
   const [isPanning, setIsPanning] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [movedDistance, setMovedDistance] = useState(0);
+  const [minScale, setMinScale] = useState(1);
 
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  const maxScale = 5;
+  const baseWidth = 1130;
 
   useEffect(() => {
     const styles = document.createElement('style');
@@ -77,19 +82,11 @@ export default function Map() {
     document.head.appendChild(styles);
   }, []);
 
+  // Load the map image so we know its natural dimensions
   useEffect(() => {
-    // if (!mapImageUrl) return;
-    // const image = new Image();
-    // image.src = mapImageUrl;
-    // image.onload = () => {
-    //   setImageDimensions({ width: image.width, height: image.height });
-    // };
-    // image.onerror = () => {
-    //   console.error('Failed to load map image from blob URL');
-    // };
     if (!mapName) return;
     const image = new Image();
-    image.src =   `/maps/${mapName}.jpg`; // Public folder is served as root in Vite/CRA
+    image.src = `/maps/${mapName}.jpg`;
     image.onload = () => {
       setImageDimensions({ width: image.width, height: image.height });
     };
@@ -98,6 +95,34 @@ export default function Map() {
     };
   }, [mapName]);
 
+  // Once we know the image size and the container size, we can figure out the minScale
+  // so that the image is entirely contained, and also center it.
+  useEffect(() => {
+    if (!containerRef.current) return;
+    if (!imageDimensions.width || !imageDimensions.height) return;
+
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+
+    if (!containerWidth || !containerHeight) return;
+
+    // Compute the minimal scale that fits the entire image inside the container
+    const fitScaleX = containerWidth / imageDimensions.width;
+    const fitScaleY = containerHeight / imageDimensions.height;
+    const newMinScale = Math.min(fitScaleX, fitScaleY);
+
+    setMinScale(newMinScale);
+    setScale(newMinScale);
+
+    // Center the image at first (when scale = minScale)
+    const centeredX = (containerWidth - imageDimensions.width * newMinScale) / 2;
+    const centeredY = (containerHeight - imageDimensions.height * newMinScale) / 2;
+
+    setTranslateX(centeredX);
+    setTranslateY(centeredY);
+  }, [imageDimensions]);
+
+  // Listen for 'f' key to reset selection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === 'f') {
@@ -149,10 +174,53 @@ export default function Map() {
     }
   };
 
-  const minScale = 1;
-  const maxScale = 5;
-  const baseWidth = 1130;
+  /**
+   * Clamps translateX and translateY so that the image never leaves the viewport entirely.
+   * If the image is smaller than the container in one dimension, we keep it centered.
+   * Otherwise, we clamp so that the user can't drag it beyond the edges.
+   */
+  const clampTranslate = (tx: number, ty: number, scl: number) => {
+    if (!containerRef.current) {
+      return { x: 0, y: 0 };
+    }
 
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+    const scaledWidth = imageDimensions.width * scl;
+    const scaledHeight = imageDimensions.height * scl;
+
+    let newTx = tx;
+    let newTy = ty;
+
+    // Horizontal clamp/center
+    if (scaledWidth <= containerWidth) {
+      // If scaled image is narrower than container, center it
+      newTx = (containerWidth - scaledWidth) / 2;
+    } else {
+      // Otherwise, clamp
+      const minX = containerWidth - scaledWidth; // negative value
+      const maxX = 0;
+      newTx = Math.max(minX, Math.min(newTx, maxX));
+    }
+
+    // Vertical clamp/center
+    if (scaledHeight <= containerHeight) {
+      // If scaled image is shorter than container, center it
+      newTy = (containerHeight - scaledHeight) / 2;
+    } else {
+      // Otherwise, clamp
+      const minY = containerHeight - scaledHeight; // negative value
+      const maxY = 0;
+      newTy = Math.max(minY, Math.min(newTy, maxY));
+    }
+
+    return { x: newTx, y: newTy };
+  };
+
+  /**
+   * Convert screen coordinates (clientX, clientY) to SVG coordinates,
+   * taking into account the current transform.
+   */
   const clientToSvgCoords = (clientX: number, clientY: number) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const pt = svgRef.current.createSVGPoint();
@@ -165,63 +233,51 @@ export default function Map() {
     return { x: 0, y: 0 };
   };
 
-  const handleMouseEnter = (e: React.MouseEvent<SVGPolygonElement>) => {
-    const target = e.currentTarget;
-    target.setAttribute('stroke', '#8B4513');
-    target.setAttribute('fill', 'rgba(139,69,19,0.2)');
-    target.setAttribute('stroke-width', '2');
-    target.style.cursor = 'pointer';
-  };
-
-  const handleMouseLeave = (e: React.MouseEvent<SVGPolygonElement>) => {
-    const target = e.currentTarget;
-    target.setAttribute('stroke', 'transparent');
-    target.setAttribute('fill', 'transparent');
-    target.setAttribute('stroke-width', '0');
-  };
-
-  const clampTranslate = (tx: number, ty: number, scl: number) => {
-    if (scl <= 1) {
-      return { x: 0, y: 0 };
-    }
-    const maxX = 0;
-    const maxY = 0;
-    const minX = -(imageDimensions.width * (scl - 1));
-    const minY = -(imageDimensions.height * (scl - 1));
-    const clampedX = Math.min(maxX, Math.max(tx, minX));
-    const clampedY = Math.min(maxY, Math.max(ty, minY));
-    return { x: clampedX, y: clampedY };
-  };
-
+  /**
+   * Zoom in/out on wheel scroll, anchored at the mouse location.
+   */
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const { deltaY } = e;
-    const scaleAmount = 1.1;
+    const scaleFactor = 1.1;
     let newScale = scale;
 
     if (deltaY < 0) {
-      newScale *= scaleAmount;
+      // Scroll up => zoom in
+      newScale *= scaleFactor;
     } else {
-      newScale /= scaleAmount;
+      // Scroll down => zoom out
+      newScale /= scaleFactor;
     }
 
+    // Respect minScale and maxScale
     newScale = Math.max(minScale, Math.min(newScale, maxScale));
 
+    // Convert mouse position to SVG coords
     const { x: svgX, y: svgY } = clientToSvgCoords(e.clientX, e.clientY);
+
+    // Current screen coords of that point
     const prevScreenX = svgX * scale + translateX;
     const prevScreenY = svgY * scale + translateY;
+
+    // Desired new translate so the point under mouse stays in the same place
     let newTranslateX = prevScreenX - svgX * newScale;
     let newTranslateY = prevScreenY - svgY * newScale;
 
+    // Clamp translation
     const clamped = clampTranslate(newTranslateX, newTranslateY, newScale);
     newTranslateX = clamped.x;
     newTranslateY = clamped.y;
 
+    // Update
     setScale(newScale);
     setTranslateX(newTranslateX);
     setTranslateY(newTranslateY);
   };
 
+  /**
+   * Begin panning on mousedown
+   */
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsPanning(true);
@@ -229,32 +285,41 @@ export default function Map() {
     setMovedDistance(0);
   };
 
+  /**
+   * Drag the image if panning
+   */
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning && lastMousePosition) {
-      const dx = e.clientX - lastMousePosition.x;
-      const dy = e.clientY - lastMousePosition.y;
+    if (!isPanning || !lastMousePosition) return;
 
-      let newTranslateX = translateX + dx;
-      let newTranslateY = translateY + dy;
+    const dx = e.clientX - lastMousePosition.x;
+    const dy = e.clientY - lastMousePosition.y;
 
-      const clamped = clampTranslate(newTranslateX, newTranslateY, scale);
-      newTranslateX = clamped.x;
-      newTranslateY = clamped.y;
+    let newTranslateX = translateX + dx;
+    let newTranslateY = translateY + dy;
 
-      setTranslateX(newTranslateX);
-      setTranslateY(newTranslateY);
-      setLastMousePosition({ x: e.clientX, y: e.clientY });
+    // Clamp after shifting
+    const clamped = clampTranslate(newTranslateX, newTranslateY, scale);
+    newTranslateX = clamped.x;
+    newTranslateY = clamped.y;
 
-      setMovedDistance(movedDistance + Math.sqrt(dx * dx + dy * dy));
-    }
+    setTranslateX(newTranslateX);
+    setTranslateY(newTranslateY);
+    setLastMousePosition({ x: e.clientX, y: e.clientY });
+    setMovedDistance(movedDistance + Math.sqrt(dx * dx + dy * dy));
   };
 
+  /**
+   * End panning on mouseup
+   */
   const handleMouseUp = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsPanning(false);
     setLastMousePosition(null);
   };
 
+  /**
+   * If the mouse leaves the container while panning, stop panning
+   */
   const handleMouseLeaveContainer = () => {
     if (isPanning) {
       setIsPanning(false);
@@ -262,56 +327,68 @@ export default function Map() {
     }
   };
 
-  const handleMouseOver = () => {
-    document.body.style.overflow = 'hidden';
-  };
-
-  const handleMouseOut = () => {
-    document.body.style.overflow = '';
-  };
-
   return (
     <div
-      className="flex justify-center items-center overflow-auto relative"
-      style={{ width: '100%', height: '100%' }}
+      ref={containerRef}
+      className="relative w-full h-full"
+      style={{ overflow: 'hidden' }}
       onMouseLeave={handleMouseLeaveContainer}
-      onMouseOver={handleMouseOver}
-      onMouseOut={handleMouseOut}
     >
       <svg
         ref={svgRef}
-        preserveAspectRatio="xMidYMid meet"
-        width={imageDimensions.width}
-        height={imageDimensions.height}
-        viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
-        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          userSelect: 'none',
+          cursor: isPanning ? 'grabbing' : 'grab',
+          width: '100%',
+          height: '100%',
+          // We make the SVG fill the container so we can handle dynamic resizing
+        }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        style={{ userSelect: 'none', cursor: isPanning ? 'grabbing' : 'grab' }}
       >
+        {/* 
+          We don't strictly need a viewBox here if we manually transform 
+          everything. But if we set a viewBox, let's make sure it matches 
+          the native image size. 
+        */}
         <g transform={`translate(${translateX},${translateY}) scale(${scale})`}>
+          {/* The map image */}
           <image
-            x="0"
-            y="0"
+            x={0}
+            y={0}
             width={imageDimensions.width}
             height={imageDimensions.height}
             href={`/maps/${mapName}.jpg`}
           />
 
+          {/* Invisible polygons for tile click detection */}
           {Object.values(tiles).map((tile) => {
             const scaledCoords = tile.polygon.coords.map(
               (coord: number) =>
                 coord *
                 (imageDimensions.width / baseWidth) *
-                offsetMapTiles
+                0.378
             );
             const points: string[] = [];
             for (let i = 0; i < scaledCoords.length; i += 2) {
               points.push(`${scaledCoords[i]},${scaledCoords[i + 1]}`);
             }
             const pointsString = points.join(' ');
+
+            const handleMouseEnter = (e: React.MouseEvent<SVGPolygonElement>) => {
+              e.currentTarget.setAttribute('stroke', '#8B4513');
+              e.currentTarget.setAttribute('fill', 'rgba(139,69,19,0.2)');
+              e.currentTarget.setAttribute('stroke-width', '2');
+              e.currentTarget.style.cursor = 'pointer';
+            };
+
+            const handleMouseLeave = (e: React.MouseEvent<SVGPolygonElement>) => {
+              e.currentTarget.setAttribute('stroke', 'transparent');
+              e.currentTarget.setAttribute('fill', 'transparent');
+              e.currentTarget.setAttribute('stroke-width', '0');
+            };
 
             return (
               <polygon
@@ -327,6 +404,7 @@ export default function Map() {
             );
           })}
 
+          {/* Stacks on each tile */}
           {Object.values(tiles).map((tile) => (
             <g key={`stack-${tile.id}`}>
               {tile.pieceStack
@@ -383,10 +461,10 @@ export default function Map() {
                                   />
                                 )}
                                 <text
-                                  x={pieceX * offsetMapTiles + baseSize - 3}
-                                  y={pieceY * offsetMapTiles - baseSize + 45}
+                                  x={pieceX * offsetMapTiles + baseSize * 0.97 }
+                                  y={pieceY * offsetMapTiles - baseSize * 0.27 }
                                   fill="black"
-                                  fontSize="18"
+                                  fontSize={`${18 / offsetMapTiles}`}
                                   fontWeight="bold"
                                   textAnchor="end"
                                   dominantBaseline="hanging"
