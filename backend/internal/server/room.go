@@ -281,12 +281,6 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	// Mark the room as in-progress
 	room.InProgress = true
 	
-	// room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
-	for i, client := range room.Players {
-		client.sendMessage("index", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(i) + `"}`)))
-		client.Index = i
-
-	}
 
 	go func() {
 		for {
@@ -313,7 +307,13 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		}
 	}()
 
-	room.sendMapUpdate()
+	room.sendSmallMapUpdate()
+
+	for i, client := range room.Players {
+		client.sendMessage("index", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(i) + `"}`)))
+		client.Index = i
+
+	}
 	room.sendBigUpdate()
 
 	sendRoomsUpdateToAll()
@@ -535,6 +535,28 @@ func (room *Room) sendGameFinishedUpdate () {
 	room.sendToRoomPlayers(messages.Message{Type: "gamefinished", Data: jsonData})
 }
 
+// Function that sends map updates to all players
+func (room *Room) sendSmallMapUpdate() {
+	type mapUpdateData struct {
+		MapName string `json: "mapName"`
+		OffSet float64 `json:"offset"`
+	}
+
+	update := mapUpdateData{
+		MapName: room.Map.Name,
+		OffSet: room.Map.Offset,
+	}
+
+
+	jsonData, _ := json.MarshalIndent(update, "", "  ")
+	room.sendToRoomPlayers(struct {
+		Type string          `json:"type"`
+		Data json.RawMessage `json:"data"`
+	}{
+		Type: "smallmapupdate",
+		Data: jsonData,
+	})
+}
 
 // Function that sends map updates to all players
 func (room *Room) sendMapUpdate() {

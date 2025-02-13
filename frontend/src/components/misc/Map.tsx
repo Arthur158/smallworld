@@ -45,7 +45,7 @@ export default function Map() {
   const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
-  const mapImageUrl = useSelector((state: RootState) => state.application.mapImageUrl);
+  const mapName = useSelector((state: RootState) => state.application.mapName);
   const phase = useSelector((state: RootState) => state.application.phase);
 
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({
@@ -78,16 +78,25 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
-    if (!mapImageUrl) return;
+    // if (!mapImageUrl) return;
+    // const image = new Image();
+    // image.src = mapImageUrl;
+    // image.onload = () => {
+    //   setImageDimensions({ width: image.width, height: image.height });
+    // };
+    // image.onerror = () => {
+    //   console.error('Failed to load map image from blob URL');
+    // };
+    if (!mapName) return;
     const image = new Image();
-    image.src = mapImageUrl;
+    image.src =   `/maps/${mapName}.jpg`; // Public folder is served as root in Vite/CRA
     image.onload = () => {
       setImageDimensions({ width: image.width, height: image.height });
     };
     image.onerror = () => {
-      console.error('Failed to load map image from blob URL');
+      console.error(`Failed to load map image: /maps/${mapName}.jpg`);
     };
-  }, [mapImageUrl]);
+  }, [mapName]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -103,7 +112,7 @@ export default function Map() {
     };
   }, [dispatch]);
 
-  if (!mapImageUrl || imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
+  if (!mapName || imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
     return <div className="text-center text-[#5F4B32] font-bold">Loading map...</div>;
   }
 
@@ -288,7 +297,7 @@ export default function Map() {
             y="0"
             width={imageDimensions.width}
             height={imageDimensions.height}
-            href={mapImageUrl}
+            href={`/maps/${mapName}.jpg`}
           />
 
           {Object.values(tiles).map((tile) => {

@@ -2,6 +2,7 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { ApplicationState } from '../../types/redux';
 import { Language } from '../../types/misc';
 import { Player, TribeEntry, Room, Tile, SaveGameInfo } from '../../types/Board';
+import { mapDatabase } from '../../data/mapData'; // <-- Import your local map data
 
 
 const initialState: ApplicationState = {
@@ -32,6 +33,7 @@ const initialState: ApplicationState = {
   isAuthenticated: false,
   saveGames: [],
   saveSelectionId: -1,
+  mapName: null
 };
 
 const applicationSlice = createSlice({
@@ -174,6 +176,30 @@ const applicationSlice = createSlice({
               pieceStack: [],
             };
           });
+          state.tiles = newTiles;
+          break;
+        }
+        case 'smallmapupdate': {
+          state.offsetMapTiles = parsedData.offset;
+          state.mapName = parsedData.MapName;
+
+          // Load tile definitions from your local map data
+          const mapKey = state.mapName || '';
+          const tileDataArray = mapDatabase[mapKey] || [];
+
+          const newTiles: Record<string, Tile> = {};
+          tileDataArray.forEach((tileDef) => {
+            newTiles[String(tileDef.ID)] = {
+              id: String(tileDef.ID),
+              polygon: {
+                coords: tileDef.Polygon.Coords,
+                stackX: tileDef.Polygon.StackX,
+                stackY: tileDef.Polygon.StackY,
+              },
+              pieceStack: [],
+            };
+          });
+
           state.tiles = newTiles;
           break;
         }

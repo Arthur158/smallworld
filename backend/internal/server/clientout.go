@@ -236,11 +236,10 @@ func (client *Client) handleLogin(userName string, password string) {
 		if room.InProgress {
 			room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
 		}
+		room.sendSmallMapUpdate()
 		room.sendBigUpdate()
-		room.sendMapUpdate()
 		client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 	}
-
 }
 
 func (client *Client) sendUserSaves() {

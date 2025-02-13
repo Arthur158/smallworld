@@ -26,6 +26,7 @@ export interface ApplicationState {
   isAuthenticated: boolean;
   saveGames: SaveGameInfo[]
   saveSelectionId: number
+  mapName: string | null;
 }
 
 export type RootState = {
