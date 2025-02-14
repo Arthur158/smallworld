@@ -39,6 +39,9 @@ export default function GameFinishedPopup() {
           </div>
         ))}
       </div>
+      <button>
+        leave game
+      </button>
     </div>
   );
 }

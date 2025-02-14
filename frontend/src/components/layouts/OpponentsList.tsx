@@ -18,12 +18,13 @@ export default function OpponentsList() {
   });
 
   const baseSize = 45;
-  const renderPieceStacks = (pieceStacks: PieceStack[], isActive: boolean) => {
+
+  // We remove any special treatment for isActive; all stacks are shown fully and are clickable.
+  const renderPieceStacks = (pieceStacks: PieceStack[]) => {
     return (
       <div className="flex space-x-2 mt-2">
         {pieceStacks.map((stack, index) => {
           const imageSrc = `/stacks/${stack.type}.png`;
-          const isClickable = isActive;
           return (
             <div
               key={index}
@@ -31,20 +32,11 @@ export default function OpponentsList() {
               style={{
                 width: baseSize,
                 height: baseSize,
-                cursor: isClickable ? 'pointer' : 'default',
-                opacity: isActive ? 1 : 0.5,
+                cursor: 'pointer',
+                opacity: 1,
               }}
-              onClick={isClickable ? () => console.log(`Stack ${stack.type} clicked`) : undefined}
+              onClick={() => console.log(`Stack ${stack.type} clicked`)}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  width: baseSize,
-                  height: baseSize,
-                  backgroundColor: 'blue',
-                  border: '1px solid black',
-                }}
-              />
               <img
                 src={imageSrc}
                 onError={(e) => {
@@ -95,7 +87,7 @@ export default function OpponentsList() {
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden border border-[#5F4B32] rounded bg-[#FDF5E6] p-4">
-      <h3 className="text-lg font-bold underline mb-2">Adversaires</h3>
+      <h3 className="text-lg font-bold underline mb-2">Opponents</h3>
 
       {/* Scrollable content so opponents are not squished */}
       <div className="flex-1 overflow-y-auto">
@@ -149,12 +141,12 @@ export default function OpponentsList() {
           ))}
         </div>
 
-        {/* Render active player's piece stacks if it's not you */}
+        {/* Render the active player's piece stacks if it's not you */}
         {activePlayer &&
           activePlayer.name !== player.name &&
           activePlayer.pieceStacks && (
             <div className="flex space-x-4 mt-4">
-              {renderPieceStacks(activePlayer.pieceStacks, activeIndex === playerIndex)}
+              {renderPieceStacks(activePlayer.pieceStacks)}
             </div>
           )}
       </div>

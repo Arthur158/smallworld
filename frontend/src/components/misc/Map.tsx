@@ -1,33 +1,74 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { setError, setSelectedStack, setIsStackFromBank, setSelectedTile } from '../../redux/slices/applicationSlice';
-import mapImage from '../../images/mapsw.jpg';
+import { setSelectedStack, setIsStackFromBank, setSelectedTile } from '../../redux/slices/applicationSlice';
 import { Tile } from '../../types/Board';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { sendMessageToBackend } from '../../services/backendService';
 
+function ImageOrBlueSquare({
+  imageSrc,
+  x,
+  y,
+  width,
+  height,
+  isGray,
+}: {
+  imageSrc: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isGray: boolean;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  return hasError ? (
+    <rect x={x} y={y} width={width} height={height} fill="blue" />
+  ) : (
+    <image
+      href={imageSrc}
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      style={{ filter: isGray ? 'grayscale(100%)' : 'none' }}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 export default function Map() {
+  const dispatch = useDispatch();
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
   const tiles: Record<string, Tile> = useSelector((state: RootState) => state.application.tiles);
+  const offsetMapTiles: number = useSelector((state: RootState) => state.application.offsetMapTiles);
   const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
+  const mapName = useSelector((state: RootState) => state.application.mapName);
   const phase = useSelector((state: RootState) => state.application.phase);
-  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
-  const dispatch = useDispatch();
+  const offsetStacksX = useSelector((state: RootState) => state.application.offsetStacksX);
+  const offsetStacksY = useSelector((state: RootState) => state.application.offsetStacksY);
 
-  // Pan & Zoom state
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
+
   const [scale, setScale] = useState(1);
   const [translateX, setTranslateX] = useState(0);
   const [translateY, setTranslateY] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
-
-  // Track movement to distinguish click vs drag
   const [movedDistance, setMovedDistance] = useState(0);
+  const [minScale, setMinScale] = useState(1);
 
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  const maxScale = 5;
+  const baseWidth = 1130;
 
-  // Inject the keyframes into the document once
   useEffect(() => {
     const styles = document.createElement('style');
     styles.innerHTML = `
@@ -43,28 +84,72 @@ export default function Map() {
     document.head.appendChild(styles);
   }, []);
 
+  // Load the map image so we know its natural dimensions
   useEffect(() => {
+    if (!mapName) return;
     const image = new Image();
-    image.src = mapImage;
+    image.src = `/maps/${mapName}.png`;
     image.onload = () => {
       setImageDimensions({ width: image.width, height: image.height });
     };
     image.onerror = () => {
-      console.error('Failed to load image');
+      console.error(`Failed to load map image: /maps/${mapName}.png`);
     };
-  }, []);
+  }, [mapName]);
 
-  if (imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
-    return <div className="text-center text-[#5F4B32] font-bold">Loading...</div>;
+  // Once we know the image size and the container size, we can figure out the minScale
+  // so that the image is entirely contained, and also center it.
+  useEffect(() => {
+    if (!containerRef.current) return;
+    if (!imageDimensions.width || !imageDimensions.height) return;
+
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+
+    if (!containerWidth || !containerHeight) return;
+
+    // Compute the minimal scale that fits the entire image inside the container
+    const fitScaleX = containerWidth / imageDimensions.width;
+    const fitScaleY = containerHeight / imageDimensions.height;
+    const newMinScale = Math.min(fitScaleX, fitScaleY);
+
+    setMinScale(newMinScale);
+    setScale(newMinScale);
+
+    // Center the image at first (when scale = minScale)
+    const centeredX = (containerWidth - imageDimensions.width * newMinScale) / 2;
+    const centeredY = (containerHeight - imageDimensions.height * newMinScale) / 2;
+
+    setTranslateX(centeredX);
+    setTranslateY(centeredY);
+  }, [imageDimensions]);
+
+  // Listen for 'f' key to reset selection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'f') {
+        dispatch(setSelectedStack(null));
+        dispatch(setSelectedTile(null));
+        dispatch(setIsStackFromBank(false));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [dispatch]);
+
+  if (!mapName || imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
+    return <div className="text-center text-[#5F4B32] font-bold">Loading map...</div>;
   }
 
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
     if (
-      (phase === "Conquest" || phase === "TileAbandonment" || phase === "DeclineChoice") &&
+      (phase === 'Conquest' || phase === 'TileAbandonment' || phase === 'DeclineChoice') &&
       isStackFromBank &&
       selectedStack != null
     ) {
-      sendMessageToBackend("Conquest", { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
+      sendMessageToBackend('Conquest', { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
     } else if (
       (phase === 'Redeployment' || phase === 'TileAbandonment') &&
       selectedStack === stackType &&
@@ -73,16 +158,16 @@ export default function Map() {
       dispatch(setSelectedStack(null));
       dispatch(setSelectedTile(null));
       dispatch(setIsStackFromBank(false));
-    } else if ((phase === "TileAbandonment" || phase === "DeclineChoice") && stackType != null) {
+    } else if ((phase === 'TileAbandonment' || phase === 'DeclineChoice') && stackType != null) {
       dispatch(setSelectedStack(stackType));
       dispatch(setSelectedTile(tileID));
     } else if (phase === 'Redeployment' && isStackFromBank && selectedStack != null) {
-      sendMessageToBackend("deploymentin", { tileId: tileID.toString(), stackType: selectedStack.toString() });
+      sendMessageToBackend('deploymentin', { tileId: tileID.toString(), stackType: selectedStack.toString() });
     } else if (phase === 'Redeployment' && !isStackFromBank && selectedTile != null && selectedStack != null) {
-      sendMessageToBackend("deploymentthrough", {
+      sendMessageToBackend('deploymentthrough', {
         tileFromId: selectedTile.toString(),
         tileToId: tileID.toString(),
-        stackType: selectedStack
+        stackType: selectedStack,
       });
     } else if (phase === 'Redeployment' && selectedStack == null && stackType != null) {
       dispatch(setSelectedStack(stackType));
@@ -91,10 +176,53 @@ export default function Map() {
     }
   };
 
-  const minScale = 1;
-  const maxScale = 5;
-  const baseWidth = 1130;
+  /**
+   * Clamps translateX and translateY so that the image never leaves the viewport entirely.
+   * If the image is smaller than the container in one dimension, we keep it centered.
+   * Otherwise, we clamp so that the user can't drag it beyond the edges.
+   */
+  const clampTranslate = (tx: number, ty: number, scl: number) => {
+    if (!containerRef.current) {
+      return { x: 0, y: 0 };
+    }
 
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+    const scaledWidth = imageDimensions.width * scl;
+    const scaledHeight = imageDimensions.height * scl;
+
+    let newTx = tx;
+    let newTy = ty;
+
+    // Horizontal clamp/center
+    if (scaledWidth <= containerWidth) {
+      // If scaled image is narrower than container, center it
+      newTx = (containerWidth - scaledWidth) / 2;
+    } else {
+      // Otherwise, clamp
+      const minX = containerWidth - scaledWidth; // negative value
+      const maxX = 0;
+      newTx = Math.max(minX, Math.min(newTx, maxX));
+    }
+
+    // Vertical clamp/center
+    if (scaledHeight <= containerHeight) {
+      // If scaled image is shorter than container, center it
+      newTy = (containerHeight - scaledHeight) / 2;
+    } else {
+      // Otherwise, clamp
+      const minY = containerHeight - scaledHeight; // negative value
+      const maxY = 0;
+      newTy = Math.max(minY, Math.min(newTy, maxY));
+    }
+
+    return { x: newTx, y: newTy };
+  };
+
+  /**
+   * Convert screen coordinates (clientX, clientY) to SVG coordinates,
+   * taking into account the current transform.
+   */
   const clientToSvgCoords = (clientX: number, clientY: number) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const pt = svgRef.current.createSVGPoint();
@@ -107,64 +235,51 @@ export default function Map() {
     return { x: 0, y: 0 };
   };
 
-  const handleMouseEnter = (e: React.MouseEvent<SVGPolygonElement>) => {
-    const target = e.currentTarget;
-    target.setAttribute('stroke', '#8B4513');
-    target.setAttribute('fill', 'rgba(139,69,19,0.2)');
-    target.setAttribute('stroke-width', '2');
-    target.style.cursor = 'pointer';
-  };
-
-  const handleMouseLeave = (e: React.MouseEvent<SVGPolygonElement>) => {
-    const target = e.currentTarget;
-    target.setAttribute('stroke', 'transparent');
-    target.setAttribute('fill', 'transparent');
-    target.setAttribute('stroke-width', '0');
-  };
-
-  const clampTranslate = (tx: number, ty: number, scl: number) => {
-    if (scl <= 1) {
-      return { x: 0, y: 0 };
-    }
-    const maxX = 0;
-    const maxY = 0;
-    const minX = -(imageDimensions.width * (scl - 1));
-    const minY = -(imageDimensions.height * (scl - 1));
-    const clampedX = Math.min(maxX, Math.max(tx, minX));
-    const clampedY = Math.min(maxY, Math.max(ty, minY));
-    return { x: clampedX, y: clampedY };
-  };
-
+  /**
+   * Zoom in/out on wheel scroll, anchored at the mouse location.
+   */
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-
     const { deltaY } = e;
-    const scaleAmount = 1.1;
+    const scaleFactor = 1.1;
     let newScale = scale;
 
     if (deltaY < 0) {
-      newScale *= scaleAmount;
+      // Scroll up => zoom in
+      newScale *= scaleFactor;
     } else {
-      newScale /= scaleAmount;
+      // Scroll down => zoom out
+      newScale /= scaleFactor;
     }
 
+    // Respect minScale and maxScale
     newScale = Math.max(minScale, Math.min(newScale, maxScale));
 
+    // Convert mouse position to SVG coords
     const { x: svgX, y: svgY } = clientToSvgCoords(e.clientX, e.clientY);
+
+    // Current screen coords of that point
     const prevScreenX = svgX * scale + translateX;
     const prevScreenY = svgY * scale + translateY;
+
+    // Desired new translate so the point under mouse stays in the same place
     let newTranslateX = prevScreenX - svgX * newScale;
     let newTranslateY = prevScreenY - svgY * newScale;
 
+    // Clamp translation
     const clamped = clampTranslate(newTranslateX, newTranslateY, newScale);
     newTranslateX = clamped.x;
     newTranslateY = clamped.y;
 
+    // Update
     setScale(newScale);
     setTranslateX(newTranslateX);
     setTranslateY(newTranslateY);
   };
 
+  /**
+   * Begin panning on mousedown
+   */
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsPanning(true);
@@ -172,32 +287,41 @@ export default function Map() {
     setMovedDistance(0);
   };
 
+  /**
+   * Drag the image if panning
+   */
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning && lastMousePosition) {
-      const dx = e.clientX - lastMousePosition.x;
-      const dy = e.clientY - lastMousePosition.y;
+    if (!isPanning || !lastMousePosition) return;
 
-      let newTranslateX = translateX + dx;
-      let newTranslateY = translateY + dy;
+    const dx = e.clientX - lastMousePosition.x;
+    const dy = e.clientY - lastMousePosition.y;
 
-      const clamped = clampTranslate(newTranslateX, newTranslateY, scale);
-      newTranslateX = clamped.x;
-      newTranslateY = clamped.y;
+    let newTranslateX = translateX + dx;
+    let newTranslateY = translateY + dy;
 
-      setTranslateX(newTranslateX);
-      setTranslateY(newTranslateY);
-      setLastMousePosition({ x: e.clientX, y: e.clientY });
+    // Clamp after shifting
+    const clamped = clampTranslate(newTranslateX, newTranslateY, scale);
+    newTranslateX = clamped.x;
+    newTranslateY = clamped.y;
 
-      setMovedDistance(movedDistance + Math.sqrt(dx * dx + dy * dy));
-    }
+    setTranslateX(newTranslateX);
+    setTranslateY(newTranslateY);
+    setLastMousePosition({ x: e.clientX, y: e.clientY });
+    setMovedDistance(movedDistance + Math.sqrt(dx * dx + dy * dy));
   };
 
+  /**
+   * End panning on mouseup
+   */
   const handleMouseUp = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsPanning(false);
     setLastMousePosition(null);
   };
 
+  /**
+   * If the mouse leaves the container while panning, stop panning
+   */
   const handleMouseLeaveContainer = () => {
     if (isPanning) {
       setIsPanning(false);
@@ -205,52 +329,67 @@ export default function Map() {
     }
   };
 
-  const handleMouseOver = () => {
-    document.body.style.overflow = 'hidden';
-  };
-
-  const handleMouseOut = () => {
-    document.body.style.overflow = '';
-  };
-
   return (
     <div
-      className="flex justify-center items-center overflow-hidden relative"
-      style={{ width: '100%', height: '100%' }}
+      ref={containerRef}
+      className="relative w-full h-full"
+      style={{ overflow: 'hidden' }}
       onMouseLeave={handleMouseLeaveContainer}
-      onMouseOver={handleMouseOver}
-      onMouseOut={handleMouseOut}
     >
       <svg
         ref={svgRef}
-        width={imageDimensions.width}
-        height={imageDimensions.height}
-        viewBox={`0 0 ${imageDimensions.width} ${imageDimensions.height}`}
-        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          userSelect: 'none',
+          cursor: isPanning ? 'grabbing' : 'grab',
+          width: '100%',
+          height: '100%',
+          // We make the SVG fill the container so we can handle dynamic resizing
+        }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        style={{ userSelect: 'none', cursor: isPanning ? 'grabbing' : 'grab' }}
       >
+        {/* 
+          We don't strictly need a viewBox here if we manually transform 
+          everything. But if we set a viewBox, let's make sure it matches 
+          the native image size. 
+        */}
         <g transform={`translate(${translateX},${translateY}) scale(${scale})`}>
+          {/* The map image */}
           <image
-            x="0"
-            y="0"
+            x={0}
+            y={0}
             width={imageDimensions.width}
             height={imageDimensions.height}
-            href={mapImage}
+            href={`/maps/${mapName}.png`}
           />
 
+          {/* Invisible polygons for tile click detection */}
           {Object.values(tiles).map((tile) => {
             const scaledCoords = tile.polygon.coords.map(
-              (coord: number) => coord * (imageDimensions.width / baseWidth)
+              (coord: number) =>
+                coord *
+                (imageDimensions.width / baseWidth) * offsetMapTiles
             );
             const points: string[] = [];
             for (let i = 0; i < scaledCoords.length; i += 2) {
               points.push(`${scaledCoords[i]},${scaledCoords[i + 1]}`);
             }
             const pointsString = points.join(' ');
+
+            const handleMouseEnter = (e: React.MouseEvent<SVGPolygonElement>) => {
+              e.currentTarget.setAttribute('stroke', '#8B4513');
+              e.currentTarget.setAttribute('fill', 'rgba(139,69,19,0.2)');
+              e.currentTarget.setAttribute('stroke-width', '2');
+              e.currentTarget.style.cursor = 'pointer';
+            };
+
+            const handleMouseLeave = (e: React.MouseEvent<SVGPolygonElement>) => {
+              e.currentTarget.setAttribute('stroke', 'transparent');
+              e.currentTarget.setAttribute('fill', 'transparent');
+              e.currentTarget.setAttribute('stroke-width', '0');
+            };
 
             return (
               <polygon
@@ -266,28 +405,28 @@ export default function Map() {
             );
           })}
 
+          {/* Stacks on each tile */}
           {Object.values(tiles).map((tile) => (
             <g key={`stack-${tile.id}`}>
               {tile.pieceStack
                 .slice()
                 .reverse()
                 .map((stack, index) => {
-                  const baseSize = 61;
+                  const baseSize = imageDimensions.width * 0.0555;
                   const offset = 0.4 * baseSize;
                   const scaledStackX =
-                    (tile.polygon.stackX + index * offset) *
+                    (tile.polygon.stackX + index * offset * baseSize * offsetStacksX) *
                     (imageDimensions.width / baseWidth);
                   const scaledStackY =
-                    (tile.polygon.stackY - index * offset) *
+                    (tile.polygon.stackY - index * offset * baseSize * offsetStacksX ) *
                     (imageDimensions.width / baseWidth);
                   const imageSrc = `/stacks/${stack.type}.png`;
-
                   const isGray = !stack.isActive;
                   const isSelected =
-                    selectedTile === tile.id && selectedStack === stack.type && isStackFromBank === false;
+                    selectedTile === tile.id &&
+                    selectedStack === stack.type &&
+                    isStackFromBank === false;
 
-                  // We create multiple images (or "layers") to visually stack them
-                  // Each piece moves slightly bottom-right, so we see the "pile".
                   return (
                     <g
                       key={`piece-${tile.id}-${index}`}
@@ -300,27 +439,20 @@ export default function Map() {
 
                         return (
                           <g key={`piece-layer-${i}`}>
-                            <image
-                              href={imageSrc}
-                              x={pieceX}
-                              y={pieceY - baseSize}
+                            <ImageOrBlueSquare
+                              imageSrc={imageSrc}
+                              x={pieceX * offsetMapTiles}
+                              y={pieceY * offsetMapTiles - baseSize}
                               width={baseSize}
                               height={baseSize}
-                              style={{
-                                filter: isGray ? 'grayscale(100%)' : 'none',
-                              }}
-                              onError={(e) => {
-                                (e.target as SVGImageElement).style.display = 'none';
-                              }}
+                              isGray={isGray}
                             />
-                            {/* If it's the top piece, show type, amount and (optionally) a flashing border */}
                             {isTopPiece && (
                               <>
-                                {/* A stroke behind the image to show selection (flash) */}
                                 {isSelected && (
                                   <rect
-                                    x={pieceX}
-                                    y={pieceY - baseSize}
+                                    x={pieceX * offsetMapTiles}
+                                    y={pieceY * offsetMapTiles - baseSize}
                                     width={baseSize}
                                     height={baseSize}
                                     fill="none"
@@ -330,21 +462,10 @@ export default function Map() {
                                   />
                                 )}
                                 <text
-                                  x={pieceX + baseSize / 2}
-                                  y={pieceY - baseSize / 2}
-                                  fill="white"
-                                  fontSize="8"
-                                  fontWeight="bold"
-                                  textAnchor="middle"
-                                  dominantBaseline="middle"
-                                >
-                                  {stack.type}
-                                </text>
-                                <text
-                                  x={pieceX + baseSize - 3}
-                                  y={pieceY - baseSize + 45}
+                                  x={pieceX * offsetMapTiles + baseSize * 0.97 }
+                                  y={pieceY * offsetMapTiles - baseSize * 0.27 }
                                   fill="black"
-                                  fontSize="18"
+                                  fontSize={`${baseSize * 0.3}`}
                                   fontWeight="bold"
                                   textAnchor="end"
                                   dominantBaseline="hanging"

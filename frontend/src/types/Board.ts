@@ -17,6 +17,11 @@ export interface PieceStack {
   isActive: boolean
 }
 
+export interface SaveGameInfo {
+  saveId: number;
+  summary: string;
+}
+
 export interface Tribe {
   race: string;
   trait: string;
@@ -36,3 +41,14 @@ export interface Player {
   passiveTribes: Tribe[];
   pieceStacks: PieceStack[]
 }
+
+export interface Room {
+  id: string;
+  name: string;
+  creator: string;
+  players: string[];
+  capacity: number
+  mapName: string
+}
+
+

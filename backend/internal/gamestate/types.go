@@ -4,18 +4,23 @@ type Race string;
 type Trait string;
 
 type Tribe struct {
+	Owner *Player
 	Race Race;
 	Trait Trait;
 	IsActive bool;
 	State map[string]interface{};
+	Minimum int;
+
+	checkPresence func(*Tile, Race) bool;
 
 	giveInitialStacks func() []PieceStack;
 
 	//abandonment
 	canTileBeAbandoned func(*Tile) bool;
-	receiveAbandonment func(*Tile) []PieceStack;
+	handleAbandonment func(*Tile, *GameState);
 
 	// receive for conquest
+	getStacksForConquestTurn func(*Player, *GameState);
 	getStacksForConquest func(*Tile, *Player);
 
 	// conquest checks
@@ -24,28 +29,33 @@ type Tribe struct {
 	checkAdjacency func(*Tile, *GameState) error;
 
 	// conquest for attacker
-	countAttack func(*Tile, int, string) ([]PieceStack, int, int);
+	countAttack func(*Tile, int, string) ([]PieceStack, int, int, int);
+	computeDiscount func(string, *Tile) int;
 	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
-	calculateRemainingAttackingStacks func([]PieceStack, []PieceStack) ([]PieceStack, []PieceStack, bool, error)
+	calculateRemainingAttackingStacks func([]PieceStack, *Tile, *GameState) ([]PieceStack, bool, bool, error)
+	specialConquest func(*GameState, *Tile, string, *Player, int) (bool, error);
 
 	//conquest for defender
 	countDefense func(*Tile) (int, int, int, error);
-	countReturningStacks func(*Tile) ([]PieceStack, []PieceStack);
+	clearTile func(*Tile, *GameState, int);
 
 	// redeployment
 	startRedeployment func(*GameState) []PieceStack;
 	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
-	canBeRedeployedIn func(*Tile, string) bool;
+	canBeRedeployedIn func(*Tile, string, *GameState) bool;
+	getRedeploymentStack func(string, []PieceStack) []PieceStack
+	handleDeploymentOut func(*Tile, string, int, *GameState) error;
+	handleDeploymentIn func(*Tile, string, int, *GameState) error;
 
 	// end of turn
 	countPoints func(*Tile) int;
-	countExtrapoints func() int;
+	countExtrapoints func(*GameState) int;
 
 	// decline
-	countPiecesRemaining func(*Tile) []PieceStack;
-	countRemainingAttackingStacks func(*Player) []PieceStack;
+	countRemovablePieces func(*Tile) []PieceStack;
+	countRemovableAttackingStacks func(*Player) []PieceStack;
 	canGoIntoDecline func(*GameState) bool;
-	goIntoDecline func(*GameState);
+	goIntoDecline func(*GameState) int;
 	prepareRemoval func(*GameState) bool;
 }
 
@@ -55,6 +65,62 @@ type TribeEntry struct {
 	CoinPile int;
 	PiecePile int;
 }
+
+
+type PieceStack struct {
+	Type string;
+	Amount int;
+	Tribe *Tribe
+}
+
+type Player struct {
+	Name string
+	Index int;
+	ActiveTribe *Tribe;
+	PassiveTribes []*Tribe;
+	CoinPile int
+	PieceStacks []PieceStack
+	HasActiveTribe bool
+	PointsEachTurn []int;
+}
+
+type Phase int
+
+const (
+	TribeChoice Phase = iota
+	DeclineChoice
+	TileAbandonment
+	Conquest
+	Redeployment
+	GameFinished
+)
+
+func (b Phase) String() string {
+	switch b {
+	case TribeChoice:
+		return "TribeChoice"
+	case DeclineChoice:
+		return "DeclineChoice"
+	case TileAbandonment:
+		return "TileAbandonment"
+	case Conquest:
+		return "Conquest"
+	case Redeployment:
+		return "Redeployment"
+	case GameFinished:
+		return "GameFinished"
+	default:
+		return "Unknown"
+	}
+}
+
+
+type TurnInfo struct {
+	TurnIndex int;
+	PlayerIndex int;
+	Phase Phase;
+}
+
 
 type Biome int
 
@@ -128,68 +194,3 @@ func (b Presence) String() string {
 		return "Unknown"
 	}
 }
-
-type Tile struct {
-	Id string;
-	AdjacentTiles []*Tile;
-	PieceStacks []PieceStack;
-	OwningPlayer *Player;
-	OwningTribe *Tribe;
-	Biome Biome;
-	Attributes []Attribute;
-	Presence Presence;
-	IsEdge bool;
-}
-
-type PieceStack struct {
-	Type string;
-	Amount int;
-}
-
-type Player struct {
-	// Name string;
-	ActiveTribe *Tribe;
-	PassiveTribes []*Tribe;
-	CoinPile int
-	PieceStacks []PieceStack
-	HasActiveTribe bool
-	PointsEachTurn []int;
-}
-
-type Phase int
-
-const (
-	TribeChoice Phase = iota
-	DeclineChoice
-	TileAbandonment
-	Conquest
-	Redeployment
-	GameFinished
-)
-
-func (b Phase) String() string {
-	switch b {
-	case TribeChoice:
-		return "TribeChoice"
-	case DeclineChoice:
-		return "DeclineChoice"
-	case TileAbandonment:
-		return "TileAbandonment"
-	case Conquest:
-		return "Conquest"
-	case Redeployment:
-		return "Redeployment"
-	case GameFinished:
-		return "GameFinished"
-	default:
-		return "Unknown"
-	}
-}
-
-
-type TurnInfo struct {
-	TurnIndex int;
-	PlayerIndex int;
-	Phase Phase;
-}
-
