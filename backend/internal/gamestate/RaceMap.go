@@ -10,7 +10,7 @@ type RaceValue struct {
 }
 
 var RaceMap = map[Race]RaceValue {
-	"Troll": {Transform: func(t *Tribe) {
+	"Trolls": {Transform: func(t *Tribe) {
 		// Make a newly conquered region contain a lair
 		oldCountNewTileStacks := t.countNewTileStacks
 		t.countNewTileStacks = func(stacks []PieceStack, tile *Tile) []PieceStack {
@@ -38,7 +38,7 @@ var RaceMap = map[Race]RaceValue {
 			}
 		}
 		}, Count: 5},
-	"Wizard": {Transform: func(t *Tribe) {
+	"Wizards": {Transform: func(t *Tribe) {
 		oldCountPoints := t.countPoints
 		t.countPoints = func(tile *Tile) int {
 			count := oldCountPoints(tile)
@@ -52,7 +52,7 @@ var RaceMap = map[Race]RaceValue {
 			return count
 		}
 		}, Count: 5},
-	"Khan": {Transform: func(t *Tribe) {
+	"Khans": {Transform: func(t *Tribe) {
 		oldCountPoints := t.countPoints
 		t.countPoints = func(tile *Tile) int {
 			count := oldCountPoints(tile)
@@ -64,7 +64,7 @@ var RaceMap = map[Race]RaceValue {
 			return max(0, count)
 		}
 		}, Count: 5},
-	"Human": {Transform: func(t *Tribe) {
+	"Humans": {Transform: func(t *Tribe) {
 		oldCountPoints := t.countPoints
 		t.countPoints = func(tile *Tile) int {
 			count := oldCountPoints(tile)
@@ -74,7 +74,7 @@ var RaceMap = map[Race]RaceValue {
 			return max(0, count)
 		}
 		}, Count: 5},
-	"Halfling": {Transform: func(t *Tribe) {
+	"Halflings": {Transform: func(t *Tribe) {
 		t.State["holesleft"] = 2
 		t.State["startedalready"] = false
 		oldCheckAdjacency := t.checkAdjacency
@@ -132,7 +132,7 @@ var RaceMap = map[Race]RaceValue {
 			}
 		}
 		}, Count: 6},
-	"White Lady": {Transform: func(t *Tribe) {
+	"White Ladies": {Transform: func(t *Tribe) {
 		oldCountDefense := t.countDefense
 		t.countDefense = func(tile *Tile) (int, int, int, error) {
 			count, g, l, err := oldCountDefense(tile)
@@ -145,7 +145,7 @@ var RaceMap = map[Race]RaceValue {
 			return count, g, l, err
 		}
 		}, Count: 2},
-	"Triton": {Transform: func(t *Tribe) {
+	"Tritons": {Transform: func(t *Tribe) {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			for _, neighbour := range tile.AdjacentTiles {
@@ -156,7 +156,7 @@ var RaceMap = map[Race]RaceValue {
 			return oldcomputeDiscount(stackType, tile)
 		}
 		}, Count: 6},
-	"Shrubman": {Transform: func(t *Tribe) {
+	"Shrubmen": {Transform: func(t *Tribe) {
 		oldCountDefense := t.countDefense
 		t.countDefense = func(tile *Tile) (int, int, int, error) {
 			count, g, l, err := oldCountDefense(tile)
@@ -169,9 +169,9 @@ var RaceMap = map[Race]RaceValue {
 			return count, g, l, err
 		}
 		}, Count: 6},
-	"Ratman": {Transform: func(t *Tribe) {
+	"Ratmen": {Transform: func(t *Tribe) {
 		}, Count: 8},
-	"Goblin": {Transform: func(t *Tribe) {
+	"Goblins": {Transform: func(t *Tribe) {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			if tile.Presence == Passive {
@@ -180,7 +180,7 @@ var RaceMap = map[Race]RaceValue {
 			return oldcomputeDiscount(stackType, tile)
 		}
 		}, Count: 6},
-	"Giant": {Transform: func(t *Tribe) {
+	"Giants": {Transform: func(t *Tribe) {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			for _, neighbour := range tile.AdjacentTiles {
@@ -191,7 +191,7 @@ var RaceMap = map[Race]RaceValue {
 			return oldcomputeDiscount(stackType, tile)
 		}
 		}, Count: 6},
-	"Orc": {Transform: func(t *Tribe) {
+	"Orcs": {Transform: func(t *Tribe) {
 		oldCountAttack := t.countAttack
 		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
 			old, g, l, k := oldCountAttack(tile, cost, stackType)
@@ -201,7 +201,7 @@ var RaceMap = map[Race]RaceValue {
 			return old, g , l, k
 		}
 		}, Count: 5},
-	"Skeletton": {Transform: func(t *Tribe) {
+	"Skeletons": {Transform: func(t *Tribe) {
 		t.State["killcount"] = 0
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
 		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
@@ -226,7 +226,7 @@ var RaceMap = map[Race]RaceValue {
 			return stacks
 		}
 		}, Count: 6},
-	"Pygmy": {Transform: func(t *Tribe) {
+	"Witch Doctors": {Transform: func(t *Tribe) {
 		oldClearTile := t.clearTile
 		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
 			oldClearTile(tile, gs, pk)
@@ -237,7 +237,7 @@ var RaceMap = map[Race]RaceValue {
 			}
 		}
 		}, Count: 6},
-	"Elf": {Transform: func(t *Tribe) {
+	"Elves": {Transform: func(t *Tribe) {
 		oldClearTile := t.clearTile
 		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
 			oldClearTile(tile, gs, pk)
@@ -246,7 +246,7 @@ var RaceMap = map[Race]RaceValue {
 			}
 		}
 		}, Count: 6},
-	"Pixy": {Transform: func(t *Tribe) {
+	"Pixies": {Transform: func(t *Tribe) {
 		oldStartRedeployment := t.startRedeployment
 		t.startRedeployment = func(gs *GameState) []PieceStack {
 			stacks := oldStartRedeployment(gs)
@@ -265,7 +265,7 @@ var RaceMap = map[Race]RaceValue {
 			return false
 		}
 		}, Count: 11},
-	"Barbarian": {Transform: func(t *Tribe) {
+	"Barbarians": {Transform: func(t *Tribe) {
 		oldCanBeRedeployedIn := t.canBeRedeployedIn
 		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
 			if oldCanBeRedeployedIn(tile, stackType, gs) {
@@ -284,7 +284,7 @@ var RaceMap = map[Race]RaceValue {
 			return stacks, err
 		}
 		}, Count: 9},
-	"Sorcerer": {Transform: func(t *Tribe) {
+	"Sorcerers": {Transform: func(t *Tribe) {
 		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
 		t.getStacksForConquestTurn = func(player *Player, gs *GameState) {
 			oldgetStacksForConquestTurn(player, gs)
@@ -357,7 +357,7 @@ var RaceMap = map[Race]RaceValue {
 			return oldStacks
 		}
 		}, Count: 5},
-	"Wendigo": {Transform: func(t *Tribe) {
+	"Wendigos": {Transform: func(t *Tribe) {
 		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
 		t.getStacksForConquestTurn = func(player *Player, gs *GameState) {
 			oldgetStacksForConquestTurn(player, gs)
@@ -407,7 +407,7 @@ var RaceMap = map[Race]RaceValue {
 			return true, nil
 		}
 		}, Count: 6},
-	"Gypsy": {Transform: func(t *Tribe) {
+	"Nomads": {Transform: func(t *Tribe) {
 		t.State["abandonedTiles"] = []string{}
 		oldhandleAbandonment := t.handleAbandonment
 		t.handleAbandonment = func(tile *Tile, gs *GameState) {
@@ -449,17 +449,17 @@ var RaceMap = map[Race]RaceValue {
 			return total
 		}
 		}, Count: 6},
-	"Scarecrow": {Transform: func(t *Tribe) {
+	"Scarecrows": {Transform: func(t *Tribe) {
 		oldCountDefense:= t.countDefense
 		t.countDefense = func(tile *Tile) (int, int, int, error) {
 			a, b, c, err := oldCountDefense(tile)
 			return a, b, c-1, err
 		}
 		}, Count: 11},
-	"Kobold": {Transform: func(t *Tribe) {
+	"Kobolds": {Transform: func(t *Tribe) {
 		t.Minimum = 2
 		}, Count: 11},
-	"Leprechaun": {Transform: func(t *Tribe) {
+	"Leprechauns": {Transform: func(t *Tribe) {
 		oldgiveInitialStacks := t.giveInitialStacks
 		t.giveInitialStacks = func() []PieceStack {
 			stacks := oldgiveInitialStacks()
@@ -533,7 +533,7 @@ var RaceMap = map[Race]RaceValue {
 			return oldgetRedeploymentStack(s, ps)
 		}
 		}, Count: 6},
-	"Drakon": {Transform: func(t *Tribe) {
+	"Drakons": {Transform: func(t *Tribe) {
 		oldgiveInitialStacks := t.giveInitialStacks
 		t.giveInitialStacks = func() []PieceStack {
 			stacks := oldgiveInitialStacks()
@@ -589,7 +589,7 @@ var RaceMap = map[Race]RaceValue {
 			return stacks, g, l, k
 		}
 		}, Count: 6},
-	"Faun": {Transform: func(t *Tribe) {
+	"Fauns": {Transform: func(t *Tribe) {
 		t.State["activecount"] = 0
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
 		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
@@ -614,7 +614,7 @@ var RaceMap = map[Race]RaceValue {
 			return stacks
 		}
 		}, Count: 5},
-	"Ghoul": {Transform: func(t *Tribe) {
+	"Ghouls": {Transform: func(t *Tribe) {
 		t.State["deploy"] = make(map[string]int)
 		oldcountRemovablePieces := t.countRemovablePieces
 		t.countRemovablePieces = func(tile *Tile) []PieceStack {
@@ -691,7 +691,7 @@ var RaceMap = map[Race]RaceValue {
 
 		}
 		}, Count: 5},
-	"Scavenger": {Transform: func(t *Tribe) {
+	"Scavengers": {Transform: func(t *Tribe) {
 		oldSpecialConquest := t.specialConquest
 		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
 			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
@@ -826,7 +826,7 @@ var RaceMap = map[Race]RaceValue {
 			return oldStacks 
 		}
 		}, Count: 6},
-	"Priestess": {Transform: func(t *Tribe) {
+	"Priestesses": {Transform: func(t *Tribe) {
 		t.State["access"] = false
 		oldgiveInitialStacks := t.giveInitialStacks
 		t.giveInitialStacks = func() []PieceStack {
@@ -905,7 +905,7 @@ var RaceMap = map[Race]RaceValue {
 			return count
 		}
 		}, Count: 4},
-	"Ice Witch": {Transform: func(t *Tribe) {
+	"Ice Witches": {Transform: func(t *Tribe) {
 		oldStartRedeployment := t.startRedeployment
 		t.startRedeployment = func(gs *GameState) []PieceStack {
 			stacks := oldStartRedeployment(gs)
