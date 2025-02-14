@@ -240,6 +240,7 @@ func (client *Client) handleLogin(userName string, password string) {
 		for i, player := range room.Players {
 			if player != nil && player.Username == client.Username {
 				room.Players[i] = client
+				client.Index = i
 				client.sendMessage("index", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(i) + `"}`)))
 			}
 		}

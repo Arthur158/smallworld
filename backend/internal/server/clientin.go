@@ -1,9 +1,10 @@
 package server
 
 import (
-	"encoding/json"
-	"backend/internal/messages"
 	"backend/internal/gamestate"
+	"backend/internal/messages"
+	"encoding/json"
+	"log"
 )
 
 
@@ -16,6 +17,9 @@ func (client *Client) handleTribePick (msg messages.Message) {
 		client.sendError("Invalid choice data")
 		return
 	}
+
+	log.Println(client)
+	log.Println(client.Room.Gamestate.TurnInfo.PlayerIndex)
 
 	if client.Room == nil {
 		client.sendError("Client not in a room")
