@@ -24,7 +24,6 @@ const initialState: ApplicationState = {
   selectedTile: null,
   messages: [],
   scores: [],
-
   rooms: [],
   roomid: "",
   name: "",

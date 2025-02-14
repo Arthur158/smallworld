@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../redux/store';
 import { reset } from '../redux/slices/applicationSlice';
@@ -14,6 +14,42 @@ import GameFinishedPopup from '../components/layouts/GameFinishedPopup';
 export default function GamePage() {
   const dispatch: AppDispatch = useDispatch();
   const error = useSelector((state: RootState) => state.application.error);
+  const phase = useSelector((state: RootState) => state.application.phase);
+  const playerNumber = useSelector((state: RootState) => state.application.playerNumber);
+  const playerIndex = useSelector((state: RootState) => state.application.playerIndex);
+  const players = useSelector((state: RootState) => state.application.players);
+
+  const currentPlayer = players[playerNumber]?.name || 'Unknown Player';
+  const dynamicPlaceholder = "Game Event Placeholder"; // Can be dynamic later
+
+  const [showTurnInfo, setShowTurnInfo] = useState(false);
+
+  useEffect(() => {
+    if (playerNumber == playerIndex && phase == "Conquest") {
+      setShowTurnInfo(true)
+    } else if (playerNumber == playerIndex && phase == "TribeChoice") {
+      setShowTurnInfo(false)
+    }
+  }, [playerIndex, playerNumber, phase, setShowTurnInfo])
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 's':
+          if (showTurnInfo) {
+            setShowTurnInfo(false)
+          } else {
+            setShowTurnInfo(true)
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [setShowTurnInfo, showTurnInfo]);
 
   useEffect(() => {
     const handlePageRefresh = () => {
@@ -31,26 +67,42 @@ export default function GamePage() {
     <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
       <div className="flex w-full h-full">
         {/* Left column (1/3 width) */}
-        <div className="w-1/3 h-full flex flex-col space-y-2 p-2">
+        <div className="w-1/3 h-full flex p-2">
           
-          {/* Tribe List (Now Larger) */}
-          <div className="flex-[1.3] w-3/5 border border-[#5F4B32] bg-[#FDF5E6] p-2 overflow-y-auto">
-            <TribeList />
-          </div>
-
-          {/* Player Info + Turn Info Block (Stacked) */}
-          <div className="flex-1 border border-[#5F4B32] bg-[#FDF5E6] p-2">
+          {/* Toggleable Section - TribeList OR Player/Opponents List */}
+          <div className="h-3/5 w-3/5 flex flex-col p-0">
             <PlayerInfo />
-            <TurnInfoBlock />
+            <div className="flex-1 flex flex-col min-h-[600px]"> 
+            <button
+              onClick={() => setShowTurnInfo(!showTurnInfo)}
+              className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white font-bold py-1 px-2 rounded mb-1 mt-1"
+            >
+              {showTurnInfo ? 'Show Tribe List' : 'Show Turn Info'}
+            </button>
+              {showTurnInfo ? (
+                <div className="flex flex-col flex-grow"> 
+                  <div className="flex-1 ">
+                    <OpponentsList />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 p-0">
+                  <TribeList />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Chat + OpponentsList (Still 50/50 but resized) */}
-          <div className="flex-1 flex space-x-2">
-            <div className="w-1/2 border border-[#5F4B32] bg-[#FDF5E6] p-2">
-              <Chat />
+          {/* Right section of the left column */}
+          <div className="w-2/5 h-full flex flex-col p-1">
+            {/* Turn Info Block (Above Chat) */}
+            <div className="p-1">
+              <TurnInfoBlock />
             </div>
-            <div className="w-1/2 border border-[#5F4B32] bg-[#FDF5E6] p-2">
-              <OpponentsList />
+            
+            {/* Chat Component */}
+            <div className="h-2/5 p-1">
+              <Chat />
             </div>
           </div>
         </div>

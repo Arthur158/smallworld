@@ -25,7 +25,6 @@ export default function TribeList() {
 
   return (
     <div className="p-4 border border-[#5F4B43] rounded bg-[#FDF5E6]">
-      <h2 className="text-2xl font-bold mb-4 underline text-center">Choose your tribe</h2>
       {tribes.length === 0 ? (
         <div className="italic text-center">Loading tribes...</div>
       ) : (
