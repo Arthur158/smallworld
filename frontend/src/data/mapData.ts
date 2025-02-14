@@ -1446,4 +1446,20 @@ mapDatabase.map4players2islands = unionMapData(
   transformMapData(mapDatabase.map3players, 0.844, 0.85, -5, 434),
   transformMapData(mapDatabase.map2islands, 0.27, 0.27, 80, 6)
 );
-mapDatabase.map4players2islands.OffsetStacksY = 1
+mapDatabase.map4players2islands.OffsetStacksX = 1/250,
+mapDatabase.map4players2islands.OffsetStacksY = 1/250,
+
+mapDatabase.map3players2islands = unionMapData(
+  transformMapData(mapDatabase.map2players, 0.61, 0.61, -3, 460),
+  transformMapData(mapDatabase.map2islands, 0.29, 0.29, 45, 0)
+);
+mapDatabase.map3players2islands.OffsetStacksX = 1/250,
+mapDatabase.map3players2islands.OffsetStacksY = 1/250
+
+mapDatabase.map5players2islands = unionMapData(
+  transformMapData(mapDatabase.map4players, 0.32, 0.32, -3, 460),
+  transformMapData(mapDatabase.map2islands, 0.29, 0.29, 45, 0)
+);
+mapDatabase.map5players2islands.OffsetStacksX = 1/250,
+mapDatabase.map5players2islands.OffsetStacksY = 1/250
+

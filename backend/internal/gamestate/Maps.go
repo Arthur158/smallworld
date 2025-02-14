@@ -1,5 +1,9 @@
 package gamestate
 
+import (
+	"fmt"
+)
+
 func mergeMaps(map1, map2 map[string]*Tile) map[string]*Tile {
     merged := make(map[string]*Tile)
 
@@ -16,7 +20,7 @@ func mergeMaps(map1, map2 map[string]*Tile) map[string]*Tile {
     return merged
 }
 // Map1 defines tiles and their adjacency relationships
-func Map3() map[string]*Tile {
+func Map3(gs *GameState) map[string]*Tile {
     // Step 1: Create tiles without adjacency
     tileMap := map[string]*Tile{
         "0":  {Id: "0", Biome: Swamp, Attributes: []Attribute{}},
@@ -202,7 +206,7 @@ func Map3() map[string]*Tile {
     return result
 }
 
-func Map2() map[string]*Tile {
+func Map2(gs *GameState) map[string]*Tile {
     // Step 1: Create tiles without adjacency
     tileMap := map[string]*Tile{
         "0":  {Id: "0", Biome: Swamp, Attributes: []Attribute{Magic}, IsEdge: true},
@@ -351,7 +355,7 @@ func Map2() map[string]*Tile {
     return result
 }
 
-func Map4() map[string]*Tile {
+func Map4(gs *GameState) map[string]*Tile {
     // Step 1: Create tiles without adjacency
     tileMap := map[string]*Tile{
         "0":  {Id: "0", Biome: Field, Attributes: []Attribute{}, IsEdge: true},
@@ -588,7 +592,7 @@ func Map4() map[string]*Tile {
     return result
 }
 
-func MapIsles2() map[string]*Tile {
+func MapIsles2(gs *GameState) map[string]*Tile {
     tileMap := map[string]*Tile{
         "0i":  {Id: "0i", Biome: Swamp, Attributes: []Attribute{}},
         "1i":  {Id: "1i", Biome: Hill, Attributes: []Attribute{Magic}},
@@ -651,11 +655,49 @@ func MapIsles2() map[string]*Tile {
         tileMap[id].OwningPlayer = &lostPlayer
     }
 
+    gs.ModifierPoints["islands"] = func(i int, p *Player) int {
+        if tile, ok := tileMap["0i"]; ok && tile.Presence != None && tile.OwningPlayer == p {
+            tribe := tile.OwningTribe
+            foundOutlier := false
+            for _, id := range []string{"1i", "2i", "3i"} {
+                if tile, ok := tileMap[id]; !(ok && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
+                    foundOutlier = true
+                }
+            }
+            if !foundOutlier {
+                gs.Messages = append(gs.Messages, fmt.Sprintf(
+                                "%s owns an entire island!",
+                                p.Name,
+                ))
+                i += 1
+            }
+        }
+
+        if tile, ok := tileMap["9i"]; ok && tile.Presence != None && tile.OwningPlayer == p {
+            tribe := tile.OwningTribe
+            foundOutlier := false
+            for _, id := range []string{"4i", "5i", "7i", "8i"} {
+                if tile, ok := tileMap[id]; !(ok && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
+                    foundOutlier = true
+                }
+            }
+            if !foundOutlier {
+                gs.Messages = append(gs.Messages, fmt.Sprintf(
+                                "%s owns an entire island!",
+                                p.Name,
+                ))
+                i += 1
+            }
+        }
+
+        return i
+    }
+
     return tileMap
 }
 
-func Map4Isles2() map[string]*Tile {
-    result := mergeMaps(Map3(), MapIsles2())
+func Map4Isles2(gs *GameState) map[string]*Tile {
+    result := mergeMaps(Map3(gs), MapIsles2(gs))
     potentialPositions := []string{"1", "2", "3", "4", "25", "5", "21", "20", "16", "15", "0"}
     AncientBuilders := CreateBaseTribe()
     a, b, _ := pickTwoRandom(potentialPositions)
@@ -668,7 +710,35 @@ func Map4Isles2() map[string]*Tile {
     return result
 }
 
-func Map5() map[string]*Tile {
+func Map3Isles2(gs *GameState) map[string]*Tile {
+    result := mergeMaps(Map2(gs), MapIsles2(gs))
+    potentialPositions := []string{"7", "8", "9", "13", "15", "16"}
+    AncientBuilders := CreateBaseTribe()
+    a, b, _ := pickTwoRandom(potentialPositions)
+    result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
+    result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
+    result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["0i"])
+    result[b].AdjacentTiles = append(result[b].AdjacentTiles, result["9i"])
+    result["0i"].AdjacentTiles = append(result["0i"].AdjacentTiles, result[a])
+    result["9i"].AdjacentTiles = append(result["9i"].AdjacentTiles, result[b])
+    return result
+}
+
+func Map5Isles2(gs *GameState) map[string]*Tile {
+    result := mergeMaps(Map4(gs), MapIsles2(gs))
+    potentialPositions := []string{"8", "9", "10", "11", "12", "13", "14", "18", "19", "21", "25", "26", "27", "32", "33"}
+    AncientBuilders := CreateBaseTribe()
+    a, b, _ := pickTwoRandom(potentialPositions)
+    result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
+    result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
+    result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["0i"])
+    result[b].AdjacentTiles = append(result[b].AdjacentTiles, result["9i"])
+    result["0i"].AdjacentTiles = append(result["0i"].AdjacentTiles, result[a])
+    result["9i"].AdjacentTiles = append(result["9i"].AdjacentTiles, result[b])
+    return result
+}
+
+func Map5(gs *GameState) map[string]*Tile {
     // Step 1: Create tiles without adjacency
     tileMap := map[string]*Tile{
         "0":  {Id: "0", Biome: Swamp, Attributes: []Attribute{}},
@@ -868,10 +938,12 @@ func Map5() map[string]*Tile {
 }
 
 // MapRegistry stores map definitions for dynamic loading
-var MapRegistry = map[string]func() map[string]*Tile{
+var MapRegistry = map[string]func(*GameState) map[string]*Tile{
 	"map2players": Map2,
 	"map3players": Map3,
         "map4players": Map4,
         "map4players2islands": Map4Isles2,
+        "map3players2islands": Map3Isles2,
+        "map5players2islands": Map5Isles2,
         "map5players": Map3,
 }

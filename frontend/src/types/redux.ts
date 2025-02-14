@@ -29,6 +29,7 @@ export interface ApplicationState {
   mapName: string | null;
   offsetStacksX: number
   offsetStacksY: number
+  mapChoices: string[]
 }
 
 export type RootState = {

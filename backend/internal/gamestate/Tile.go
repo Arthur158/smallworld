@@ -29,8 +29,14 @@ func (tile *Tile) countDefense() (int, error) {
     if tile.Biome == Mountain {
         price += 1
     }
+    if err != nil {
+	return price, err
+    }
     for _, modifier := range(tile.ModifierDefenses) {
 	price, err = modifier(price, err)
+	if err != nil {
+	    return price, err
+	}
     }
     return price, err
 }

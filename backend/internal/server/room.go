@@ -7,15 +7,27 @@ import (
 	"log"
 	"strconv"
 	"time"
-
+	"sync"
 	"github.com/google/uuid"
 )
 
-func createRoom(client *Client, roomName, username string, maxPlayers int) {
+type Room struct {
+	ID           string
+	Name         string
+	HostUsername string
+	Players      []*Client
+	InProgress   bool
+	Gamestate    gamestate.GameState
+	mu	     sync.Mutex
+	Map	     Map
+	saveId	     int64
+}
+
+func createRoom(client *Client, roomName, username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
-	gameMap, ok := mapMap[maxPlayers]
+	gameMap, ok := mapMap["2 Players"]
 	if !ok {
 		log.Println("Problem logging map")
 	}
@@ -24,8 +36,7 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 		ID:           uuid.New().String(),
 		Name:         roomName,
 		HostUsername: username,
-		Players:      make([]*Client, maxPlayers), // Create a fixed-size slice with nil values
-		MaxPlayers:   maxPlayers,
+		Players:      make([]*Client, gameMap.Capacity), // Create a fixed-size slice with nil values
 		InProgress:   false,
 		Gamestate:    gamestate.GameState{},
 		Map:          gameMap,
@@ -33,36 +44,60 @@ func createRoom(client *Client, roomName, username string, maxPlayers int) {
 	}
 	rooms[room.ID] = room
 
-	for i := range(maxPlayers) {
+	for i := range(gameMap.Capacity) {
 		room.Players[i] = nil
 	}
 
-	// Mark this client as the host
-	client.Username = username
 	client.Room = room
 	room.Players[0] = client
 
 	sendRoomsUpdateToAll()
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
+
+	room.sendMapChoices()
+}
+
+func (room *Room) sendMapChoices() {
+	mapChoices := []string{}
+	for key := range(mapMap) {
+		mapChoices = append(mapChoices, key)
+	}
+
+	var host *Client
+	for i, client := range(room.Players) {
+		if client != nil && client.Username == room.HostUsername {
+			host = room.Players[i]
+			break
+		}
+	}
+
+	message := map[string]interface{}{
+		"mapChoices": mapChoices, // This ensures it's an empty list if no maps exist
+	}
+
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		host.sendMessage("error", json.RawMessage(`{"error": "Failed to marshal message"}`))
+		return
+	}
+
+	host.sendMessage("mapChoices", json.RawMessage(messageJSON))
 }
 
 // ChangeSize modifies the room size while preserving existing players
-func (room *Room) ChangeSize(newSize int) {
-	// Ensure the new size is between 2 and 5
-	if newSize < 2 || newSize > 5 {
-		log.Println("Invalid room size. Must be between 2 and 5.")
-		return
-	}
+func (room *Room) ChangeMap(newMap string) {
 
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
-	gameMap, ok := mapMap[newSize]
+	gameMap, ok := mapMap[newMap]
 	if !ok {
 		log.Println("Problem logging map")
 	}
 
 	room.Map = gameMap
+
+	newSize := gameMap.Capacity
 
 	// First, remove any nil players from the slice
 	cleanedPlayers := make([]*Client, 0, len(room.Players))
@@ -85,9 +120,6 @@ func (room *Room) ChangeSize(newSize int) {
 			room.Players = append(room.Players, nil)
 		}
 	}
-
-	// Assign new max size
-	room.MaxPlayers = newSize
 
 	// Ensure there is still a valid host
 	if len(room.Players) > 0 && room.HostUsername == "" {
@@ -564,11 +596,9 @@ func (room *Room) sendSmallMapUpdate() {
 func (room *Room) sendMapUpdate() {
 	type mapUpdateData struct {
 		Picture string    `json:"picture"`
-		Zones   []TileData `json:"zones"`
 		OffSet float64 `json:"offset"`
 	}
 
-	zones := room.Map.populateMap()
 
 	// Load the image from disk
 	imgPath := room.Map.ImagePath("./assets/maps") // base path for images
@@ -581,7 +611,6 @@ func (room *Room) sendMapUpdate() {
 	update := mapUpdateData{
 		// Leave the path or stream data blank (or assign appropriately)
 		Picture: base64Img,
-		Zones:   zones,
 		OffSet: room.Map.Offset,
 	}
 

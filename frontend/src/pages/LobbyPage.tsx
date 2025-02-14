@@ -21,6 +21,7 @@ export default function LobbyPage() {
     saveGames,
     error,
     saveSelectionId,
+    mapChoices,
   } = useSelector((state: RootState) => ({
     name: state.application.name,
     isAuthenticated: state.application.isAuthenticated,
@@ -30,6 +31,7 @@ export default function LobbyPage() {
     saveGames: state.application.saveGames as SaveGameInfo[],
     error: state.application.error,
     saveSelectionId: state.application.saveSelectionId,
+    mapChoices: state.application.mapChoices,
   }));
 
   const [roomName, setRoomName] = useState('');
@@ -107,13 +109,14 @@ export default function LobbyPage() {
     sendMessageToBackend('loadgame', { saveId: gameId });
   };
 
-  // Callbacks (backend must implement these)
-  const handleRoomSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newSize = parseInt(event.target.value, 10);
+  // Handle map change
+  const handleMapChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     if (!currentRoom) return;
-    sendMessageToBackend('changeRoomSize', { roomId: currentRoom.id, newSize });
+    const newMap = event.target.value;
+    sendMessageToBackend('changeRoomMap', { roomId: currentRoom.id, newMap });
   };
 
+  // Callbacks (backend must implement these)
   const handleMoveUp = (playerName: string) => {
     if (!currentRoom) return;
     sendMessageToBackend('moveUp', { roomId: currentRoom.id, username: playerName });
@@ -198,18 +201,20 @@ export default function LobbyPage() {
               <div className="border border-[#5F4B32] p-4 bg-white">
                 <h2 className="text-xl font-bold mb-2 underline">Room: {currentRoom.name}</h2>
 
-                {/* Show size changer only if you're the creator/host */}
-                {currentRoom.creator === username && (
+                {/* Display selected map (placeholder) */}
+                <div className="mb-4">
+                  <p className="font-semibold">Selected Map: {currentRoom?.mapName}</p>
+                </div>
+
+                {/* Show map chooser only if you're the creator/host */}
+                {currentRoom.creator === username && mapChoices && mapChoices.length > 0 && (
                   <div className="mb-4">
-                    <label className="font-semibold mr-2">Room Size:</label>
-                    <select
-                      value={currentRoom.capacity ?? 2}
-                      onChange={handleRoomSizeChange}
-                      className="border p-1"
-                    >
-                      {[2, 3, 4, 5].map((size) => (
-                        <option key={size} value={size}>
-                          {size}
+                    <label className="font-semibold mr-2">Choose Map:</label>
+                    <select onChange={handleMapChange} className="border p-1">
+                      <option value="">-- Select a Map --</option>
+                      {mapChoices.map((map) => (
+                        <option key={map} value={map}>
+                          {map}
                         </option>
                       ))}
                     </select>

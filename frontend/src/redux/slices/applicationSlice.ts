@@ -35,7 +35,8 @@ const initialState: ApplicationState = {
   saveSelectionId: -1,
   mapName: null,
   offsetStacksX: 10,
-  offsetStacksY: 10
+  offsetStacksY: 10,
+  mapChoices: [],
 };
 
 const applicationSlice = createSlice({
@@ -179,6 +180,11 @@ const applicationSlice = createSlice({
             };
           });
           state.tiles = newTiles;
+          break;
+        }
+        case 'mapChoices': {
+          state.mapChoices = parsedData.mapChoices
+          state.mapName = parsedData.MapName
           break;
         }
         case 'smallmapupdate': {

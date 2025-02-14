@@ -10,13 +10,15 @@ type GameState struct {
 	TileList map[string]*Tile
 	TurnInfo *TurnInfo
 	Messages []string
+	ModifierPoints map[string]func(int, *Player) int;
 }
 
 func New(playerNames []string, mapName string) (*GameState, error) {
 	// Create a list of initialized players
-	players := make([]*Player, len(playerNames))
+	gs := &GameState{}
+	gs.Players = make([]*Player, len(playerNames))
 	for i, name := range(playerNames) {
-		players[i] = &Player{
+		gs.Players[i] = &Player{
 			Name: name,
 			Index: i,
 			ActiveTribe:    nil,
@@ -28,26 +30,23 @@ func New(playerNames []string, mapName string) (*GameState, error) {
 		}
 	}
 
-	turnInfo := &TurnInfo{
+	gs.TurnInfo = &TurnInfo{
 		TurnIndex: 1,
 		PlayerIndex: 0,
 		Phase: TribeChoice,
 	}
 
-	tribelist, err := createTribeList()
+	var err error;
+	gs.TribeList, err = createTribeList()
 
-	tilelist := MapRegistry[mapName]()
+	gs.ModifierPoints = make(map[string]func(int, *Player) int)
+	gs.TileList = MapRegistry[mapName](gs)
 
         if err != nil {
             return nil, fmt.Errorf("failed to create list of tribe entries", err)
         }
 
-	return &GameState{
-		Players:	players,
-		TribeList:	tribelist,
-		TileList:	tilelist,
-		TurnInfo:	turnInfo,
-	}, nil
+	return gs, nil
 }
 
 func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
@@ -356,31 +355,6 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 
 	return nil
 }
-
-func (gs *GameState) countPoints(player *Player) int {
-	total := 0
-	for _, tile := range gs.TileList {
-		if tile.Presence != None {
-			if player.HasActiveTribe && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
-				total += player.ActiveTribe.countPoints(tile)
-			}
-			for _, tribe := range(player.PassiveTribes) {
-			    if tile.OwningTribe.checkPresence(tile, tribe.Race) {
-				total += tribe.countPoints(tile)
-			    }
-			}
-		}
-	}
-	if player.HasActiveTribe {
-		total += player.ActiveTribe.countExtrapoints(gs)
-	}
-	for _, passiveTribe := range player.PassiveTribes {
-		total += passiveTribe.countExtrapoints(gs)
-	}
-
-	return total
-}
-
 
 func (gs *GameState) handleNextPlayerTurn() {
 	if gs.TurnInfo.PlayerIndex == len(gs.Players) - 1 {

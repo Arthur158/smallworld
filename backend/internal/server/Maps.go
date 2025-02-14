@@ -8,6 +8,13 @@ import (
 	"path/filepath"
 )
 
+type Map struct {
+	Name	string
+	Offset float64
+	FontSize int
+	Capacity int
+}
+
 func (m *Map) ImagePath(baseDir string) string {
     return filepath.Join(baseDir, m.Name + ".jpg")
 }
@@ -24,36 +31,58 @@ var Map3 = Map{
 	Name: "map3players",
 	Offset: 1,
 	FontSize: 18,
+	Capacity: 3,
 }
 
 var Map5 = Map{
 	Name: "map5players",
 	Offset: 1.185,
 	FontSize: 50,
+	Capacity: 5,
 }
 
 var Map4 = Map{
 	Name: "map4players",
 	Offset: 0.378,
 	FontSize: 44,
+	Capacity: 4,
 }
 
 var Map2 = Map{
 	Name: "map2players",
 	Offset: 0.728,
 	FontSize: 60,
+	Capacity: 2,
 }
 
 var Map4Isles2 = Map{
 	Name: "map4players2islands",
 	Offset: 1.185,
 	FontSize: 50,
+	Capacity: 2,
 }
 
-var mapMap = map[int]Map {
-	2: Map4Isles2,
-	3: Map3,
-	4: Map4,
-	5: Map5,
+var Map3Isles2 = Map{
+	Name: "map3players2islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 2,
+}
+
+var Map5Isles2 = Map{
+	Name: "map5players2islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 2,
+}
+
+
+var mapMap = map[string]Map {
+	"2 Players": Map2,
+	"3 Players": Map3,
+	"4 Players": Map4,
+	"4 Players with 2 islands": Map4Isles2,
+	"3 Players with 2 islands": Map3Isles2,
+	"5 Players with 2 islands": Map5Isles2,
 }
 

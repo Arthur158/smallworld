@@ -6,7 +6,17 @@ import (
 	"backend/internal/messages"
 	"fmt"
 	"strconv"
+	"github.com/gorilla/websocket"
 )
+
+type Client struct {
+	Conn     *websocket.Conn
+	Username string
+	IsAuthenticated bool
+	Index	int
+	Room   *Room
+}
+
 
 
 func readMessages(client *Client) {
@@ -70,7 +80,7 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			log.Println("Error unmarshalling createRoom data:", err)
 			return
 		}
-		createRoom(client, data.RoomName, client.Username, data.MaxPlayers)
+		createRoom(client, data.RoomName, client.Username)
 		client.sendUserSaves()
 
 	case "leaveroom":
@@ -151,16 +161,16 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		client.Room.MovePlayer(data.Username, "down")
 		sendRoomsUpdateToAll()
-	case "changeRoomSize":
+	case "changeRoomMap":
 		var data struct {
 			RoomId string `json:"roomId"`
-			NewSize int `json:"newSize"`
+			NewMap string `json:"newMap"`
 		}
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling register data:", err)
 			return
 		}
-		client.Room.ChangeSize(data.NewSize)
+		client.Room.ChangeMap(data.NewMap)
 	case "kickPlayer":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -333,9 +343,9 @@ func sendRoomsUpdateToAll() {
 				"id":         r.ID,
 				"name":       r.Name,
 				"players":    playerNames,
-				"maxPlayers": r.MaxPlayers,
+				"maxPlayers": r.Map.Capacity,
+				"mapName":    r.Map.Name,
 				"creator":  r.HostUsername,
-				"capacity": r.MaxPlayers,
 			})
 		}
 	}

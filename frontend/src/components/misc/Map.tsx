@@ -415,10 +415,10 @@ export default function Map() {
                   const baseSize = imageDimensions.width * 0.0555;
                   const offset = 0.4 * baseSize;
                   const scaledStackX =
-                    (tile.polygon.stackX + index * offset * baseSize * offsetStacksX/5) *
+                    (tile.polygon.stackX + index * offset * baseSize * offsetStacksX) *
                     (imageDimensions.width / baseWidth);
                   const scaledStackY =
-                    (tile.polygon.stackY - index * offset * baseSize * offsetStacksY/330) *
+                    (tile.polygon.stackY - index * offset * baseSize * offsetStacksX ) *
                     (imageDimensions.width / baseWidth);
                   const imageSrc = `/stacks/${stack.type}.png`;
                   const isGray = !stack.isActive;
