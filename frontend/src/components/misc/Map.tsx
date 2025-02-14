@@ -50,7 +50,8 @@ export default function Map() {
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
   const mapName = useSelector((state: RootState) => state.application.mapName);
   const phase = useSelector((state: RootState) => state.application.phase);
-  const fontsize = useSelector((state: RootState) => state.application.fontSize);
+  const offsetStacksX = useSelector((state: RootState) => state.application.offsetStacksX);
+  const offsetStacksY = useSelector((state: RootState) => state.application.offsetStacksY);
 
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({
     width: 0,
@@ -414,10 +415,10 @@ export default function Map() {
                   const baseSize = imageDimensions.width * 0.0555;
                   const offset = 0.4 * baseSize;
                   const scaledStackX =
-                    (tile.polygon.stackX + index * offset) *
+                    (tile.polygon.stackX + index * offset * baseSize * offsetStacksX/5) *
                     (imageDimensions.width / baseWidth);
                   const scaledStackY =
-                    (tile.polygon.stackY - index * offset) *
+                    (tile.polygon.stackY - index * offset * baseSize * offsetStacksY/330) *
                     (imageDimensions.width / baseWidth);
                   const imageSrc = `/stacks/${stack.type}.png`;
                   const isGray = !stack.isActive;
@@ -464,7 +465,7 @@ export default function Map() {
                                   x={pieceX * offsetMapTiles + baseSize * 0.97 }
                                   y={pieceY * offsetMapTiles - baseSize * 0.27 }
                                   fill="black"
-                                  fontSize={`${fontsize}`}
+                                  fontSize={`${baseSize * 0.3}`}
                                   fontWeight="bold"
                                   textAnchor="end"
                                   dominantBaseline="hanging"

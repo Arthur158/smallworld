@@ -1,5 +1,20 @@
 package gamestate
 
+func mergeMaps(map1, map2 map[string]*Tile) map[string]*Tile {
+    merged := make(map[string]*Tile)
+
+    // Copy all elements from map1
+    for k, v := range map1 {
+        merged[k] = v
+    }
+
+    // Copy all elements from map2 (overwrites if key exists)
+    for k, v := range map2 {
+        merged[k] = v
+    }
+
+    return merged
+}
 // Map1 defines tiles and their adjacency relationships
 func Map3() map[string]*Tile {
     // Step 1: Create tiles without adjacency
@@ -573,184 +588,52 @@ func Map4() map[string]*Tile {
     return result
 }
 
-func Map4Isles2() map[string]*Tile {
-    // Step 1: Create tiles without adjacency
+func MapIsles2() map[string]*Tile {
     tileMap := map[string]*Tile{
-        "0":  {Id: "0", Biome: Swamp, Attributes: []Attribute{}},
-        "1":  {Id: "1", Biome: Forest, Attributes: []Attribute{Cave}},
-        "2":  {Id: "2", Biome: Hill, Attributes: []Attribute{}},
-        "3":  {Id: "3", Biome: Swamp, Attributes: []Attribute{Magic}},
-        "4":  {Id: "4", Biome: Field, Attributes: []Attribute{}},
-        "5":  {Id: "5", Biome: Mountain, Attributes: []Attribute{Cave}},
-        "6":  {Id: "6", Biome: Forest, Attributes: []Attribute{}, IsEdge: true},
-        "7":  {Id: "7", Biome: Mountain, Attributes: []Attribute{}, IsEdge: true},
-        "8":  {Id: "8", Biome: Mountain, Attributes: []Attribute{}, IsEdge: true},
-        "9":  {Id: "9", Biome: Hill, Attributes: []Attribute{}, IsEdge: true},
-        "10": {Id: "10", Biome: Field, Attributes: []Attribute{Magic}, IsEdge: true},
-        "11": {Id: "11", Biome: Forest, Attributes: []Attribute{Mine}, IsEdge: true},
-        "12": {Id: "12", Biome: Mountain, Attributes: []Attribute{Cave, Mine}, IsEdge: true},
-        "13": {Id: "13", Biome: Field, Attributes: []Attribute{Magic}, IsEdge: true},
-        "14": {Id: "14", Biome: Forest, Attributes: []Attribute{Mine}, IsEdge: true},
-        "15": {Id: "15", Biome: Swamp, Attributes: []Attribute{}},
-        "16": {Id: "16", Biome: Hill, Attributes: []Attribute{Magic}},
-        "17": {Id: "17", Biome: Mountain, Attributes: []Attribute{}, IsEdge: true},
-        "18": {Id: "18", Biome: Field, Attributes: []Attribute{}, IsEdge: true},
-        "19": {Id: "19", Biome: Swamp, Attributes: []Attribute{Cave}, IsEdge: true},
-        "20": {Id: "20", Biome: Mountain, Attributes: []Attribute{Mine}},
-        "21": {Id: "21", Biome: Field, Attributes: []Attribute{}},
-        "22": {Id: "22", Biome: Forest, Attributes: []Attribute{}, IsEdge: true},
-        "23": {Id: "23", Biome: Swamp, Attributes: []Attribute{Mine}, IsEdge: true},
-        "24": {Id: "24", Biome: Mountain, Attributes: []Attribute{}, IsEdge: true},
-        "25": {Id: "25", Biome: Hill, Attributes: []Attribute{Magic}},
-        "26": {Id: "26", Biome: Hill, Attributes: []Attribute{Cave}, IsEdge: true},
-        "27": {Id: "27", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "28": {Id: "28", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "29": {Id: "29", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "30": {Id: "30", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "31": {Id: "31", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "32": {Id: "32", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "33": {Id: "33", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "34": {Id: "34", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "35": {Id: "35", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "36": {Id: "36", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "37": {Id: "37", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "38": {Id: "38", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "39": {Id: "39", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "40": {Id: "40", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "41": {Id: "41", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
-        "42": {Id: "42", Biome: Water, Attributes: []Attribute{}, IsEdge: true},
+        "0i":  {Id: "0i", Biome: Swamp, Attributes: []Attribute{}},
+        "1i":  {Id: "1i", Biome: Hill, Attributes: []Attribute{Magic}},
+        "2i":  {Id: "2i", Biome: Field, Attributes: []Attribute{}},
+        "3i":  {Id: "3i", Biome: Mountain, Attributes: []Attribute{Mine}},
+        "4i":  {Id: "4i", Biome: Mountain, Attributes: []Attribute{}},
+        "5i":  {Id: "5i", Biome: Field, Attributes: []Attribute{Cave}},
+        "6i":  {Id: "6i", Biome: Water, Attributes: []Attribute{}},
+        "7i":  {Id: "7i", Biome: Swamp, Attributes: []Attribute{Mine}},
+        "8i":  {Id: "8i", Biome: Hill, Attributes: []Attribute{Magic}},
+        "9i":  {Id: "9i", Biome: Forest, Attributes: []Attribute{}},
     }
 
-    for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+    tileMap["0i"].AdjacentTiles = []*Tile{
+        tileMap["2i"], tileMap["3i"], tileMap["1i"], tileMap["8i"],
     }
 
-        // Step 2: Set adjacency by adding pointers to AdjacentTiles
-    tileMap["0"].AdjacentTiles = []*Tile{
-        tileMap["12"], tileMap["15"], tileMap["16"], tileMap["28"], tileMap["1"], tileMap["10"],
+    tileMap["1i"].AdjacentTiles = []*Tile{
+        tileMap["0i"], tileMap["3i"], 
     }
 
-    tileMap["1"].AdjacentTiles = []*Tile{
-        tileMap["0"], tileMap["8"], tileMap["10"], tileMap["12"], tileMap["28"], tileMap["7"], tileMap["2"],
+    tileMap["2i"].AdjacentTiles = []*Tile{
+        tileMap["0i"], tileMap["3i"], tileMap["4i"], 
     }
-
-    tileMap["2"].AdjacentTiles = []*Tile{
-        tileMap["3"], tileMap["6"], tileMap["1"], tileMap["7"], tileMap["28"],
+    tileMap["3i"].AdjacentTiles = []*Tile{
+        tileMap["2i"], tileMap["0i"], tileMap["1i"], 
     }
-
-    tileMap["3"].AdjacentTiles = []*Tile{
-        tileMap["11"], tileMap["6"], tileMap["2"],  tileMap["5"],tileMap["4"], tileMap["28"],
+    tileMap["4i"].AdjacentTiles = []*Tile{
+        tileMap["2i"], tileMap["5i"], tileMap["6i"], tileMap["8i"], 
     }
-
-    tileMap["4"].AdjacentTiles = []*Tile{
-        tileMap["3"], tileMap["5"], tileMap["25"], tileMap["26"], tileMap["11"],
+    tileMap["5i"].AdjacentTiles = []*Tile{
+        tileMap["4i"], tileMap["5i"], tileMap["6i"], 
     }
-
-    tileMap["5"].AdjacentTiles = []*Tile{
-        tileMap["3"], tileMap["4"], tileMap["25"], tileMap["21"],  tileMap["20"], tileMap["28"],
+    tileMap["6i"].AdjacentTiles = []*Tile{
+        tileMap["4i"], tileMap["5i"], tileMap["7i"], tileMap["8i"],
     }
-
-    tileMap["6"].AdjacentTiles = []*Tile{
-        tileMap["2"], tileMap["7"], tileMap["3"], tileMap["11"],
+    tileMap["7i"].AdjacentTiles = []*Tile{
+        tileMap["5i"], tileMap["6i"], tileMap["8i"], tileMap["9i"], 
     }
-
-    tileMap["7"].AdjacentTiles = []*Tile{
-        tileMap["8"], tileMap["2"], tileMap["6"], tileMap["1"],
+    tileMap["8i"].AdjacentTiles = []*Tile{
+        tileMap["0i"], tileMap["4i"], tileMap["6i"], 
+        tileMap["7i"], tileMap["9i"],
     }
-
-    tileMap["8"].AdjacentTiles = []*Tile{
-        tileMap["7"], tileMap["9"], tileMap["10"], tileMap["1"],
-    }
-
-    tileMap["9"].AdjacentTiles = []*Tile{
-        tileMap["8"], tileMap["10"], // ajustez si besoin
-    }
-
-    tileMap["10"].AdjacentTiles = []*Tile{
-        tileMap["1"], tileMap["8"], tileMap["9"], tileMap["12"],tileMap["0"],
-    }
-
-    tileMap["11"].AdjacentTiles = []*Tile{
-        tileMap["6"], tileMap["3"], tileMap["4"], tileMap["26"],tileMap["27"],
-    }
-
-    tileMap["12"].AdjacentTiles = []*Tile{
-        tileMap["0"], tileMap["13"], tileMap["10"], tileMap["15"], tileMap["29"], 
-    }
-
-    tileMap["13"].AdjacentTiles = []*Tile{
-        tileMap["29"], tileMap["14"], tileMap["15"], tileMap["12"], 
-    }
-
-    tileMap["14"].AdjacentTiles = []*Tile{
-        tileMap["13"], tileMap["17"], tileMap["15"], tileMap["29"],
-    }
-
-    tileMap["15"].AdjacentTiles = []*Tile{
-        tileMap["12"], tileMap["13"], tileMap["14"], tileMap["17"], tileMap["16"], tileMap["0"],
-    }
-
-    tileMap["16"].AdjacentTiles = []*Tile{
-        tileMap["0"], tileMap["15"], tileMap["17"], tileMap["18"], tileMap["20"], tileMap["28"],
-    }
-
-    tileMap["17"].AdjacentTiles = []*Tile{
-        tileMap["14"], tileMap["15"], tileMap["16"], tileMap["18"],
-    }
-
-    tileMap["18"].AdjacentTiles = []*Tile{
-        tileMap["16"], tileMap["17"], tileMap["19"], tileMap["20"],
-    }
-
-    tileMap["19"].AdjacentTiles = []*Tile{
-        tileMap["18"], tileMap["20"], tileMap["21"], tileMap["22"],
-    }
-
-    tileMap["20"].AdjacentTiles = []*Tile{
-        tileMap["16"], tileMap["19"], tileMap["21"], tileMap["5"], tileMap["28"], tileMap["18"],
-    }
-
-    tileMap["21"].AdjacentTiles = []*Tile{
-        tileMap["19"], tileMap["20"], tileMap["23"], tileMap["22"], tileMap["5"], tileMap["25"],
-    }
-
-    tileMap["22"].AdjacentTiles = []*Tile{
-        tileMap["19"], tileMap["23"], tileMap["21"],
-    }
-
-    tileMap["23"].AdjacentTiles = []*Tile{
-        tileMap["21"], tileMap["22"], tileMap["24"], tileMap["25"],
-    }
-
-    tileMap["24"].AdjacentTiles = []*Tile{
-        tileMap["23"], tileMap["25"], tileMap["26"], tileMap["27"],
-    }
-
-    tileMap["25"].AdjacentTiles = []*Tile{
-        tileMap["24"], tileMap["21"], tileMap["5"], tileMap["4"], tileMap["23"], tileMap["26"],
-    }
-
-    tileMap["26"].AdjacentTiles = []*Tile{
-        tileMap["25"], tileMap["4"], tileMap["24"], tileMap["27"], tileMap["11"],
-    }
-
-    tileMap["27"].AdjacentTiles = []*Tile{
-        tileMap["26"], tileMap["11"], tileMap["24"],
-    }
-
-    tileMap["28"].AdjacentTiles = []*Tile{
-        tileMap["0"], tileMap["1"], tileMap["2"], tileMap["3"], tileMap["5"], tileMap["20"], tileMap["16"],
-    }
-
-    tileMap["29"].AdjacentTiles = []*Tile{
-        tileMap["12"], tileMap["13"], tileMap["14"], // selon la frontière visible
-    }
-
-    // Step 3: Convert the map of pointers to a map of values
-    result := make(map[string]*Tile, len(tileMap))
-    for id, tile := range tileMap {
-        result[id] = tile // Dereference pointer to get a Tile value
+    tileMap["9i"].AdjacentTiles = []*Tile{
+        tileMap["7i"], tileMap["8i"], 
     }
 
     lostTribe := CreateBaseTribe()
@@ -761,14 +644,27 @@ func Map4Isles2() map[string]*Tile {
         ActiveTribe: lostTribe,
     }
 
-    for _, id := range []string{ "0", "1", "2", "3", "4", "5" ,"6", "7", "8", "9", "10", "11", "12", "13", "14", "15" ,"16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33"} {
+    for _, id := range []string{"0i", "7i", "8i"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
         tileMap[id].Presence = Passive
         tileMap[id].OwningPlayer = &lostPlayer
     }
 
+    return tileMap
+}
 
+func Map4Isles2() map[string]*Tile {
+    result := mergeMaps(Map3(), MapIsles2())
+    potentialPositions := []string{"1", "2", "3", "4", "25", "5", "21", "20", "16", "15", "0"}
+    AncientBuilders := CreateBaseTribe()
+    a, b, _ := pickTwoRandom(potentialPositions)
+    result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
+    result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
+    result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["0i"])
+    result[b].AdjacentTiles = append(result[b].AdjacentTiles, result["9i"])
+    result["0i"].AdjacentTiles = append(result["0i"].AdjacentTiles, result[a])
+    result["9i"].AdjacentTiles = append(result["9i"].AdjacentTiles, result[b])
     return result
 }
 
@@ -976,6 +872,6 @@ var MapRegistry = map[string]func() map[string]*Tile{
 	"map2players": Map2,
 	"map3players": Map3,
         "map4players": Map4,
-        "map4players2islands": Map3,
+        "map4players2islands": Map4Isles2,
         "map5players": Map3,
 }

@@ -2,7 +2,7 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { ApplicationState } from '../../types/redux';
 import { Language } from '../../types/misc';
 import { Player, TribeEntry, Room, Tile, SaveGameInfo } from '../../types/Board';
-import { mapDatabase } from '../../data/mapData'; // <-- Import your local map data
+import { mapDatabase, MapData } from '../../data/mapData'; // <-- Import your local map data
 
 
 const initialState: ApplicationState = {
@@ -34,7 +34,8 @@ const initialState: ApplicationState = {
   saveGames: [],
   saveSelectionId: -1,
   mapName: null,
-  fontSize: 20
+  offsetStacksX: 10,
+  offsetStacksY: 10
 };
 
 const applicationSlice = createSlice({
@@ -183,14 +184,16 @@ const applicationSlice = createSlice({
         case 'smallmapupdate': {
           state.offsetMapTiles = parsedData.offset;
           state.mapName = parsedData.MapName;
-          state.fontSize = parsedData.FontSize
 
           // Load tile definitions from your local map data
           const mapKey = state.mapName || '';
           const tileDataArray = mapDatabase[mapKey] || [];
 
+          state.offsetStacksX = tileDataArray.OffsetStacksX
+          state.offsetStacksY = tileDataArray.OffsetStacksY
+
           const newTiles: Record<string, Tile> = {};
-          tileDataArray.forEach((tileDef) => {
+          tileDataArray.Tiles.forEach((tileDef) => {
             newTiles[String(tileDef.ID)] = {
               id: String(tileDef.ID),
               polygon: {
@@ -238,7 +241,7 @@ const applicationSlice = createSlice({
           break;
 
         case 'tileupdate': {
-          const tile = state.tiles[Number(parsedData.tileID)];
+          const tile = state.tiles[parsedData.tileID];
           if (!tile) {
             console.error(`Tile with ID ${parsedData.tileID} does not exist.`);
             return;
@@ -257,7 +260,7 @@ const applicationSlice = createSlice({
         case 'alltileupdate': {
           for (let i = 0; i < parsedData.length; i++) {
             const t = parsedData[i];
-            const tile = state.tiles[Number(t.tileID)];
+            const tile = state.tiles[t.tileID];
             if (!tile) {
               console.error(`Tile with ID ${t.tileID} does not exist.`);
               continue;
@@ -369,7 +372,7 @@ const applicationSlice = createSlice({
           // 4) All tiles
           if (Array.isArray(parsedData.allTiles)) {
             for (const t of parsedData.allTiles) {
-              const tileId = Number(t.tileID);
+              const tileId = t.tileID;
               const tileObj = state.tiles[tileId];
               if (!tileObj) {
                 console.error('Tile does not exist:', tileId);

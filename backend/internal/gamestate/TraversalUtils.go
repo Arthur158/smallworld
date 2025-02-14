@@ -1,5 +1,12 @@
 package gamestate;
 
+import (
+    "fmt"
+    "math/rand"
+    "time"
+)
+
+
 func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
     for _, tile := range gs.TileList {
         if tile.Presence != None && tile.OwningTribe.checkPresence(tile, race) {
@@ -43,4 +50,22 @@ func (gs *GameState) CheckJump(tile *Tile, otherTile *Tile) bool {
     }
     return false
 }
+// pickTwoRandom selects two distinct strings from a given slice.
+func pickTwoRandom(strings []string) (string, string, error) {
+	if len(strings) < 2 {
+		return "", "", fmt.Errorf("not enough elements to pick two")
+	}
 
+	rand.Seed(time.Now().UnixNano())
+
+	// Pick first random index
+	i := rand.Intn(len(strings))
+
+	// Pick second random index, ensuring it's different from the first
+	j := rand.Intn(len(strings) - 1)
+	if j >= i {
+		j++
+	}
+
+	return strings[i], strings[j], nil
+}

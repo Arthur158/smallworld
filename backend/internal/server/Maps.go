@@ -51,7 +51,7 @@ var Map4Isles2 = Map{
 }
 
 var mapMap = map[int]Map {
-	2: Map2,
+	2: Map4Isles2,
 	3: Map3,
 	4: Map4,
 	5: Map5,
