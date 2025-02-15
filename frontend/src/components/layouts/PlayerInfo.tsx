@@ -69,7 +69,24 @@ export default function PlayerInfo() {
         <img
           src={getTraitImagePath(tribe.trait)}
           alt={tribe.trait}
-          className="h-full w-auto -mr-1 z-20"
+          className="h-full w-auto -mr-6 z-20"
+        />
+        <img
+          src={getRaceImagePath(tribe.race)}
+          alt={tribe.race}
+          className="h-full w-auto z-10"
+        />
+      </div>
+    );
+  };
+
+  const renderPassiveTribeImages = (tribe: Tribe, customClasses = '') => {
+    return (
+      <div className={`relative flex items-center ${customClasses}`}>
+        <img
+          src={getTraitImagePath(tribe.trait)}
+          alt={tribe.trait}
+          className="h-full w-auto -mr-3 z-20"
         />
         <img
           src={getRaceImagePath(tribe.race)}
@@ -92,8 +109,8 @@ export default function PlayerInfo() {
               key={index}
               className="relative"
               style={{
-                width: 45,
-                height: 45,
+                width: 60,
+                height: 60,
                 cursor: 'pointer',
                 border: isFlashy ? '3px solid blue' : '',
                 animation: isFlashy ? 'flash 1s infinite' : undefined,
@@ -112,9 +129,6 @@ export default function PlayerInfo() {
               />
               <span className="absolute top-2 right-2 text-white text-xs font-bold text-shadow">
                 {stack.amount}
-              </span>
-              <span className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-xs font-bold text-center text-shadow">
-                {stack.type}
               </span>
             </div>
           );
@@ -143,7 +157,7 @@ export default function PlayerInfo() {
               className="opacity-60"
               style={{ height: '3rem', filter: 'grayscale(50%)' }}
             >
-              {renderTribeImages(tribe, 'h-full')}
+              {renderPassiveTribeImages(tribe, 'h-full')}
             </div>
           ))}
         </div>

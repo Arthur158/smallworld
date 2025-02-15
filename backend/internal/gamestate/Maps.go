@@ -945,5 +945,5 @@ var MapRegistry = map[string]func(*GameState) map[string]*Tile{
         "map4players2islands": Map4Isles2,
         "map3players2islands": Map3Isles2,
         "map5players2islands": Map5Isles2,
-        "map5players": Map3,
+        "map5players": Map5,
 }

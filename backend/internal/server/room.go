@@ -270,6 +270,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		if player == nil {
 			log.Println("The room is not full")
 			client.sendError("The room is not full")
+			return
 		}
 	}
 

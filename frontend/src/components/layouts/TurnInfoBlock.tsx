@@ -12,7 +12,6 @@ export default function TurnInfoBlock() {
   const dispatch = useDispatch();
 
   const currentPlayer = players[playerNumber]?.name || 'Unknown Player';
-  const dynamicPlaceholder = "Game Event Placeholder"; // Can be dynamic later
 
   const handleDecline = () => {
     sendMessageToBackend("decline", {});
@@ -71,7 +70,6 @@ export default function TurnInfoBlock() {
       <p><span className="font-semibold">Current Player:</span> {currentPlayer}</p>
       <p><span className="font-semibold">Turn Number:</span> {turnNumber}</p>
       <p><span className="font-semibold">Phase:</span> {phase}</p>
-      <p><span className="font-semibold">Event:</span> {dynamicPlaceholder}</p>
 
       {/* Buttons Layout */}
       <div className="grid grid-cols-2 gap-2 mt-4">

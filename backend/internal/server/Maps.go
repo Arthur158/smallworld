@@ -36,9 +36,9 @@ var Map3 = Map{
 
 var Map5 = Map{
 	Name: "map5players",
-	Offset: 1.185,
+	Offset: 0.39,
 	FontSize: 50,
-	Capacity: 5,
+	Capacity: 2,
 }
 
 var Map4 = Map{
@@ -81,6 +81,7 @@ var mapMap = map[string]Map {
 	"2 Players": Map2,
 	"3 Players": Map3,
 	"4 Players": Map4,
+	"5 Players": Map5,
 	"4 Players with 2 islands": Map4Isles2,
 	"3 Players with 2 islands": Map3Isles2,
 	"5 Players with 2 islands": Map5Isles2,

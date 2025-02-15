@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../redux/store';
-import { reset } from '../redux/slices/applicationSlice';
+import { reset, clearError } from '../redux/slices/applicationSlice';
 
 import TribeList from '../components/layouts/TribeList';
 import Map from '../components/misc/Map';
@@ -25,7 +25,7 @@ export default function GamePage() {
   const [showTurnInfo, setShowTurnInfo] = useState(false);
 
   useEffect(() => {
-    if (playerNumber == playerIndex && phase == "Conquest") {
+    if (phase == "Conquest") {
       setShowTurnInfo(true)
     } else if (playerNumber == playerIndex && phase == "TribeChoice") {
       setShowTurnInfo(false)
@@ -41,6 +41,9 @@ export default function GamePage() {
           } else {
             setShowTurnInfo(true)
           }
+          break;
+        case 'c':
+          dispatch(clearError())
           break;
       }
     };
@@ -70,8 +73,10 @@ export default function GamePage() {
         <div className="w-1/3 h-full flex p-2">
           
           {/* Toggleable Section - TribeList OR Player/Opponents List */}
-          <div className="h-3/5 w-3/5 flex flex-col p-0">
+          <div className="h-full w-3/5 p-0">
+            <div className='h-1/3'>
             <PlayerInfo />
+            </div>
             <div className="flex-1 flex flex-col min-h-[600px]"> 
             <button
               onClick={() => setShowTurnInfo(!showTurnInfo)}
@@ -86,7 +91,7 @@ export default function GamePage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col flex-grow"> 
+                <div className="h-2/3 "> 
                   <div className="h-2/3 ">
                     <TribeList />
                   </div>
@@ -103,7 +108,7 @@ export default function GamePage() {
             </div>
             
             {/* Chat Component */}
-            <div className="h-2/5 p-1">
+            <div className="h-3/5 p-1">
               <Chat />
             </div>
           </div>

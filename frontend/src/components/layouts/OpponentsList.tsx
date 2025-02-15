@@ -32,7 +32,24 @@ const renderTribeImages = (tribe: Tribe, customClasses = '') => {
       <img
         src={getTraitImagePath(tribe.trait)}
         alt={tribe.trait}
-        className="h-full w-auto -mr-1 z-20"
+        className="h-full w-auto -mr-6 z-20"
+      />
+      <img
+        src={getRaceImagePath(tribe.race)}
+        alt={tribe.race}
+        className="h-full w-auto z-10"
+      />
+    </div>
+  );
+};
+
+const renderPassiveTribeImages = (tribe: Tribe, customClasses = '') => {
+  return (
+    <div className={`relative flex items-center ${customClasses}`}>
+      <img
+        src={getTraitImagePath(tribe.trait)}
+        alt={tribe.trait}
+        className="h-full w-auto -mr-3 z-20"
       />
       <img
         src={getRaceImagePath(tribe.race)}
@@ -71,10 +88,6 @@ const renderPieceStacks = (pieceStacks: PieceStack[]) => {
             <span className="absolute top-2 right-2 text-white text-xs font-bold text-shadow">
               {stack.amount}
             </span>
-            {/* Stack Type */}
-            <span className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white text-xs font-bold text-center text-shadow">
-              {stack.type}
-            </span>
           </div>
         );
       })}
@@ -112,7 +125,7 @@ const renderOneOpponent = (opponent: Player, isActive: boolean) => {
               className="opacity-60"
               style={{ height: '3rem', filter: 'grayscale(50%)' }}
             >
-              {renderTribeImages(tribe, 'h-full')}
+              {renderPassiveTribeImages(tribe, 'h-full')}
             </div>
           ))}
         </div>
@@ -137,8 +150,7 @@ export default function OpponentsList() {
   if (!allPlayers || allPlayers.length === 0) {
     return (
       <div className="flex flex-col w-full h-full overflow-hidden border border-[#5F4B32] rounded bg-[#FDF5E6] p-4">
-        <h3 className="text-lg font-bold underline mb-2">Opponents</h3>
-        <p>Aucun joueur trouvé</p>
+        <p>No player found</p>
       </div>
     );
   }
@@ -153,7 +165,6 @@ export default function OpponentsList() {
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden border border-[#5F4B32] rounded bg-[#FDF5E6] p-4">
-      <h3 className="text-lg font-bold underline mb-2">Opponents</h3>
 
       {/* Scrollable container */}
       <div className="flex-1 overflow-y-auto pr-2">
