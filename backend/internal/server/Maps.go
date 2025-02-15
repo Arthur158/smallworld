@@ -27,18 +27,18 @@ func getMapImageAsBase64(path string) (string, error) {
     return base64.StdEncoding.EncodeToString(imgBytes), nil
 }
 
+var Map2 = Map{
+	Name: "map2players",
+	Offset: 0.728,
+	FontSize: 60,
+	Capacity: 2,
+}
+
 var Map3 = Map{
 	Name: "map3players",
 	Offset: 1,
 	FontSize: 18,
 	Capacity: 3,
-}
-
-var Map5 = Map{
-	Name: "map5players",
-	Offset: 0.39,
-	FontSize: 50,
-	Capacity: 2,
 }
 
 var Map4 = Map{
@@ -48,16 +48,9 @@ var Map4 = Map{
 	Capacity: 4,
 }
 
-var Map2 = Map{
-	Name: "map2players",
-	Offset: 0.728,
-	FontSize: 60,
-	Capacity: 2,
-}
-
-var Map4Isles2 = Map{
-	Name: "map4players2islands",
-	Offset: 1.185,
+var Map5 = Map{
+	Name: "map5players",
+	Offset: 0.39,
 	FontSize: 50,
 	Capacity: 2,
 }
@@ -68,6 +61,26 @@ var Map3Isles2 = Map{
 	FontSize: 50,
 	Capacity: 2,
 }
+var Map3Isles3 = Map{
+	Name: "map3players3islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 2,
+}
+
+var Map4Isles2 = Map{
+	Name: "map4players2islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 2,
+}
+var Map4Isles3 = Map{
+	Name: "map4players3islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 2,
+}
+
 
 var Map5Isles2 = Map{
 	Name: "map5players2islands",
@@ -75,7 +88,25 @@ var Map5Isles2 = Map{
 	FontSize: 50,
 	Capacity: 2,
 }
+var Map5Isles3 = Map{
+	Name: "map5players3islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 2,
+}
 
+var Map6Isles2 = Map{
+	Name: "map6players2islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 2,
+}
+var Map6Isles3 = Map{
+	Name: "map6players3islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 2,
+}
 
 var mapMap = map[string]Map {
 	"2 Players": Map2,
@@ -85,5 +116,10 @@ var mapMap = map[string]Map {
 	"4 Players with 2 islands": Map4Isles2,
 	"3 Players with 2 islands": Map3Isles2,
 	"5 Players with 2 islands": Map5Isles2,
+	"6 Players with 2 islands": Map6Isles2,
+	"4 Players with 3 islands": Map4Isles3,
+	"3 Players with 3 islands": Map3Isles3,
+	"5 Players with 3 islands": Map5Isles3,
+	"6 Players with 3 islands": Map6Isles3,
 }
 

@@ -108,21 +108,26 @@ export default function Map() {
 
     if (!containerWidth || !containerHeight) return;
 
+    // We incorporate offsetMapTiles here so the minimal scale calculation
+    // is consistent with how we are actually rendering the image.
+    const imageWidthWithOffset = imageDimensions.width * offsetMapTiles;
+    const imageHeightWithOffset = imageDimensions.height * offsetMapTiles;
+
     // Compute the minimal scale that fits the entire image inside the container
-    const fitScaleX = containerWidth / imageDimensions.width;
-    const fitScaleY = containerHeight / imageDimensions.height;
+    const fitScaleX = containerWidth / imageWidthWithOffset;
+    const fitScaleY = containerHeight / imageHeightWithOffset;
     const newMinScale = Math.min(fitScaleX, fitScaleY);
 
     setMinScale(newMinScale);
     setScale(newMinScale);
 
     // Center the image at first (when scale = minScale)
-    const centeredX = (containerWidth - imageDimensions.width * newMinScale) / 2;
-    const centeredY = (containerHeight - imageDimensions.height * newMinScale) / 2;
+    const centeredX = (containerWidth - imageWidthWithOffset * newMinScale) / 2;
+    const centeredY = (containerHeight - imageHeightWithOffset * newMinScale) / 2;
 
     setTranslateX(centeredX);
     setTranslateY(centeredY);
-  }, [imageDimensions]);
+  }, [imageDimensions, offsetMapTiles]);
 
   // Listen for 'f' key to reset selection
   useEffect(() => {
@@ -188,8 +193,10 @@ export default function Map() {
 
     const containerWidth = containerRef.current.clientWidth;
     const containerHeight = containerRef.current.clientHeight;
-    const scaledWidth = imageDimensions.width * scl;
-    const scaledHeight = imageDimensions.height * scl;
+
+    // Use the offsetMapTiles-adjusted width/height in the clamp
+    const scaledWidth = imageDimensions.width * offsetMapTiles * scl;
+    const scaledHeight = imageDimensions.height * offsetMapTiles * scl;
 
     let newTx = tx;
     let newTy = ty;
@@ -259,12 +266,16 @@ export default function Map() {
     const { x: svgX, y: svgY } = clientToSvgCoords(e.clientX, e.clientY);
 
     // Current screen coords of that point
-    const prevScreenX = svgX * scale + translateX;
-    const prevScreenY = svgY * scale + translateY;
+    const prevScreenX = svgX * scale;
+    const prevScreenY = svgY * scale;
 
-    // Desired new translate so the point under mouse stays in the same place
-    let newTranslateX = prevScreenX - svgX * newScale;
-    let newTranslateY = prevScreenY - svgY * newScale;
+    // Desired new screen coords after zoom
+    const nextScreenX = svgX * newScale;
+    const nextScreenY = svgY * newScale;
+
+    // So the difference is where we need to shift translation
+    let newTranslateX = translateX + (prevScreenX - nextScreenX);
+    let newTranslateY = translateY + (prevScreenY - nextScreenY);
 
     // Clamp translation
     const clamped = clampTranslate(newTranslateX, newTranslateY, newScale);
@@ -343,25 +354,20 @@ export default function Map() {
           cursor: isPanning ? 'grabbing' : 'grab',
           width: '100%',
           height: '100%',
-          // We make the SVG fill the container so we can handle dynamic resizing
         }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
       >
-        {/* 
-          We don't strictly need a viewBox here if we manually transform 
-          everything. But if we set a viewBox, let's make sure it matches 
-          the native image size. 
-        */}
+        {/* We apply the current translation & scale to everything in <g> */}
         <g transform={`translate(${translateX},${translateY}) scale(${scale})`}>
-          {/* The map image */}
+          {/* The map image, now multiplied by offsetMapTiles */}
           <image
             x={0}
             y={0}
-            width={imageDimensions.width}
-            height={imageDimensions.height}
+            width={imageDimensions.width * offsetMapTiles}
+            height={imageDimensions.height * offsetMapTiles}
             href={`/maps/${mapName}.png`}
           />
 
@@ -369,8 +375,7 @@ export default function Map() {
           {Object.values(tiles).map((tile) => {
             const scaledCoords = tile.polygon.coords.map(
               (coord: number) =>
-                coord *
-                (imageDimensions.width / baseWidth) * offsetMapTiles
+                coord * (imageDimensions.width * offsetMapTiles / baseWidth) * offsetMapTiles
             );
             const points: string[] = [];
             for (let i = 0; i < scaledCoords.length; i += 2) {
@@ -412,14 +417,14 @@ export default function Map() {
                 .slice()
                 .reverse()
                 .map((stack, index) => {
-                  const baseSize = imageDimensions.width * 0.0555;
+                  const baseSize = imageDimensions.width * offsetMapTiles * 0.0555;
                   const offset = 0.4 * baseSize;
                   const scaledStackX =
                     (tile.polygon.stackX + index * offset * baseSize * offsetStacksX) *
-                    (imageDimensions.width / baseWidth);
+                    (imageDimensions.width * offsetMapTiles / baseWidth);
                   const scaledStackY =
-                    (tile.polygon.stackY - index * offset * baseSize * offsetStacksX ) *
-                    (imageDimensions.width / baseWidth);
+                    (tile.polygon.stackY - index * offset * baseSize * offsetStacksX) *
+                    (imageDimensions.width * offsetMapTiles / baseWidth);
                   const imageSrc = `/stacks/${stack.type}.png`;
                   const isGray = !stack.isActive;
                   const isSelected =
@@ -462,8 +467,8 @@ export default function Map() {
                                   />
                                 )}
                                 <text
-                                  x={pieceX * offsetMapTiles + baseSize * 0.97 }
-                                  y={pieceY * offsetMapTiles - baseSize * 0.27 }
+                                  x={pieceX * offsetMapTiles + baseSize * 0.97}
+                                  y={pieceY * offsetMapTiles - baseSize * 0.27}
                                   fill="black"
                                   fontSize={`${baseSize * 0.3}`}
                                   fontWeight="bold"

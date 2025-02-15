@@ -314,6 +314,10 @@ func (client *Client) sendError (errorMsg string) {
 		Type: "error",
 		Data: json.RawMessage([]byte(fmt.Sprintf(`{"message": "%s"}`, errorMsg))),
 	}
+	if client.Conn == nil {
+		log.Println("Client is not connected!")
+		return
+	}
 	client.Conn.WriteJSON(errMsg)
 }
 
@@ -321,6 +325,10 @@ func (client *Client) sendMessage (msgType string, msgData json.RawMessage) {
 	errMsg := messages.Message{
 		Type: msgType,
 		Data: msgData	}
+	if client.Conn == nil {
+		log.Println("Client is not connected!")
+		return
+	}
 	client.Conn.WriteJSON(errMsg)
 }
 
@@ -361,6 +369,10 @@ func sendRoomsUpdateToAll() {
 	for _, cli := range connectedClients {
 		// Optionally skip if client is in a game
 		if cli.Room == nil || (cli.Room != nil && !cli.Room.InProgress) {
+			if cli.Conn == nil {
+				log.Println("Client is not connected!")
+				break
+	}
 			cli.Conn.WriteJSON(messages.Message{
 				Type: "roomEntriesUpdate",
 				Data: data,

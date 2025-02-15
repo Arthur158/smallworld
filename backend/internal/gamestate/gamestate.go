@@ -317,8 +317,7 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 			"%s made %d points this turn",
 			player.Name,
 			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
-		    ),
-)
+		    ),)
 
 	gs.handleNextPlayerTurn()
 

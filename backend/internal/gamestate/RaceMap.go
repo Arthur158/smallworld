@@ -370,6 +370,16 @@ var RaceMap = map[Race]RaceValue {
 			newstacks = append(newstacks, PieceStack{Type: "Power", Amount: 1})
 			player.PieceStacks = newstacks
 		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Power" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
 		oldIsStackValid := t.IsStackValid
 		t.IsStackValid = func(s string) bool {
 			return oldIsStackValid(s) || s == "Power"
@@ -837,6 +847,16 @@ var RaceMap = map[Race]RaceValue {
 		oldIsStackValid := t.IsStackValid
 		t.IsStackValid = func(stackType string) bool {
 			return stackType == "Decline" || oldIsStackValid(stackType)
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Decline" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
 		}
 		oldSpecialConquest := t.specialConquest
 		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {

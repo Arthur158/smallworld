@@ -955,6 +955,10 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return stacks, moneyGainAttacker, b, c
 		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Mercenary"
+		}
 		}, Count: 4},
 	"Peace-loving": {Transform: func(t *Tribe) {
 		t.State["hasattacked"] = false
@@ -1047,6 +1051,7 @@ var TraitMap = map[Trait]TraitValue {
 				for i := range(tile.PieceStacks) {
 					if tile.PieceStacks[i].Type == "Lava" {
 						tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+						delete(tile.ModifierPoints, "Lava")
 					}
 				}
 			}
