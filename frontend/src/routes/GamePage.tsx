@@ -81,13 +81,15 @@ export default function GamePage() {
             </button>
               {showTurnInfo ? (
                 <div className="flex flex-col flex-grow"> 
-                  <div className="flex-1 ">
+                  <div className="h-2/3 ">
                     <OpponentsList />
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 p-0">
-                  <TribeList />
+                <div className="flex flex-col flex-grow"> 
+                  <div className="h-2/3 ">
+                    <TribeList />
+                  </div>
                 </div>
               )}
             </div>
