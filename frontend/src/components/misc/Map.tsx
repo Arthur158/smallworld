@@ -51,6 +51,8 @@ export default function Map() {
   const mapName = useSelector((state: RootState) => state.application.mapName);
   const phase = useSelector((state: RootState) => state.application.phase);
   const offsetStacks = useSelector((state: RootState) => state.application.offsetStacks);
+  const Xmult = useSelector((state: RootState) => state.application.Xmult);
+  const Ymult = useSelector((state: RootState) => state.application.Ymult);
 
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({
     width: 0,
@@ -262,7 +264,9 @@ export default function Map() {
     newScale = Math.max(minScale, Math.min(newScale, maxScale));
 
     // Convert mouse position to SVG coords
-    const { x: svgX, y: svgY } = clientToSvgCoords(e.clientX, e.clientY);
+    var { x: svgX, y: svgY } = clientToSvgCoords(e.clientX, e.clientY);
+    svgX = Xmult*svgX
+    svgY = Ymult*svgY
 
     // Current screen coords of that point
     const prevScreenX = svgX * scale;
@@ -437,8 +441,8 @@ export default function Map() {
                       onClick={() => handleTileStackClick(tile.id, stack.type)}
                     >
                       {[...Array(stack.amount)].map((_, i) => {
-                        const pieceX = scaledStackX + i * offsetStacks*3500;
-                        const pieceY = scaledStackY + i * offsetStacks*3500;
+                        const pieceX = scaledStackX + i * offset * baseSize * offsetStacks / 3.5;
+                        const pieceY = scaledStackY + i * offset * baseSize * offsetStacks / 3.5;
                         const isTopPiece = i === stack.amount - 1;
 
                         return (

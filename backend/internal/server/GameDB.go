@@ -545,3 +545,24 @@ func LoadSummary(id int64) (string, error) {
 	}
 	return summary, nil
 }
+
+func DeleteGameState(id int64) error {
+	query := `DELETE FROM game_states WHERE id = ?;`
+	result, err := db.Exec(query, id)
+	if err != nil {
+		log.Println("Error deleting game state:", err)
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("game state not found")
+	}
+
+	log.Println("Game state deleted successfully with id:", id)
+	return nil
+}

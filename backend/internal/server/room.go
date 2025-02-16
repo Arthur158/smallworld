@@ -21,6 +21,7 @@ type Room struct {
 	mu	     sync.Mutex
 	Map	     Map
 	saveId	     int64
+	autoSaveId   int64
 	playerStatuses []string
 }
 
@@ -219,6 +220,11 @@ func (room *Room) removePlayer(username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 	var client Client
+
+	if room.Players == nil {
+		log.Println("room uninitialized or something")
+		return
+	}
 
 	for i, player := range room.Players {
 		if player != nil && player.Username == username {
@@ -846,4 +852,27 @@ func (room *Room) sendMegaUpdate() {
 		Type: "megaUpdate",
 		Data: jsonData,
 	})
+}
+
+func (room *Room) AutoSave() {
+	id, err := SaveGameState(&room.Gamestate, 0, room.Map.Name)
+	if err != nil {
+		log.Println("Problem saving the game")
+	}
+	for _, client := range(room.Players) {
+		err := RemoveGameIDFromUser(client.Username, room.autoSaveId)
+		if err != nil {
+			log.Println("Problem removing old save")
+		}
+	}
+
+	DeleteGameState(room.autoSaveId)
+	room.autoSaveId = id
+
+	for _, client := range(room.Players) {
+		err = AddGameIDToUser(client.Username, id)
+		if err != nil {
+			log.Println("Problem adding new save for player")
+		}
+	}
 }

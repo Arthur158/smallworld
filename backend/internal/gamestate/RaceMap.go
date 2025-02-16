@@ -233,7 +233,7 @@ var RaceMap = map[Race]RaceValue {
 			if t.IsActive {
 				diceThrow := RollDice()
 				gs.Messages = append(gs.Messages, fmt.Sprintf("Pygmies got back: %d Pawns!", diceThrow))
-				t.Owner.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: max(0, diceThrow - (1 - pk))}})
+				t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: max(0, diceThrow - (1 - pk))}})
 			}
 		}
 		}, Count: 6},
@@ -242,7 +242,7 @@ var RaceMap = map[Race]RaceValue {
 		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
 			oldClearTile(tile, gs, pk)
 			if t.IsActive {
-				t.Owner.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: max(0, pk)}})
+				t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: max(0, pk)}})
 			}
 		}
 		}, Count: 6},
@@ -398,7 +398,7 @@ var RaceMap = map[Race]RaceValue {
 				return true, fmt.Errorf("This is not a forest!")
 			}
 
-			if tile.Presence == Active {
+			if tile.Presence != None {
 				// Maybe do something with those, in case this is actually considered a conquest
 				_, _, _, err := tile.OwningTribe.countDefense(tile)
 				if err != nil {

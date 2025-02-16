@@ -74,13 +74,13 @@ export default function TribeList() {
   };
 
   return (
-    <div className="p-4 border border-[#5F4B43] rounded bg-[#FDF5E6] h-full min-h-[450px] flex flex-col">
+    <div className="p-6 border border-[#5F4B43] rounded bg-[#FDF5E6] h-full min-h-[450px] flex flex-col">
       {tribes.length === 0 ? (
         <div className="italic text-center flex-1 flex items-center justify-center">
           Loading tribes...
         </div>
       ) : (
-        <ul className="space-y-3 overflow-y-auto pr-2 flex-1">
+        <ul className="space-y-0.85 overflow-y-auto pr-2 flex-1">
           {tribes.map((tribe: TribeEntry, i: number) => (
             <li key={i}>
               <button

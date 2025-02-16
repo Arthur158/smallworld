@@ -36,6 +36,8 @@ const initialState: ApplicationState = {
   offsetStacks: 10,
   mapChoices: [],
   playerStatuses: [],
+  Xmult: 1,
+  Ymult: 1,
 };
 
 const applicationSlice = createSlice({
@@ -198,6 +200,8 @@ const applicationSlice = createSlice({
           const tileDataArray = mapDatabase[mapKey] || [];
 
           state.offsetStacks = tileDataArray.OffsetStacks
+          state.Xmult = tileDataArray.Xmult
+          state.Ymult = tileDataArray.Ymult
 
           const newTiles: Record<string, Tile> = {};
           tileDataArray.Tiles.forEach((tileDef) => {

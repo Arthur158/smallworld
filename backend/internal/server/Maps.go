@@ -52,33 +52,33 @@ var Map5 = Map{
 	Name: "map5players",
 	Offset: 0.39,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 5,
 }
 
 var Map3Isles2 = Map{
 	Name: "map3players2islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 3,
 }
 var Map3Isles3 = Map{
 	Name: "map3players3islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 3,
 }
 
 var Map4Isles2 = Map{
 	Name: "map4players2islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 4,
 }
 var Map4Isles3 = Map{
 	Name: "map4players3islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 4,
 }
 
 
@@ -86,26 +86,26 @@ var Map5Isles2 = Map{
 	Name: "map5players2islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 5,
 }
 var Map5Isles3 = Map{
 	Name: "map5players3islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 5,
 }
 
 var Map6Isles2 = Map{
 	Name: "map6players2islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 6,
 }
 var Map6Isles3 = Map{
 	Name: "map6players3islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 6,
 }
 
 var mapMap = map[string]Map {

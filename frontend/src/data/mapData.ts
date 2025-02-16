@@ -77,20 +77,25 @@ export function unionMapData(...maps: MapData[]): MapData {
   return {
     Tiles: unionTiles,
     OffsetStacks: totalOffsetStacks,
+    Xmult: 1,
+    Ymult: 1,
   };
 }
 export interface MapData {
   // IDs are now strings
   Tiles: TileData[]
   OffsetStacks: number
-
+  Xmult: number
+  Ymult: number
 }
 
 
 // A dictionary of "mapName" -> array of TileData
 export const mapDatabase: Record<string, MapData> = {
   map2players: {
-    OffsetStacks: 1/600,
+    OffsetStacks: 1/400,
+    Xmult: 2.5,
+    Ymult: 2.0,
     Tiles: [
     {
       ID: '0',
@@ -396,6 +401,8 @@ export const mapDatabase: Record<string, MapData> = {
   },
   map3players: {
   OffsetStacks: 1/60,
+  Xmult: 1,
+  Ymult: 1,
   Tiles: [
   {
     ID: '0',
@@ -773,7 +780,9 @@ export const mapDatabase: Record<string, MapData> = {
   ],
   },
   map4players: {
-    OffsetStacks: 1/150,
+    OffsetStacks: 1/25,
+    Xmult: 1,
+    Ymult: 1,
   Tiles: [
     {
       ID: '0',
@@ -1328,6 +1337,8 @@ export const mapDatabase: Record<string, MapData> = {
   ],
   },
   map2islands: {
+    Xmult: 1,
+    Ymult: 1,
     OffsetStacks: 1/1350,
   Tiles: [
   {
@@ -1433,6 +1444,8 @@ export const mapDatabase: Record<string, MapData> = {
 ]
   },
 map5players: {
+    Xmult: 1,
+    Ymult: 1,
   OffsetStacks: 0.03,
   Tiles: [
     {
@@ -2128,6 +2141,8 @@ map5players: {
   ],
 }, 
 map3islands : {
+    Xmult: 1,
+    Ymult: 1,
   OffsetStacks: 1/600,
   Tiles: [
     {
@@ -2273,12 +2288,16 @@ mapDatabase.map4players2islands = unionMapData(
   transformMapData(mapDatabase.map2islands, 0.27, 0.27, 80, 6)
 );
 mapDatabase.map4players2islands.OffsetStacks = 1/500,
+mapDatabase.map4players2islands.Xmult = 2,
+mapDatabase.map4players2islands.Ymult = 3.5,
 
 mapDatabase.map3players2islands = unionMapData(
   transformMapData(mapDatabase.map2players, 0.61, 0.61, -3, 460),
   transformMapData(mapDatabase.map2islands, 0.29, 0.29, 45, 0)
 );
 mapDatabase.map3players2islands.OffsetStacks = 1/250,
+mapDatabase.map3players2islands.Xmult = 2,
+mapDatabase.map3players2islands.Ymult = 3.5,
 
 mapDatabase.map5players2islands = unionMapData(
   transformMapData(mapDatabase.map4players, 0.32, 0.32, -3, 460),
@@ -2305,6 +2324,8 @@ mapDatabase.map3players3islands = unionMapData(
   transformMapData(mapDatabase.map3islands, 0.29, 0.29, 45, 0)
 );
 mapDatabase.map3players3islands.OffsetStacks = 1/500,
+mapDatabase.map3players3islands.Xmult = 2,
+mapDatabase.map3players3islands.Ymult = 3.5,
 
 mapDatabase.map5players3islands = unionMapData(
   transformMapData(mapDatabase.map4players, 0.32, 0.32, -3, 460),

@@ -202,6 +202,8 @@ func (client *Client) handleFinishTurn () {
 		client.sendError(err.Error())
 	} else {
 		client.Room.sendBigUpdate()
+		client.Room.AutoSave()
+
 		if client.Room.Gamestate.TurnInfo.Phase == gamestate.GameFinished {
 			client.Room.sendGameFinishedUpdate()
 			client.Room.InProgress = false
@@ -223,6 +225,7 @@ func (client *Client) handleDecline () {
 		client.sendError(err.Error())
 	} else {
 		client.Room.sendBigUpdate()
+		client.Room.AutoSave()
 
 		if client.Room.Gamestate.TurnInfo.Phase == gamestate.GameFinished {
 			client.Room.sendGameFinishedUpdate()

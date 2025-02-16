@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { Player, PieceStack, Tribe } from '../../types/Board';
@@ -9,10 +9,12 @@ export default function PlayerInfo() {
   const dispatch = useDispatch();
   const allPlayers = useSelector((state: RootState) => state.application.players);
   const playerIndex = useSelector((state: RootState) => state.application.playerIndex);
+  const playerNumber = useSelector((state: RootState) => state.application.playerNumber);
   const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
   const phase = useSelector((state: RootState) => state.application.phase);
+  const hasExecutedRef = useRef(false);
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -21,23 +23,43 @@ export default function PlayerInfo() {
         dispatch(setSelectedTile(null));
         dispatch(setSelectedStack(null));
       }
+      if (event.key === 'a' && (phase == "DeclineChoice" || "HandleAbandonment") && selectedTile != null) {
+        sendMessageToBackend('abandonment', { tileId: selectedTile.toString() });
+      }
+      if (event.key === 'a' && phase == "Redeployment" && selectedTile != null && selectedStack != null) {
+        sendMessageToBackend('deploymentout', {
+          tileId: selectedTile.toString(),
+          stackType: selectedStack.toString(),
+        });
+      }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [dispatch]);
+  }, [dispatch, selectedTile, selectedStack]);
 
-  if (!allPlayers || allPlayers.length === 0 || playerIndex < 0 || playerIndex >= allPlayers.length) {
-    return (
-      <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative">
-        No player data available
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!allPlayers || allPlayers.length === 0) return;
+    const player = allPlayers[playerIndex];
+    if (!player) return;
 
-  const player = allPlayers[playerIndex];
+    // Run only once when the phase changes to "DeclineChoice"
+    if (phase === "DeclineChoice" && !hasExecutedRef.current) {
+      hasExecutedRef.current = true; // Mark as executed
+
+      if (playerIndex === playerNumber && player.pieceStacks.length !== 0) {
+        dispatch(setIsStackFromBank(true));
+        dispatch(setSelectedTile(null));
+        dispatch(setSelectedStack(player.pieceStacks[0].type));
+      }
+    } else if (phase !== "DeclineChoice") {
+      hasExecutedRef.current = false; // Reset when phase changes away
+    }
+  }, [dispatch, selectedTile, selectedStack, allPlayers, playerIndex, playerNumber, phase]);
+
+  const player = allPlayers?.[playerIndex] || null;
 
   // Same logic as in TribeList
   const getTraitImagePath = (trait?: string) => {
@@ -51,6 +73,19 @@ export default function PlayerInfo() {
       ? `/races/${race}.png`
       : '';
   };
+  const handlePlayerClick = () => {
+    if ((phase === 'TileAbandonment' || phase === 'DeclineChoice') && selectedTile != null && selectedStack != null) {
+      sendMessageToBackend('abandonment', { tileId: selectedTile.toString() });
+    } else if (phase === 'Redeployment' && selectedTile != null && selectedStack != null && !isStackFromBank) {
+      sendMessageToBackend('deploymentout', {
+        tileId: selectedTile.toString(),
+        stackType: selectedStack.toString(),
+      });
+    } else if (isStackFromBank) {
+      dispatch(setSelectedStack(null));
+      dispatch(setIsStackFromBank(false));
+    }
+  }
 
   const handlePieceStackClick = (stackType: string) => {
     if (isStackFromBank && selectedStack === stackType) {
@@ -138,8 +173,8 @@ export default function PlayerInfo() {
   };
 
   return (
-    <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative">
-      <h3 className="text-lg font-bold">{player.name}</h3>
+    <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative h-full" onClick={handlePlayerClick}>
+      <h3 className="text-lg font-bold">{player?.name}</h3>
 
       {/* Active Tribe Display (Only if exists) */}
       {player.activeTribe && (

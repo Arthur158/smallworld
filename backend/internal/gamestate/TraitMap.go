@@ -187,6 +187,13 @@ var TraitMap = map[Trait]TraitValue {
 			amount, _ := t.State["diceroll"].(int)
 			return oldcomputeDiscount(stackType, tile) + amount
 		}
+		oldGetStacksForConquestTurn := t.getStacksForConquestTurn
+		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+			oldGetStacksForConquestTurn(p, gs)
+			val := RollDice()
+			t.State["diceroll"] = val
+			gs.Messages = append(gs.Messages, fmt.Sprintf("New throw of dice for berserk tribe: %d", val))
+		}
 
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
 		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
@@ -947,13 +954,19 @@ var TraitMap = map[Trait]TraitValue {
 		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
 			stacks, moneyGainAttacker, b, c := oldCountAttack(tile, cost, stackType)
 			if stackType == "Mercenary" {
-				for _, stack := range(t.Owner.PieceStacks) {
-					if stack.Type == stackType {
-						return []PieceStack{{Type: string(t.Race), Amount: max(t.Minimum, cost - 2)}}, moneyGainAttacker, b, c
-					}
-				}
+				return []PieceStack{{Type: string(t.Race), Amount: max(t.Minimum, cost - 2 - t.computeDiscount(stackType, tile))}}, moneyGainAttacker - 1, b, c
 			}
 			return stacks, moneyGainAttacker, b, c
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Mercenary" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
 		}
 		oldIsStackValid := t.IsStackValid
 		t.IsStackValid = func(s string) bool {
@@ -1007,6 +1020,21 @@ var TraitMap = map[Trait]TraitValue {
 			t.State["mountains"] = mountains
 			stacks = append(stacks, PieceStack{Type:"Lava", Amount: count})
 			return stacks
+		}
+		oldCanBeRedeployedIn := t.canBeRedeployedIn
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			if oldCanBeRedeployedIn(tile, stackType, gs) {
+				return true
+			}
+			if stackType == "Lava" {
+				for _, stack := range tile.PieceStacks {
+					if stack.Type == "Lava" {
+						return false
+					}
+				}
+				return true
+			}
+			return false
 		}
 		oldhandleDeploymentIn := t.handleDeploymentIn
 		t.handleDeploymentIn = func(tile *Tile, stackType string, i int, gs *GameState) error {

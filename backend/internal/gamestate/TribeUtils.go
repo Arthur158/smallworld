@@ -107,7 +107,9 @@ func CreateBaseTribe() *Tribe {
             if stack.Type == string(tribe.Race) {
                 tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                 stack.Amount = max(0, stack.Amount - pawnKill)
-                tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, []PieceStack{stack})
+                if tile.Presence != None {
+                    tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, []PieceStack{stack})
+                }
                 if tile.OwningTribe == &tribe {
                     tile.Presence = None
                     tile.OwningTribe = nil
@@ -128,14 +130,6 @@ func CreateBaseTribe() *Tribe {
 
     tribe.handleAbandonment = func(tile *Tile, gs *GameState) {
         tribe.clearTile(tile, gs, 0)
-        // tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, []PieceStack{{Type: string(tribe.Race), Amount: tribe.Minimum}})
-        // for i, stack := range(tile.PieceStacks) {
-        //     if stack.Type == string(tribe.Race) {
-        //         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-        //         break
-        //     }
-        // }
-        // tile.Presence = None
     }
 
     tribe.startRedeployment = func(gs *GameState) []PieceStack {

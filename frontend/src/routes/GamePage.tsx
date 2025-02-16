@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../redux/store';
+import { sendMessageToBackend } from '../services/backendService';
 import { reset, clearError } from '../redux/slices/applicationSlice';
 
 import TribeList from '../components/layouts/TribeList';
@@ -20,47 +21,42 @@ export default function GamePage() {
   const players = useSelector((state: RootState) => state.application.players);
 
   const currentPlayer = players[playerNumber]?.name || 'Unknown Player';
-  const dynamicPlaceholder = "Game Event Placeholder"; // Can be dynamic later
-
   const [showTurnInfo, setShowTurnInfo] = useState(false);
 
+  // Auto-toggle the middle section based on phase
   useEffect(() => {
-    if (phase == "Conquest") {
-      setShowTurnInfo(true)
-    } else if (playerNumber == playerIndex && phase == "TribeChoice") {
-      setShowTurnInfo(false)
+    if (phase === 'Conquest') {
+      setShowTurnInfo(true);
+    } else if (playerNumber === playerIndex && phase === 'TribeChoice') {
+      setShowTurnInfo(false);
     }
-  }, [playerIndex, playerNumber, phase, setShowTurnInfo])
+  }, [phase, playerNumber, playerIndex]);
 
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       switch (event.key) {
         case 's':
-          if (showTurnInfo) {
-            setShowTurnInfo(false)
-          } else {
-            setShowTurnInfo(true)
-          }
+          setShowTurnInfo((prev) => !prev);
           break;
         case 'c':
-          dispatch(clearError())
+          dispatch(clearError());
           break;
       }
     };
-
     window.addEventListener('keydown', handleKeyPress);
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [setShowTurnInfo, showTurnInfo]);
+  }, [dispatch]);
 
+  // Handle page refresh
   useEffect(() => {
     const handlePageRefresh = () => {
       dispatch(reset());
+      sendMessageToBackend('requestrefresh', {});
     };
-
     window.addEventListener('beforeunload', handlePageRefresh);
-
     return () => {
       window.removeEventListener('beforeunload', handlePageRefresh);
     };
@@ -69,52 +65,42 @@ export default function GamePage() {
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
       <div className="flex w-full h-full">
-        {/* Left column (1/3 width) */}
-        <div className="w-1/3 h-full flex p-2">
-          
-          {/* Toggleable Section - TribeList OR Player/Opponents List */}
-          <div className="h-full w-3/5 p-0">
-            <div className='h-1/3'>
-            <PlayerInfo />
+        {/* LEFT SECTION (1/3 width) */}
+        <div className="w-1/3 h-full flex p-2 min-h-0">
+          {/* SUBCOLUMN A (3/5) */}
+          <div className="h-full w-3/5 p-0 flex flex-col min-h-0">
+            {/* Top: PlayerInfo (fixed height: h-1/3) */}
+            <div className="h-1/3 min-h-[150px]">
+              <PlayerInfo />
             </div>
-            <div className="flex-1 flex flex-col min-h-[600px]"> 
-            <button
-              onClick={() => setShowTurnInfo(!showTurnInfo)}
-              className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white font-bold py-1 px-2 rounded mb-1 mt-3"
-            >
-              {showTurnInfo ? 'Show Tribe List' : 'Show Turn Info'}
-            </button>
-              {showTurnInfo ? (
-                <div className="flex flex-col flex-grow"> 
-                  <div className="h-2/3 ">
-                    <OpponentsList />
-                  </div>
-                </div>
-              ) : (
-                <div className="h-2/3 "> 
-                  <div className="h-2/3 ">
-                    <TribeList />
-                  </div>
-                </div>
-              )}
+            {/* Middle/Bottom: Toggle + OpponentsList/TribeList */}
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <button
+                onClick={() => setShowTurnInfo(!showTurnInfo)}
+                className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white font-bold py-1 px-2 rounded mt-2 mb-2"
+              >
+                {showTurnInfo ? 'Show Tribe List' : 'Show Turn Info'}
+              </button>
+              <div className="flex-1 overflow-auto min-h-0">
+                {showTurnInfo ? <OpponentsList /> : <TribeList />}
+              </div>
             </div>
           </div>
 
-          {/* Right section of the left column */}
-          <div className="w-2/5 h-full flex flex-col p-1">
-            {/* Turn Info Block (Above Chat) */}
-            <div className="p-1">
+          {/* SUBCOLUMN B (2/5) */}
+          <div className="w-2/5 h-full flex flex-col p-1 min-h-0">
+            {/* TurnInfoBlock on top (auto height) */}
+            <div className="flex-none mb-2">
               <TurnInfoBlock />
             </div>
-            
-            {/* Chat Component */}
-            <div className="h-3/5 p-1">
+            {/* Chat below (scrollable if large) */}
+            <div className="flex-1 overflow-auto min-h-0">
               <Chat />
             </div>
           </div>
         </div>
 
-        {/* Right column (2/3 width) */}
+        {/* RIGHT SECTION (2/3 width): Map */}
         <div className="w-2/3 h-full p-4">
           <div className="w-full h-full border-4 border-[#8B4513] rounded-lg bg-white">
             <Map />

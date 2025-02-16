@@ -187,12 +187,11 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	// counts the cost for the attacker
 	attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := attackingTribe.countAttack(tile, tileCost, attackingStackType)
 	newStacks, hasDiceBeenUsed, ok, err := attackingTribe.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
-	newTileStacks := attackingTribe.countNewTileStacks(newStacks, tile)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return nil
+		return gs.HandleStartRedeployment(attackerIndex)
 	}
 
 	// Enact changes
@@ -201,7 +200,10 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		defendingTribe.clearTile(tile, gs, pawnKill)
 		// tile.OwningPlayer.PointsEachTurn[len(tile.OwningPlayer.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	}
+
+	newTileStacks := attackingTribe.countNewTileStacks(newStacks, tile)
 	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
+
 	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, attackCostStacks)
 	attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
