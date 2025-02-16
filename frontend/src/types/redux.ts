@@ -27,8 +27,7 @@ export interface ApplicationState {
   saveGames: SaveGameInfo[]
   saveSelectionId: number
   mapName: string | null;
-  offsetStacksX: number
-  offsetStacksY: number
+  offsetStacks: number
   mapChoices: string[]
   playerStatuses: string[]
 }

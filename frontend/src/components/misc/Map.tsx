@@ -50,8 +50,7 @@ export default function Map() {
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
   const mapName = useSelector((state: RootState) => state.application.mapName);
   const phase = useSelector((state: RootState) => state.application.phase);
-  const offsetStacksX = useSelector((state: RootState) => state.application.offsetStacksX);
-  const offsetStacksY = useSelector((state: RootState) => state.application.offsetStacksY);
+  const offsetStacks = useSelector((state: RootState) => state.application.offsetStacks);
 
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({
     width: 0,
@@ -420,10 +419,10 @@ export default function Map() {
                   const baseSize = imageDimensions.width * offsetMapTiles * 0.0555;
                   const offset = 0.4 * baseSize;
                   const scaledStackX =
-                    (tile.polygon.stackX + index * offset * baseSize * offsetStacksX) *
+                    (tile.polygon.stackX + index * offset * baseSize * offsetStacks) *
                     (imageDimensions.width * offsetMapTiles / baseWidth);
                   const scaledStackY =
-                    (tile.polygon.stackY - index * offset * baseSize * offsetStacksX) *
+                    (tile.polygon.stackY - index * offset * baseSize * offsetStacks) *
                     (imageDimensions.width * offsetMapTiles / baseWidth);
                   const imageSrc = `/stacks/${stack.type}.png`;
                   const isGray = !stack.isActive;
@@ -438,8 +437,8 @@ export default function Map() {
                       onClick={() => handleTileStackClick(tile.id, stack.type)}
                     >
                       {[...Array(stack.amount)].map((_, i) => {
-                        const pieceX = scaledStackX + i * 3;
-                        const pieceY = scaledStackY + i * 3;
+                        const pieceX = scaledStackX + i * offsetStacks*3500;
+                        const pieceY = scaledStackY + i * offsetStacks*3500;
                         const isTopPiece = i === stack.amount - 1;
 
                         return (

@@ -61,8 +61,7 @@ export function transformMapData(
 export function unionMapData(...maps: MapData[]): MapData {
   const unionTiles: TileData[] = [];
   const seenIDs = new Set<string>();
-  let totalOffsetStacksX = 0;
-  let totalOffsetStacksY = 0;
+  let totalOffsetStacks = 0;
 
   for (const map of maps) {
     for (const tile of map.Tiles) {
@@ -72,21 +71,18 @@ export function unionMapData(...maps: MapData[]): MapData {
       seenIDs.add(tile.ID);
       unionTiles.push(tile);
     }
-    totalOffsetStacksY += map.OffsetStacksY;
-    totalOffsetStacksX += map.OffsetStacksX;
+    totalOffsetStacks += map.OffsetStacks;
   }
 
   return {
     Tiles: unionTiles,
-    OffsetStacksX: totalOffsetStacksX,
-    OffsetStacksY: totalOffsetStacksY,
+    OffsetStacks: totalOffsetStacks,
   };
 }
 export interface MapData {
   // IDs are now strings
   Tiles: TileData[]
-  OffsetStacksX: number
-  OffsetStacksY: number
+  OffsetStacks: number
 
 }
 
@@ -94,8 +90,7 @@ export interface MapData {
 // A dictionary of "mapName" -> array of TileData
 export const mapDatabase: Record<string, MapData> = {
   map2players: {
-    OffsetStacksX: 1/600,
-    OffsetStacksY: 1/800,
+    OffsetStacks: 1/600,
     Tiles: [
     {
       ID: '0',
@@ -400,8 +395,7 @@ export const mapDatabase: Record<string, MapData> = {
   ],
   },
   map3players: {
-  OffsetStacksX: 1/60,
-  OffsetStacksY: 1/70,
+  OffsetStacks: 1/60,
   Tiles: [
   {
     ID: '0',
@@ -779,8 +773,7 @@ export const mapDatabase: Record<string, MapData> = {
   ],
   },
   map4players: {
-    OffsetStacksX: 1/150,
-    OffsetStacksY: 1/150,
+    OffsetStacks: 1/150,
   Tiles: [
     {
       ID: '0',
@@ -1335,8 +1328,7 @@ export const mapDatabase: Record<string, MapData> = {
   ],
   },
   map2islands: {
-    OffsetStacksX: 1/1350,
-    OffsetStacksY: (1/270)/330,
+    OffsetStacks: 1/1350,
   Tiles: [
   {
     "ID": "0i",
@@ -1441,8 +1433,7 @@ export const mapDatabase: Record<string, MapData> = {
 ]
   },
 map5players: {
-  OffsetStacksX: 0.03,
-  OffsetStacksY: 0.03,
+  OffsetStacks: 0.03,
   Tiles: [
     {
       ID: '0',
@@ -2137,8 +2128,7 @@ map5players: {
   ],
 }, 
 map3islands : {
-  OffsetStacksX: 1/600,
-  OffsetStacksY: 1/800,
+  OffsetStacks: 1/600,
   Tiles: [
     {
       ID: '0i',
@@ -2282,29 +2272,25 @@ mapDatabase.map4players2islands = unionMapData(
   transformMapData(mapDatabase.map3players, 0.844, 0.85, -5, 434),
   transformMapData(mapDatabase.map2islands, 0.27, 0.27, 80, 6)
 );
-mapDatabase.map4players2islands.OffsetStacksX = 1/250,
-mapDatabase.map4players2islands.OffsetStacksY = 1/250,
+mapDatabase.map4players2islands.OffsetStacks = 1/500,
 
 mapDatabase.map3players2islands = unionMapData(
   transformMapData(mapDatabase.map2players, 0.61, 0.61, -3, 460),
   transformMapData(mapDatabase.map2islands, 0.29, 0.29, 45, 0)
 );
-mapDatabase.map3players2islands.OffsetStacksX = 1/250,
-mapDatabase.map3players2islands.OffsetStacksY = 1/250
+mapDatabase.map3players2islands.OffsetStacks = 1/250,
 
 mapDatabase.map5players2islands = unionMapData(
   transformMapData(mapDatabase.map4players, 0.32, 0.32, -3, 460),
   transformMapData(mapDatabase.map2islands, 0.29, 0.29, 45, 0)
 );
-mapDatabase.map5players2islands.OffsetStacksX = 1/500,
-mapDatabase.map5players2islands.OffsetStacksY = 1/500
+mapDatabase.map5players2islands.OffsetStacks = 1/500/2,
 
 mapDatabase.map6players2islands = unionMapData(
   transformMapData(mapDatabase.map5players, 0.33, 0.33, -3, 460),
   transformMapData(mapDatabase.map2islands, 0.29, 0.29, 45, 0)
 );
-mapDatabase.map6players2islands.OffsetStacksX = 1/250/2,
-mapDatabase.map6players2islands.OffsetStacksY = 1/250/2
+mapDatabase.map6players2islands.OffsetStacks = 1/250/4,
 
 
 
@@ -2312,28 +2298,24 @@ mapDatabase.map4players3islands = unionMapData(
   transformMapData(mapDatabase.map3players, 0.844, 0.85, -5, 434),
   transformMapData(mapDatabase.map3islands, 0.27, 0.27, 75, 0)
 );
-mapDatabase.map4players3islands.OffsetStacksX = 1/250,
-mapDatabase.map4players3islands.OffsetStacksY = 1/250,
+mapDatabase.map4players3islands.OffsetStacks = 1/250,
 
 mapDatabase.map3players3islands = unionMapData(
   transformMapData(mapDatabase.map2players, 0.61, 0.61, -3, 465),
   transformMapData(mapDatabase.map3islands, 0.29, 0.29, 45, 0)
 );
-mapDatabase.map3players3islands.OffsetStacksX = 1/500,
-mapDatabase.map3players3islands.OffsetStacksY = 1/500
+mapDatabase.map3players3islands.OffsetStacks = 1/500,
 
 mapDatabase.map5players3islands = unionMapData(
   transformMapData(mapDatabase.map4players, 0.32, 0.32, -3, 460),
   transformMapData(mapDatabase.map3islands, 0.29, 0.29, 45, 0)
 );
-mapDatabase.map5players3islands.OffsetStacksX = 1/500,
-mapDatabase.map5players3islands.OffsetStacksY = 1/500
+mapDatabase.map5players3islands.OffsetStacks = 1/500/2,
 
 mapDatabase.map6players3islands = unionMapData(
   transformMapData(mapDatabase.map5players, 0.33, 0.33, -3, 460),
   transformMapData(mapDatabase.map3islands, 0.29, 0.29, 45, 0)
 );
 
-mapDatabase.map6players3islands.OffsetStacksX = 1/250/2,
-mapDatabase.map6players3islands.OffsetStacksY = 1/250/2
+mapDatabase.map6players3islands.OffsetStacks = 1/250/4
 

@@ -33,8 +33,7 @@ const initialState: ApplicationState = {
   saveGames: [],
   saveSelectionId: -1,
   mapName: null,
-  offsetStacksX: 10,
-  offsetStacksY: 10,
+  offsetStacks: 10,
   mapChoices: [],
   playerStatuses: [],
 };
@@ -198,8 +197,7 @@ const applicationSlice = createSlice({
           const mapKey = state.mapName || '';
           const tileDataArray = mapDatabase[mapKey] || [];
 
-          state.offsetStacksX = tileDataArray.OffsetStacksX
-          state.offsetStacksY = tileDataArray.OffsetStacksY
+          state.offsetStacks = tileDataArray.OffsetStacks
 
           const newTiles: Record<string, Tile> = {};
           tileDataArray.Tiles.forEach((tileDef) => {
