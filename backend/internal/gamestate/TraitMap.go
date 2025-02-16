@@ -113,7 +113,7 @@ var TraitMap = map[Trait]TraitValue {
 	"Commando": {Transform: func(t *Tribe) {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
-			return oldcomputeDiscount(stackType, tile)
+			return oldcomputeDiscount(stackType, tile) + 1
 		}
 		}, Count: 4},
 	"Flying": {Transform: func(t *Tribe) {
@@ -137,7 +137,7 @@ var TraitMap = map[Trait]TraitValue {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			if tile.Biome == Field || tile.Biome == Hill {
-				return oldcomputeDiscount(stackType, tile) - 1
+				return oldcomputeDiscount(stackType, tile) + 1
 			}
 			return oldcomputeDiscount(stackType, tile)
 		}
@@ -185,7 +185,7 @@ var TraitMap = map[Trait]TraitValue {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			amount, _ := t.State["diceroll"].(int)
-			return oldcomputeDiscount(stackType, tile) - amount
+			return oldcomputeDiscount(stackType, tile) + amount
 		}
 
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
@@ -1032,10 +1032,7 @@ var TraitMap = map[Trait]TraitValue {
 								}
 
 								tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
-								tile.ModifierDefenses["Lava"] = func(i int, err error) (int, error) {
-									return i, fmt.Errorf("Cannot conquer zone with lava")
-								}
-								return nil
+								tile.ModifierDefenses["Lava"] = TileModifierDefenses["Lava"]
 							}
 						}
 					}

@@ -109,17 +109,17 @@ var Map6Isles3 = Map{
 }
 
 var mapMap = map[string]Map {
-	"2 Players": Map2,
-	"3 Players": Map3,
-	"4 Players": Map4,
-	"5 Players": Map5,
-	"4 Players with 2 islands": Map4Isles2,
-	"3 Players with 2 islands": Map3Isles2,
-	"5 Players with 2 islands": Map5Isles2,
-	"6 Players with 2 islands": Map6Isles2,
-	"4 Players with 3 islands": Map4Isles3,
-	"3 Players with 3 islands": Map3Isles3,
-	"5 Players with 3 islands": Map5Isles3,
-	"6 Players with 3 islands": Map6Isles3,
+	"map2players": Map2,
+	"map3players": Map3,
+	"map4players": Map4,
+	"map5players": Map5,
+	"map3players2islands": Map3Isles2,
+	"map4players2islands": Map4Isles2,
+	"map5players2islands": Map5Isles2,
+	"map6players2islands": Map6Isles2,
+	"map3players3islands": Map3Isles3,
+	"map4players3islands": Map4Isles3,
+	"map5players3islands": Map5Isles3,
+	"map6players3islands": Map6Isles3,
 }
 

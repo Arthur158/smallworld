@@ -150,7 +150,7 @@ var RaceMap = map[Race]RaceValue {
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			for _, neighbour := range tile.AdjacentTiles {
 				if neighbour.Biome == Water {
-					return oldcomputeDiscount(stackType, tile) - 1
+					return oldcomputeDiscount(stackType, tile) + 1
 				}
 			}
 			return oldcomputeDiscount(stackType, tile)
@@ -175,7 +175,7 @@ var RaceMap = map[Race]RaceValue {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			if tile.Presence == Passive {
-				return oldcomputeDiscount(stackType, tile) - 1
+				return oldcomputeDiscount(stackType, tile) + 1
 			}
 			return oldcomputeDiscount(stackType, tile)
 		}
@@ -185,7 +185,7 @@ var RaceMap = map[Race]RaceValue {
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			for _, neighbour := range tile.AdjacentTiles {
 				if neighbour.Biome == Mountain && neighbour.Presence != None && neighbour.OwningTribe.Race == t.Race {
-					return oldcomputeDiscount(stackType, tile) - 1
+					return oldcomputeDiscount(stackType, tile) + 1
 				}
 			}
 			return oldcomputeDiscount(stackType, tile)
@@ -981,14 +981,7 @@ var RaceMap = map[Race]RaceValue {
 				return err
 			}
 			if stackType == "Winter" {
-				tile.ModifierPoints["Winter"] = func(i int) int {
-					for _, stack := range(tile.PieceStacks) {
-						if stack.Type == "Winter" {
-							return i - 1
-						}
-					}
-					return i
-				}
+				tile.ModifierPoints["Winter"] = TileModifierPoints["Winter"]
 			}
 			return err
 		}

@@ -22,6 +22,7 @@ export default function LobbyPage() {
     error,
     saveSelectionId,
     mapChoices,
+    playerStatuses,
   } = useSelector((state: RootState) => ({
     name: state.application.name,
     isAuthenticated: state.application.isAuthenticated,
@@ -32,6 +33,7 @@ export default function LobbyPage() {
     error: state.application.error,
     saveSelectionId: state.application.saveSelectionId,
     mapChoices: state.application.mapChoices,
+    playerStatuses: state.application.playerStatuses,
   }));
 
   const [roomName, setRoomName] = useState('');
@@ -140,7 +142,6 @@ export default function LobbyPage() {
         {/* Left column */}
         <div className="w-2/3 h-full flex flex-col border border-[#5F4B32] bg-[#FDF5E6]">
           <div className="flex-1 overflow-y-auto p-4">
-            <h1 className="text-3xl font-bold mb-4">Welcome to the Lobby</h1>
             <div className="mb-4">
               <span className="font-semibold">Logged in as:</span> {username}
             </div>
@@ -231,6 +232,9 @@ export default function LobbyPage() {
                       <div key={p} className="bg-[#EED5B7] mb-2 p-2 flex items-center rounded-lg">
                         <span className="flex-1 font-semibold">
                           {idx + 1}: {p}
+                          {playerStatuses[idx] && playerStatuses[idx].trim() !== '' && (
+                            <> | {playerStatuses[idx]}</>
+                          )}
                         </span>
                         {currentRoom && currentRoom.creator === username && (
                           <div className="flex space-x-2">

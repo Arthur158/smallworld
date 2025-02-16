@@ -149,7 +149,6 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.Room.MovePlayer(data.Username, "up")
-		sendRoomsUpdateToAll()
 	case "moveDown":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -160,7 +159,6 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.Room.MovePlayer(data.Username, "down")
-		sendRoomsUpdateToAll()
 	case "changeRoomMap":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -171,6 +169,8 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.Room.ChangeMap(data.NewMap)
+		client.Room.saveId = -1
+		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "kickPlayer":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -184,7 +184,7 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		sendRoomsUpdateToAll()
 		
 	case "savegame":
-		id, err := SaveGameState(&client.Room.Gamestate, client.Index)
+		id, err := SaveGameState(&client.Room.Gamestate, client.Index, client.Room.Map.Name)
 		if err != nil {
 			log.Println("Error saving game", err)
 			client.sendError("error saving game")
@@ -203,14 +203,29 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
 			log.Println("Raw Data:", string(msg.Data)) // Debug log
 			return
 		}
 		log.Println("Successfully parsed:", data)
 
-		// here also need to pull map name and game size to change the room so that it corresponds to the saved game
+		index, mapName, playerStatuses, err := LoadGameInfo(data.SaveId)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		ok := client.Room.ChangeMap(mapName)
+		if !ok {
+			client.sendError("Error changing map")
+		}
+		ok = client.Room.MovePlayerWithIndex(client.Username, index)
+		if !ok {
+			client.sendError("Error moving player")
+		}
+		client.Room.playerStatuses = playerStatuses
 		client.Room.saveId = data.SaveId
 		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
+		client.Room.sendPlayerStatuses()
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
 	}
@@ -246,9 +261,10 @@ func (client *Client) handleLogin(userName string, password string) {
 		}
 		if room.InProgress {
 			room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
+			room.sendSmallMapUpdate()
+			room.sendBigUpdate()
 		}
-		room.sendSmallMapUpdate()
-		room.sendBigUpdate()
+		client.Room.sendPlayerStatuses()
 		client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 	}
 }
@@ -269,9 +285,8 @@ func (client *Client) sendUserSaves() {
 
 	for _, id := range saveIds {
 		// For each save ID, retrieve the summary from the database
-		var summary string
-		row := db.QueryRow("SELECT summary FROM game_states WHERE id = ?", id)
-		if err := row.Scan(&summary); err != nil {
+		summary, err := LoadSummary(id)
+		if err != nil {
 			log.Printf("Could not retrieve summary for save ID %d: %v\n", id, err)
 			continue
 		}

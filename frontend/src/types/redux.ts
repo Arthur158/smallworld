@@ -30,6 +30,7 @@ export interface ApplicationState {
   offsetStacksX: number
   offsetStacksY: number
   mapChoices: string[]
+  playerStatuses: string[]
 }
 
 export type RootState = {

@@ -36,6 +36,7 @@ const initialState: ApplicationState = {
   offsetStacksX: 10,
   offsetStacksY: 10,
   mapChoices: [],
+  playerStatuses: [],
 };
 
 const applicationSlice = createSlice({
@@ -119,6 +120,9 @@ const applicationSlice = createSlice({
         }
         case 'loadSaves' : 
           state.saveGames = parsedData.saves
+          break;
+        case 'playerStatuses' :
+          state.playerStatuses = parsedData
           break;
         case 'saveSelection' : 
           state.saveSelectionId = parsedData.index

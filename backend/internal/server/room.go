@@ -21,13 +21,14 @@ type Room struct {
 	mu	     sync.Mutex
 	Map	     Map
 	saveId	     int64
+	playerStatuses []string
 }
 
 func createRoom(client *Client, roomName, username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
-	gameMap, ok := mapMap["2 Players"]
+	gameMap, ok := mapMap["map2players"]
 	if !ok {
 		log.Println("Problem logging map")
 	}
@@ -41,6 +42,7 @@ func createRoom(client *Client, roomName, username string) {
 		Gamestate:    gamestate.GameState{},
 		Map:          gameMap,
 		saveId:	      -1,
+		playerStatuses: []string{},
 	}
 	rooms[room.ID] = room
 
@@ -55,6 +57,16 @@ func createRoom(client *Client, roomName, username string) {
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 
 	room.sendMapChoices()
+}
+
+func (room *Room) sendPlayerStatuses() {
+		playerStatusesJSON, err := json.Marshal(room.playerStatuses)
+		if err != nil {
+			log.Println("Error marshalling playerStatuses:", err)
+			return
+		}
+
+		room.sendToRoomPlayers(messages.Message{Type: "playerStatuses", Data: json.RawMessage(playerStatusesJSON)})
 }
 
 func (room *Room) sendMapChoices() {
@@ -85,7 +97,7 @@ func (room *Room) sendMapChoices() {
 }
 
 // ChangeSize modifies the room size while preserving existing players
-func (room *Room) ChangeMap(newMap string) {
+func (room *Room) ChangeMap(newMap string) bool {
 
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
@@ -93,6 +105,7 @@ func (room *Room) ChangeMap(newMap string) {
 	gameMap, ok := mapMap[newMap]
 	if !ok {
 		log.Println("Problem logging map")
+		return false
 	}
 
 	room.Map = gameMap
@@ -134,6 +147,7 @@ func (room *Room) ChangeMap(newMap string) {
 	log.Printf("Room %s resized to %d players.\n", room.ID, newSize)
 
 	sendRoomsUpdateToAll()
+	return true
 }
 
 func joinRoom(client *Client, roomID, username string) {
@@ -195,6 +209,7 @@ func joinRoom(client *Client, roomID, username string) {
 
 	// Notify client about successful join
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + newRoom.ID + `"}`)))
+	client.Room.sendPlayerStatuses()
 
 	// Broadcast the updated rooms list to everyone
 	sendRoomsUpdateToAll()
@@ -248,15 +263,28 @@ func (r *Room) MovePlayer(username string, direction string) bool {
 				// Swap with the slot above, even if it's nil
 				if i > 0 {
 					r.Players[i], r.Players[i-1] = r.Players[i-1], r.Players[i]
+					sendRoomsUpdateToAll()
 					return true
 				}
 			case "down":
 				// Swap with the slot below, even if it's nil
 				if i < len(r.Players)-1 {
 					r.Players[i], r.Players[i+1] = r.Players[i+1], r.Players[i]
+					sendRoomsUpdateToAll()
 					return true
 				}
 			}
+		}
+	}
+	return false
+}
+
+func (r *Room) MovePlayerWithIndex(username string, index int) bool {
+	for i := range r.Players {
+		if r.Players[i] != nil && r.Players[i].Username == username {
+			r.Players[i], r.Players[index] = r.Players[index], r.Players[i]
+			sendRoomsUpdateToAll()
+			return true
 		}
 	}
 	return false
@@ -302,6 +330,9 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	} else {
 		// here dont forget you need to set the size and change the players names.
 		newstate, _, err := LoadGameState(room.saveId)
+		for i := range(playerNames) {
+			newstate.Players[i].Name = playerNames[i]
+		}
 		if err != nil {
 			log.Println("Error loading game", err)
 			client.sendError("error loading game")
