@@ -172,41 +172,41 @@ export default function PlayerInfo() {
     );
   };
 
-  return (
-    <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative h-full" onClick={handlePlayerClick}>
-      <h3 className="text-lg font-bold">{player?.name}</h3>
+return (
+  <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative h-full" onClick={handlePlayerClick}>
+    <h3 className="text-lg font-bold">{player?.name || "Unknown Player"}</h3>
 
-      {/* Active Tribe Display (Only if exists) */}
-      {player.activeTribe && (
-        <div className="mt-3 flex items-center justify-center" style={{ height: '6rem' }}>
-          {renderTribeImages(player.activeTribe, 'h-full')}
-        </div>
-      )}
+    {/* Active Tribe Display (Only if exists) */}
+    {player?.activeTribe && (
+      <div className="mt-3 flex items-center justify-center" style={{ height: '6rem' }}>
+        {renderTribeImages(player.activeTribe, 'h-full')}
+      </div>
+    )}
 
-      {/* Passive Tribes Display (Only if exists) */}
-      {player.passiveTribes.length > 0 && (
-        <div className="flex flex-wrap items-center justify-center mt-2 gap-3">
-          {player.passiveTribes.map((tribe, i) => (
-            <div
-              key={i}
-              className="opacity-60"
-              style={{ height: '3rem', filter: 'grayscale(50%)' }}
-            >
-              {renderPassiveTribeImages(tribe, 'h-full')}
-            </div>
-          ))}
-        </div>
-      )}
+    {/* Passive Tribes Display (Only if exists) */}
+    {player?.passiveTribes?.length > 0 && (
+      <div className="flex flex-wrap items-center justify-center mt-2 gap-3">
+        {player.passiveTribes.map((tribe, i) => (
+          <div
+            key={i}
+            className="opacity-60"
+            style={{ height: '3rem', filter: 'grayscale(50%)' }}
+          >
+            {renderPassiveTribeImages(tribe, 'h-full')}
+          </div>
+        ))}
+      </div>
+    )}
 
-      {/* Show the separator line only if there are stacks */}
-      {player.pieceStacks.length > 0 && (
-        <div className="my-4 border-t-4 border-[#8B4513] w-full"></div>
-      )}
+    {/* Show the separator line only if there are stacks */}
+    {player?.pieceStacks?.length > 0 && (
+      <div className="my-4 border-t-4 border-[#8B4513] w-full"></div>
+    )}
 
-      {/* Piece Stacks */}
-      {renderPieceStacks(player.pieceStacks)}
-    </div>
-  );
+    {/* Piece Stacks */}
+    {player?.pieceStacks && renderPieceStacks(player.pieceStacks)}
+  </div>
+);
 }
 
 // CSS for the flashing border animation

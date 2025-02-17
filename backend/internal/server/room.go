@@ -351,6 +351,18 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	// Mark the room as in-progress
 	room.InProgress = true
 	
+	id, err := SaveGameState(&room.Gamestate, 0, room.Map.Name)
+	if err != nil {
+		log.Println("Problem saving the game")
+	}
+	room.autoSaveId = id
+
+	for _, client := range(room.Players) {
+		err = AddGameIDToUser(client.Username, id)
+		if err != nil {
+			log.Println("Problem adding new save for player")
+		}
+	}
 
 	go func() {
 		for {
@@ -855,6 +867,10 @@ func (room *Room) sendMegaUpdate() {
 }
 
 func (room *Room) AutoSave() {
+	if !room.InProgress {
+		log.Println("game not started")
+		return
+	}
 	id, err := SaveGameState(&room.Gamestate, 0, room.Map.Name)
 	if err != nil {
 		log.Println("Problem saving the game")
@@ -875,4 +891,16 @@ func (room *Room) AutoSave() {
 			log.Println("Problem adding new save for player")
 		}
 	}
+}
+
+func (room *Room) RollBack(client *Client) {
+	if room.Gamestate.TurnInfo.PlayerIndex != client.Index {
+		client.sendError("Not able to roll back on someone else's turn!")
+	}
+	state, _, err := LoadGameState(room.autoSaveId)
+	if err != nil {
+		client.sendError("Error rolling back")
+	}
+	room.Gamestate = *state
+	room.sendMegaUpdate()
 }

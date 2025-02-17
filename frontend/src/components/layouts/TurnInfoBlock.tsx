@@ -36,6 +36,10 @@ export default function TurnInfoBlock() {
   const handleSaveGame = () => {
     sendMessageToBackend("savegame", {});
   };
+  
+  const handleRollBack = () => {
+    sendMessageToBackend("rollback", {});
+  };
 
   const resetSelections = () => {
     dispatch(setIsStackFromBank(false));
@@ -85,7 +89,10 @@ export default function TurnInfoBlock() {
         <button onClick={handleSaveGame} className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 px-3 rounded transition-colors">
           Save Game
         </button>
-        <button onClick={handleLeaveGame} className="col-span-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded transition-colors">
+        <button onClick={handleRollBack} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded transition-colors">
+         Rollback
+        </button>
+        <button onClick={handleLeaveGame} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded transition-colors">
           Leave Game
         </button>
       </div>

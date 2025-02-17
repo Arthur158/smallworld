@@ -197,6 +197,8 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.sendMessage("message", json.RawMessage([]byte(`{"message": "Game successfully saved"}`)))
+	case "rollback":
+		client.Room.RollBack(client)
 	case "loadgame":
 		var data struct {
 			SaveId int64 `json:"saveId"`

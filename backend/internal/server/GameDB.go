@@ -164,8 +164,11 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 		}
 
 		owningPlayerIndex := -1
-		if t.OwningPlayer != nil && t.OwningPlayer.HasActiveTribe && t.OwningPlayer.ActiveTribe.Race != "Lost Tribe" {
+		if t.OwningPlayer != nil {
 			owningPlayerIndex = playerIndex[t.OwningPlayer]
+		}
+		if t.OwningPlayer != nil && t.OwningPlayer.ActiveTribe != nil && t.OwningPlayer.ActiveTribe.Race == "Lost Tribe" {
+			owningPlayerIndex = -1
 		}
 
 		owningTribe := ""
