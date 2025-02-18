@@ -442,8 +442,19 @@ func SaveGameState(state *gamestate.GameState, saverIndex int, mapName string) (
 	copyState := transformGameState(state)
 
 	// Build the summary
-	saverActiveTribe := copyState.Players[saverIndex].ActiveTribe
+	player := copyState.Players[saverIndex]
+	saverActiveTribe := player.ActiveTribe
+	if !player.HasActiveTribe && len(player.PassiveTribes) > 0 {
+		saverActiveTribe = player.PassiveTribes[0]
+	}
 	tribeString := fmt.Sprintf("%s %s", saverActiveTribe.Trait, saverActiveTribe.Race)
+	log.Println(tribeString)
+	log.Println(player.HasActiveTribe)
+	log.Println(player.PassiveTribes)
+	if !player.HasActiveTribe && len(player.PassiveTribes) > 0 {
+		tribeString = fmt.Sprintf("%s %s in decline", saverActiveTribe.Trait, saverActiveTribe.Race)
+	}
+	log.Println(tribeString)
 	turnIndex := copyState.TurnInfo.TurnIndex
 	playerCount := len(copyState.Players)
 	summary := fmt.Sprintf("%s | TurnIndex: %d | Map: %s | Players: %d",

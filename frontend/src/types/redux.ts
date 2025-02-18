@@ -32,6 +32,7 @@ export interface ApplicationState {
   playerStatuses: string[]
   Xmult: number
   Ymult: number
+  inDisplayRoom: boolean
 }
 
 export type RootState = {

@@ -38,6 +38,7 @@ const initialState: ApplicationState = {
   playerStatuses: [],
   Xmult: 1,
   Ymult: 1,
+  inDisplayRoom: false
 };
 
 const applicationSlice = createSlice({
@@ -134,7 +135,6 @@ const applicationSlice = createSlice({
           }
           break;
         }
-
         case 'index':
           state.playerIndex = Number(parsedData.index);
           state.gameStarted = true
@@ -145,6 +145,14 @@ const applicationSlice = createSlice({
         case 'lobby':
           state.roomid = ""
           state.gameStarted = false
+          break;
+        case 'displayroom':
+          state.inDisplayRoom = true
+          state.gameStarted = false
+          break;
+        case 'leavedisplayroom':
+          state.gameStarted = false
+          state.inDisplayRoom = false
           break;
         case 'error':
           state.error = parsedData.message;
@@ -329,40 +337,42 @@ const applicationSlice = createSlice({
 
           // 2) Players
           const players: Player[] = [];
-          for (let i = 0; i < parsedData.players.length; i++) {
-            const pData = parsedData.players[i];
-            const tempPlayer: Player = {
-              name: pData.name,
-              activeTribe: {
-                race: pData.activeTribe.race,
-                trait: pData.activeTribe.trait,
-              },
-              passiveTribes: [],
-              pieceStacks: [],
-            };
+          if (parsedData.players != null) {
+            for (let i = 0; i < parsedData.players.length; i++) {
+              const pData = parsedData.players[i];
+              const tempPlayer: Player = {
+                name: pData.name,
+                activeTribe: {
+                  race: pData.activeTribe.race,
+                  trait: pData.activeTribe.trait,
+                },
+                passiveTribes: [],
+                pieceStacks: [],
+              };
 
-            // Passive tribes
-            if (pData.passiveTribes && Array.isArray(pData.passiveTribes)) {
-              for (const t of pData.passiveTribes) {
-                tempPlayer.passiveTribes.push({
-                  race: t.race,
-                  trait: t.trait,
-                });
+              // Passive tribes
+              if (pData.passiveTribes && Array.isArray(pData.passiveTribes)) {
+                for (const t of pData.passiveTribes) {
+                  tempPlayer.passiveTribes.push({
+                    race: t.race,
+                    trait: t.trait,
+                  });
+                }
               }
-            }
 
-            // Piece stacks
-            if (pData.pieceStacks && Array.isArray(pData.pieceStacks)) {
-              for (const stack of pData.pieceStacks) {
-                tempPlayer.pieceStacks.push({
-                  type: stack.type,
-                  amount: stack.amount,
-                  isActive: stack.isActive,
-                });
+              // Piece stacks
+              if (pData.pieceStacks && Array.isArray(pData.pieceStacks)) {
+                for (const stack of pData.pieceStacks) {
+                  tempPlayer.pieceStacks.push({
+                    type: stack.type,
+                    amount: stack.amount,
+                    isActive: stack.isActive,
+                  });
+                }
               }
-            }
 
-            players.push(tempPlayer);
+              players.push(tempPlayer);
+            }
           }
           state.players = players;
 

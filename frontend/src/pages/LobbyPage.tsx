@@ -49,9 +49,6 @@ export default function LobbyPage() {
       navigate('/');
       return;
     }
-    if (gameStarted) {
-      navigate('/game');
-    }
   }, [isAuthenticated, gameStarted, navigate]);
 
   // Handle page refresh
@@ -93,6 +90,12 @@ export default function LobbyPage() {
     if (!username.trim()) return;
     sendMessageToBackend('joinRoom', {
       roomId: selectedRoomId,
+    });
+  };
+
+  const handleEnterDisplayRoom = () => {
+    if (!username.trim()) return;
+    sendMessageToBackend('enterdisplayroom', {
     });
   };
 
@@ -292,6 +295,13 @@ export default function LobbyPage() {
             <h2 className="text-2xl font-bold underline">Saved Games</h2>
           </div>
           <div className="flex-1 overflow-y-auto p-4">
+            <button
+              type="button"
+              onClick={handleEnterDisplayRoom}
+              className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
+            >
+             Enter Display Room 
+            </button>
             {userInRoom && currentRoom && currentRoom.creator === username ? (
               saveGames && saveGames.length > 0 ? (
                 <ul>

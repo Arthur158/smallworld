@@ -23,6 +23,7 @@ type Room struct {
 	saveId	     int64
 	autoSaveId   int64
 	playerStatuses []string
+	IsDisplayRoom  bool
 }
 
 func createRoom(client *Client, roomName, username string) {
@@ -325,6 +326,9 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	playerNames := make([]string, len(room.Players))
 	for i, client := range(room.Players) {
 		playerNames[i] = client.Username
+		if client.DisplayRoom != nil {
+			client.DisplayRoom.EndDisplayRoom()
+		}
 	}
 
 	if room.saveId == -1 {
@@ -738,7 +742,7 @@ func (room *Room) sendMegaUpdate() {
 	mega.TurnInfo.Phase = room.Gamestate.TurnInfo.Phase.String()
 
 	// -- Players --
-	for i, p := range room.Gamestate.Players {
+	for _, p := range room.Gamestate.Players {
 		if p == nil {
 			continue
 		}
@@ -770,7 +774,7 @@ func (room *Room) sendMegaUpdate() {
 			IsActive bool   `json:"isActive"`
 		}, 0)
 
-		playerData.Name = room.Players[i].Username
+		playerData.Name = p.Name
 		if p.HasActiveTribe {
 			playerData.ActiveTribe.Race = string(p.ActiveTribe.Race)
 			playerData.ActiveTribe.Trait = string(p.ActiveTribe.Trait)

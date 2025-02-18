@@ -15,6 +15,7 @@ type Client struct {
 	IsAuthenticated bool
 	Index	int
 	Room   *Room
+	DisplayRoom *Room
 }
 
 
@@ -82,7 +83,10 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		createRoom(client, data.RoomName, client.Username)
 		client.sendUserSaves()
-
+	case "enterdisplayroom":
+		client.sendUserSaves()
+		createDisplayRoom(client)
+		client.sendMessage("displayroom", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "leaveroom":
 		client.Room.removePlayer(client.Username)
 		sendRoomsUpdateToAll()
@@ -228,6 +232,25 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.Room.saveId = data.SaveId
 		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
 		client.Room.sendPlayerStatuses()
+	case "loadgamedisplay":
+		var data struct {
+			SaveId int64 `json:"saveId"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+		if client.DisplayRoom == nil {
+			client.sendError("client not in a display room!")
+		}
+		client.DisplayRoom.LoadSave(client, data.SaveId)
+		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
+	case "leavedisplayroom":
+		client.DisplayRoom.EndDisplayRoom()
+		sendRoomsUpdateToAll()
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
 	}
