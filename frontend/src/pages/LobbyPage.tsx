@@ -114,6 +114,11 @@ export default function LobbyPage() {
     sendMessageToBackend('loadgame', { saveId: gameId });
   };
 
+  const handleDeleteGame = (gameId: number) => {
+    sendMessageToBackend('deletesave', { saveId: gameId });
+  };
+
+
   // Handle map change
   const handleMapChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     if (!currentRoom) return;
@@ -308,13 +313,24 @@ export default function LobbyPage() {
                   {saveGames.map((gameSave) => (
                     <li
                       key={gameSave.saveId}
-                      className={`mb-2 p-2 cursor-pointer hover:bg-[#FFF5EE] transition-colors border-2 ${
+                      className={`relative flex items-center mb-2 p-2 cursor-pointer hover:bg-[#FFF5EE] transition-colors border-2 ${
                         gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
                       }`}
-                      onClick={() => handleGameIdClick(gameSave.saveId)}
+                      onClick={() => handleGameIdClick(gameSave.saveId)} // Keeps the whole item clickable
                     >
-                      <div className="font-bold">Game ID: {gameSave.saveId}</div>
-                      <div>Summary: {gameSave.summary}</div>
+                      <div className="flex-1">
+                        <div className="font-bold">Game ID: {gameSave.saveId}</div>
+                        <div>Summary: {gameSave.summary}</div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevents triggering the parent onClick when clicking delete
+                          handleDeleteGame(gameSave.saveId);
+                        }}
+                        className="absolute right-2 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded"
+                      >
+                        Delete
+                      </button>
                     </li>
                   ))}
                 </ul>

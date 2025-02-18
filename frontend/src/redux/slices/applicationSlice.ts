@@ -137,7 +137,6 @@ const applicationSlice = createSlice({
         }
         case 'index':
           state.playerIndex = Number(parsedData.index);
-          state.gameStarted = true
           break;
         case 'roomid':
           state.roomid = parsedData.roomid;
@@ -177,7 +176,6 @@ const applicationSlice = createSlice({
             state.mapImageUrl = imgUrl;
           }
           state.offsetMapTiles = parsedData.offset
-
           const newTiles: Record<string, Tile> = {};
           data.zones.forEach((tileData: any, index: number) => {
             const tileId = String(tileData.id);
@@ -202,6 +200,7 @@ const applicationSlice = createSlice({
         case 'smallmapupdate': {
           state.offsetMapTiles = parsedData.offset;
           state.mapName = parsedData.MapName;
+
 
           // Load tile definitions from your local map data
           const mapKey = state.mapName || '';

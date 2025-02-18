@@ -257,6 +257,7 @@ func (room *Room) removePlayer(username string) {
 		delete(rooms, room.ID)
 	}
 
+	client.Room = nil
 	client.sendMessage("lobby", nil)
 
 }
@@ -338,7 +339,6 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		}
 		client.Room.Gamestate = *newstate
 	} else {
-		// here dont forget you need to set the size and change the players names.
 		newstate, _, err := LoadGameState(room.saveId)
 		for i := range(playerNames) {
 			newstate.Players[i].Name = playerNames[i]

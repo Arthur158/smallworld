@@ -21,6 +21,9 @@ export default function DisplayPage() {
   const handleGameIdClick = (gameId: number) => {
     sendMessageToBackend('loadgamedisplay', { saveId: gameId });
   };
+  const handleDeleteGame = (gameId: number) => {
+    sendMessageToBackend('deletesave', { saveId: gameId });
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -65,18 +68,27 @@ export default function DisplayPage() {
               {Array.isArray(saveGames) && saveGames.length > 0 ? (
                 <ul>
                   {saveGames.map((gameSave) => (
-                    <li
-                      key={gameSave.saveId}
-                      className={`mb-2 p-2 cursor-pointer hover:bg-[#FFF5EE] transition-colors border-2 ${
-                        gameSave.saveId === saveSelectionId
-                          ? 'border-[#8B4513]'
-                          : 'border-transparent'
-                      }`}
-                      onClick={() => handleGameIdClick(gameSave.saveId)}
-                    >
+                  <li
+                    key={gameSave.saveId}
+                    className={`relative flex items-center mb-2 p-2 cursor-pointer hover:bg-[#FFF5EE] transition-colors border-2 ${
+                      gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
+                    }`}
+                    onClick={() => handleGameIdClick(gameSave.saveId)} // Keeps the whole item clickable
+                  >
+                    <div className="flex-1">
                       <div className="font-bold">Game ID: {gameSave.saveId}</div>
                       <div>Summary: {gameSave.summary}</div>
-                    </li>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevents triggering the parent onClick when clicking delete
+                        handleDeleteGame(gameSave.saveId);
+                      }}
+                      className="absolute right-2 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded"
+                    >
+                      Delete
+                    </button>
+                  </li>
                   ))}
                 </ul>
               ) : (

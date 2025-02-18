@@ -173,7 +173,9 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.Room.ChangeMap(data.NewMap)
+		client.Room.playerStatuses = []string{}
 		client.Room.saveId = -1
+		client.Room.sendPlayerStatuses()
 		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "kickPlayer":
 		var data struct {
@@ -215,6 +217,13 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		log.Println("Successfully parsed:", data)
 
+		if data.SaveId == -1 {
+			client.Room.playerStatuses = []string{}
+			client.Room.saveId = data.SaveId
+			client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
+			client.Room.sendPlayerStatuses()
+			return
+		} 
 		index, mapName, playerStatuses, err := LoadGameInfo(data.SaveId)
 		if err != nil {
 			log.Println(err)
@@ -232,6 +241,20 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.Room.saveId = data.SaveId
 		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
 		client.Room.sendPlayerStatuses()
+	case "deletesave":
+		var data struct {
+			SaveId int64 `json:"saveId"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+		RemoveGameIDFromUser(client.Username, data.SaveId)
+		client.sendUserSaves()
+		
 	case "loadgamedisplay":
 		var data struct {
 			SaveId int64 `json:"saveId"`
