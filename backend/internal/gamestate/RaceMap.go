@@ -2,6 +2,7 @@ package gamestate
 
 import (
 	"fmt"
+	"log"
 )
 
 type RaceValue struct {
@@ -227,9 +228,9 @@ var RaceMap = map[Race]RaceValue {
 		}
 		}, Count: 6},
 	"Witch Doctors": {Transform: func(t *Tribe) {
-		oldClearTile := t.clearTile
-		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
-			oldClearTile(tile, gs, pk)
+		oldHandleReturn := t.handleReturn
+		t.handleReturn = func(tile *Tile, gs *GameState, pk int) {
+			oldHandleReturn(tile, gs, pk)
 			if t.IsActive {
 				diceThrow := RollDice()
 				gs.Messages = append(gs.Messages, fmt.Sprintf("Pygmies got back: %d Pawns!", diceThrow))
@@ -238,11 +239,12 @@ var RaceMap = map[Race]RaceValue {
 		}
 		}, Count: 6},
 	"Elves": {Transform: func(t *Tribe) {
-		oldClearTile := t.clearTile
-		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
-			oldClearTile(tile, gs, pk)
+		oldHandleReturn := t.handleReturn
+		t.handleReturn = func(tile *Tile, gs *GameState, pk int) {
 			if t.IsActive {
-				t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: max(0, pk)}})
+				oldHandleReturn(tile, gs, 0)
+			} else {
+				oldHandleReturn(tile, gs, pk)
 			}
 		}
 		}, Count: 6},
@@ -740,6 +742,7 @@ var RaceMap = map[Race]RaceValue {
 			if !ok {
 				return true, nil
 			}
+			log.Println(tile.OwningPlayer)
 			tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender
 			for i := range tile.PieceStacks {
 			    tile.PieceStacks[i].Tribe = tile.OwningTribe
@@ -804,24 +807,27 @@ var RaceMap = map[Race]RaceValue {
 			}
 			return stacks, err
 		}
-		oldClearTile := t.clearTile
-		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
-			oldClearTile(tile, gs, pk)
+		oldHandleReturn := t.handleReturn
+		t.handleReturn = func(tile *Tile, gs *GameState, pk int) {
+			oldHandleReturn(tile, gs, pk)
 			for _, stack := range tile.PieceStacks {
 			    if stack.Tribe != nil {
-				stack.Tribe.clearTile(tile, gs, pk)
+				stack.Tribe.handleReturn(tile, gs, pk)
 				return // Only one other tribe should be present
 			    }
 			}
 		}
 		oldhandleAbandonment := t.handleAbandonment
 		t.handleAbandonment = func(tile *Tile, gs *GameState) {
+			log.Println("here")
 			oldhandleAbandonment(tile, gs)
 			for _, stack := range(tile.PieceStacks) {
 				if stack.Tribe != nil && stack.Tribe != t {
+					log.Println("here2")
 					tile.OwningTribe = stack.Tribe
 					tile.OwningPlayer = stack.Tribe.Owner
 					tile.Presence = Passive // Scavengers only accept passive tribes
+					log.Println(tile.OwningPlayer)
 				}
 			}
 		}

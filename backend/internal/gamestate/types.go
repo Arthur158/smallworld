@@ -37,6 +37,7 @@ type Tribe struct {
 
 	//conquest for defender
 	countDefense func(*Tile) (int, int, int, error);
+	handleReturn func(*Tile, *GameState, int)
 	clearTile func(*Tile, *GameState, int);
 
 	// redeployment

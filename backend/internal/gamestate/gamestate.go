@@ -197,7 +197,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	// Enact changes
 	if tile.Presence != None {
 		tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender
-		defendingTribe.clearTile(tile, gs, pawnKill)
+		defendingTribe.handleReturn(tile, gs, pawnKill)
 		// tile.OwningPlayer.PointsEachTurn[len(tile.OwningPlayer.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	}
 

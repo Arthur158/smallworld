@@ -102,6 +102,14 @@ func CreateBaseTribe() *Tribe {
         return price, 0, 0, nil
     }
 
+    tribe.handleAbandonment = func(tile *Tile, gs *GameState) {
+        tribe.clearTile(tile, gs, 0)
+    }
+
+    tribe.handleReturn = func(tile *Tile, gs *GameState, cost int) {
+        tribe.clearTile(tile, gs , cost)
+    }
+
     tribe.clearTile = func(tile *Tile, gs *GameState, pawnKill int) {
         for i, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
@@ -126,10 +134,6 @@ func CreateBaseTribe() *Tribe {
 
     tribe.canTileBeAbandoned = func(tile *Tile) bool {
         return tribe.IsActive && tile.OwningTribe.checkPresence(tile, tribe.Race)
-    }
-
-    tribe.handleAbandonment = func(tile *Tile, gs *GameState) {
-        tribe.clearTile(tile, gs, 0)
     }
 
     tribe.startRedeployment = func(gs *GameState) []PieceStack {

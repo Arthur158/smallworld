@@ -194,6 +194,7 @@ func Map3(gs *GameState) map[string]*Tile {
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
     }
+    lostTribe.Owner = &lostPlayer
 
     for _, id := range []string{ "22", "21", "4", "3", "11", "26", "1", "13", "16", "0"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
@@ -343,6 +344,7 @@ func Map2(gs *GameState) map[string]*Tile {
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
     }
+    lostTribe.Owner = &lostPlayer
 
     for _, id := range []string{ "0", "2", "6", "7", "8", "9", "13", "21", "17"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
@@ -580,6 +582,7 @@ func Map4(gs *GameState) map[string]*Tile {
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
     }
+    lostTribe.Owner = &lostPlayer
 
     for _, id := range []string{"7", "8", "9", "10", "12", "14", "16", "17", "36", "35", "34", "30", "31", "25", "27"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
@@ -647,6 +650,7 @@ func MapIsles2(gs *GameState) map[string]*Tile {
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
     }
+    lostTribe.Owner = &lostPlayer
 
     for _, id := range []string{"0i", "7i", "8i"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
@@ -748,6 +752,7 @@ func MapIsles3(gs *GameState) map[string]*Tile {
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
     }
+    lostTribe.Owner = &lostPlayer
 
     for _, id := range []string{"1i", "5i", "7i"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
@@ -1190,6 +1195,7 @@ func Map5(gs *GameState) map[string]*Tile {
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
     }
+    lostTribe.Owner = &lostPlayer
 
     for _, id := range []string{"0", "1", "13", "21", "19", "25", "10", "16", "7", "23", "8", "29", "30", "27", "33", "34", "39", "47", "36", "25"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
