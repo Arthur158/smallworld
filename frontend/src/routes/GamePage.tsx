@@ -27,7 +27,7 @@ export default function GamePage() {
   useEffect(() => {
     if (phase === 'Conquest') {
       setShowTurnInfo(true);
-    } else if (playerNumber === playerIndex && phase === 'TribeChoice') {
+    } else if (phase === 'TribeChoice') {
       setShowTurnInfo(false);
     }
   }, [phase, playerNumber, playerIndex]);

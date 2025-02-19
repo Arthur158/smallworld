@@ -812,8 +812,12 @@ func (room *Room) sendMegaUpdate() {
 		mega.Players = append(mega.Players, playerData)
 	}
 
+	maxEntries := 5
+	if len(room.Gamestate.TribeList) < maxEntries {
+	    maxEntries = len(room.Gamestate.TribeList)
+	}
 	// -- Tribe Entries --
-	for _, entry := range room.Gamestate.TribeList[:5] {
+	for _, entry := range room.Gamestate.TribeList[:maxEntries] {
 		mega.TribeEntries = append(mega.TribeEntries, struct {
 			Race      string `json:"race"`
 			Trait     string `json:"trait"`

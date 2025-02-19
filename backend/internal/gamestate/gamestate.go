@@ -64,6 +64,10 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 		return fmt.Errorf("Invalid entry index")
 	}
 
+	if entryIndex > len(gs.TribeList) - 1 {
+		return fmt.Errorf("not enough tribe entries")
+	}
+
 	if chooser.CoinPile < entryIndex {
 		return fmt.Errorf("The player only has %d coins, but they need %d for picking this tribe", chooser.CoinPile, entryIndex)
 	}
