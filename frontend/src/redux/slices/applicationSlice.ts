@@ -116,6 +116,7 @@ const applicationSlice = createSlice({
         case 'unauth': {
           state.gameStarted = false
           state.isAuthenticated = false
+          state.roomid = ""
 
           state.name = ""
           break;

@@ -132,6 +132,10 @@ export default function LobbyPage() {
     sendMessageToBackend('moveUp', { roomId: currentRoom.id, username: playerName });
   };
 
+  const handleLogout = () => {
+    sendMessageToBackend('logout', {});
+  };
+
   const handleMoveDown = (playerName: string) => {
     if (!currentRoom) return;
     sendMessageToBackend('moveDown', { roomId: currentRoom.id, username: playerName });
@@ -150,8 +154,14 @@ export default function LobbyPage() {
         {/* Left column */}
         <div className="w-2/3 h-full flex flex-col border border-[#5F4B32] bg-[#FDF5E6]">
           <div className="flex-1 overflow-y-auto p-4">
-            <div className="mb-4">
-              <span className="font-semibold">Logged in as:</span> {username}
+            <div className="mb-4 flex justify-between items-center relative">
+              <span className="font-semibold">Logged in as: {username} </span>
+              <button
+                onClick={handleLogout}
+                className="absolute right-4 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded"
+              >
+                Log Out
+              </button>
             </div>
 
             {/* If not in a room, show 'Create Room' and room list */}

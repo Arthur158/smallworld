@@ -2295,7 +2295,7 @@ mapDatabase.map3players2islands = unionMapData(
   transformMapData(mapDatabase.map2players, 0.61, 0.61, -3, 460),
   transformMapData(mapDatabase.map2islands, 0.29, 0.29, 45, 0)
 );
-mapDatabase.map3players2islands.OffsetStacks = 1/250,
+mapDatabase.map3players2islands.OffsetStacks = 1/500,
 mapDatabase.map3players2islands.Xmult = 2,
 mapDatabase.map3players2islands.Ymult = 3.5,
 

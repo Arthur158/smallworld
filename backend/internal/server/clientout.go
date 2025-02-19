@@ -143,6 +143,9 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		client.handleLogin(data.UserName, data.Password)
 		sendRoomsUpdateToAll()
+	case "logout":
+		client.handleLogout()
+		sendRoomsUpdateToAll()
 	case "moveUp":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -277,6 +280,13 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
 	}
+}
+
+func (client *Client) handleLogout() {
+	delete(nameSet, client.Username)
+	client.Username = ""
+	client.IsAuthenticated = false
+	client.sendMessage("unauth", json.RawMessage([]byte(`{"name": "` + client.Username + `"}`)))
 }
 
 func (client *Client) handleLogin(userName string, password string) {
