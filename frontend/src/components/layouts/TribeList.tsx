@@ -27,13 +27,13 @@ export default function TribeList() {
       <img
         src={getTraitImagePath(trait)}
         alt={trait}
-        className="h-full w-auto -mr-6 z-20"
+        className="h-full w-auto -mr-6"
       />
       {/* Race Image */}
       <img
         src={getRaceImagePath(race)}
         alt={race}
-        className="h-full w-auto z-10"
+        className="h-full w-auto"
       />
     </div>
   );
@@ -85,7 +85,7 @@ export default function TribeList() {
             <li key={i}>
               <button
                 onClick={() => handleSelectTribe(i)}
-                className="flex items-center transition-transform hover:scale-105 w-full p-0 border-none bg-transparent"
+                className="flex items-center z-10 transition-transform hover:scale-110 w-full p-0 border-none bg-transparent hover:z-30"
               >
                 {/* Left side: Trait & Race images */}
                 {renderTribeImages(tribe.trait, tribe.race)}

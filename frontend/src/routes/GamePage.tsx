@@ -25,9 +25,9 @@ export default function GamePage() {
 
   // Auto-toggle the middle section based on phase
   useEffect(() => {
-    if (phase === 'Conquest') {
-      setShowTurnInfo(true);
-    } else if (phase === 'TribeChoice') {
+    // if (phase === 'Conquest') {
+    //   setShowTurnInfo(true);
+    if (phase === 'TribeChoice') {
       setShowTurnInfo(false);
     }
   }, [phase, playerNumber, playerIndex]);

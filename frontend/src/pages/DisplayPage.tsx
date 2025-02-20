@@ -65,35 +65,35 @@ export default function DisplayPage() {
             {/* Top: PlayerInfo (fixed height: h-1/3) */}
             <div className="flex-1 overflow-y-auto border border-[#5F4B32] bg-[#FDF5E6] p-4">
               <h2 className="text-xl font-bold underline mb-2">Saved Games</h2>
-              {Array.isArray(saveGames) && saveGames.length > 0 ? (
-                <ul>
+              {(saveGames && saveGames.length > 0 ? (
+                <ul className="space-y-4">
                   {saveGames.map((gameSave) => (
-                  <li
-                    key={gameSave.saveId}
-                    className={`relative flex items-center mb-2 p-2 cursor-pointer hover:bg-[#FFF5EE] transition-colors border-2 ${
-                      gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
-                    }`}
-                    onClick={() => handleGameIdClick(gameSave.saveId)} // Keeps the whole item clickable
-                  >
-                    <div className="flex-1">
-                      <div className="font-bold">Game ID: {gameSave.saveId}</div>
-                      <div>Summary: {gameSave.summary}</div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevents triggering the parent onClick when clicking delete
-                        handleDeleteGame(gameSave.saveId);
-                      }}
-                      className="absolute right-2 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded"
+                    <li
+                      key={gameSave.saveId}
+                      className={`relative flex items-center p-4 cursor-pointer bg-white rounded border-2 transition-colors ${
+                        gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
+                      }`}
+                      onClick={() => handleGameIdClick(gameSave.saveId)}
                     >
-                      Delete
-                    </button>
-                  </li>
+                      <div className="flex-1">
+                        <div className="font-bold">Game ID: {gameSave.saveId}</div>
+                        <div className="text-sm text-gray-600">Summary: {gameSave.summary}</div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteGame(gameSave.saveId);
+                        }}
+                        className="absolute right-4 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </li>
                   ))}
                 </ul>
               ) : (
-                <p>No saved games available.</p>
-              )}
+                <p className="text-gray-600">No saved games available.</p>
+              ))}
             </div>
             {/* Middle/Bottom: Toggle + OpponentsList/TribeList */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
