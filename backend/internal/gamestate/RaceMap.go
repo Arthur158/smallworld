@@ -2,7 +2,6 @@ package gamestate
 
 import (
 	"fmt"
-	"log"
 )
 
 type RaceValue struct {
@@ -640,7 +639,6 @@ var RaceMap = map[Race]RaceValue {
 				if !ok {
 					return nil, true, false, fmt.Errorf("The dice was not enough for your zombies")
 				}
-				log.Println(stacks)
 				return stacks, false, ok, err
 			}
 			return stacks, diceUsed, ok, err
@@ -760,7 +758,6 @@ var RaceMap = map[Race]RaceValue {
 			if !ok {
 				return true, nil
 			}
-			log.Println(tile.OwningPlayer)
 			tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender
 			for i := range tile.PieceStacks {
 			    tile.PieceStacks[i].Tribe = tile.OwningTribe
@@ -837,15 +834,12 @@ var RaceMap = map[Race]RaceValue {
 		}
 		oldhandleAbandonment := t.handleAbandonment
 		t.handleAbandonment = func(tile *Tile, gs *GameState) {
-			log.Println("here")
 			oldhandleAbandonment(tile, gs)
 			for _, stack := range(tile.PieceStacks) {
 				if stack.Tribe != nil && stack.Tribe != t {
-					log.Println("here2")
 					tile.OwningTribe = stack.Tribe
 					tile.OwningPlayer = stack.Tribe.Owner
 					tile.Presence = Passive // Scavengers only accept passive tribes
-					log.Println(tile.OwningPlayer)
 				}
 			}
 		}

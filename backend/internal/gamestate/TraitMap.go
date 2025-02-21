@@ -1,7 +1,6 @@
 package gamestate
 
 import "fmt"
-// import "log"
 
 
 

@@ -2,7 +2,6 @@ package gamestate
 
 import (
 	"fmt"
-	"log"
 )
 
 type GameState struct {
@@ -225,8 +224,6 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	} else {
 		gs.TurnInfo.Phase = Conquest
 	}
-	log.Println("now")
-	log.Println(attacker.PieceStacks)
 
 	return nil
 }

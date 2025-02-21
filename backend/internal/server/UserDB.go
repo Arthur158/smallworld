@@ -48,9 +48,6 @@ func AddUser(username, password string) error {
 
 // AddGameIDToUser adds a game ID to the user's savegameids list
 func AddGameIDToUser(username string, gameID int64) error {
-	log.Println(username)
-	log.Println("saving")
-	log.Println(gameID)
 	// Get current savegameids
 	var saveGameIDsStr string
 	query := "SELECT savegameids FROM users WHERE username = ?;"
