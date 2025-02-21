@@ -136,7 +136,7 @@ var TraitMap = map[Trait]TraitValue {
 	"Mounted": {Transform: func(t *Tribe) {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
-			if tile.Biome == Field || tile.Biome == Hill {
+			if (tile.Biome == Field || tile.Biome == Hill) && t.IsActive == true {
 				return oldcomputeDiscount(stackType, tile) + 1
 			}
 			return oldcomputeDiscount(stackType, tile)

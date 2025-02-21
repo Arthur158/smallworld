@@ -627,6 +627,24 @@ var RaceMap = map[Race]RaceValue {
 		}
 		}, Count: 5},
 	"Ghouls": {Transform: func(t *Tribe) {
+		t.State["hasThrownDice"] = false
+		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
+		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
+			hasThrownDice := t.State["hasThrownDice"].(bool)
+			if !t.IsActive && hasThrownDice {
+				return nil, true, false, fmt.Errorf("You already threw the dice for the ghouls")
+			}
+			stacks, diceUsed, ok, err := oldCalculateRemainingAttackingStacks(ps, tile, gs)
+			if !t.IsActive && diceUsed {
+				t.State["hasThrownDice"] = true
+				if !ok {
+					return nil, true, false, fmt.Errorf("The dice was not enough for your zombies")
+				}
+				log.Println(stacks)
+				return stacks, false, ok, err
+			}
+			return stacks, diceUsed, ok, err
+		}
 		t.State["deploy"] = make(map[string]int)
 		oldcountRemovablePieces := t.countRemovablePieces
 		t.countRemovablePieces = func(tile *Tile) []PieceStack {

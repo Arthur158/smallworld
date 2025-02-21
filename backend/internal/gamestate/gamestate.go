@@ -2,6 +2,7 @@ package gamestate
 
 import (
 	"fmt"
+	"log"
 )
 
 type GameState struct {
@@ -208,7 +209,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	newTileStacks := attackingTribe.countNewTileStacks(newStacks, tile)
 	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
 
-	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, attackCostStacks)
+	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
 	attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	tile.OwningTribe = attackingTribe
@@ -224,6 +225,8 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	} else {
 		gs.TurnInfo.Phase = Conquest
 	}
+	log.Println("now")
+	log.Println(attacker.PieceStacks)
 
 	return nil
 }
