@@ -190,9 +190,11 @@ func Map3(gs *GameState) map[string]*Tile {
     lostTribe := CreateBaseTribe()
     lostTribe.Race = "Lost Tribe"
     lostTribe.Trait = "Lost"
+    lostTribe.IsActive = false
     lostPlayer := Player{
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
+        Index: -1,
     }
     lostTribe.Owner = &lostPlayer
 
@@ -340,9 +342,11 @@ func Map2(gs *GameState) map[string]*Tile {
     lostTribe := CreateBaseTribe()
     lostTribe.Race = "Lost Tribe"
     lostTribe.Trait = "Lost"
+    lostTribe.IsActive = false
     lostPlayer := Player{
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
+        Index: -1,
     }
     lostTribe.Owner = &lostPlayer
 
@@ -578,9 +582,11 @@ func Map4(gs *GameState) map[string]*Tile {
     lostTribe := CreateBaseTribe()
     lostTribe.Race = "Lost Tribe"
     lostTribe.Trait = "Lost"
+    lostTribe.IsActive = false
     lostPlayer := Player{
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
+        Index: -1,
     }
     lostTribe.Owner = &lostPlayer
 
@@ -646,9 +652,11 @@ func MapIsles2(gs *GameState) map[string]*Tile {
     lostTribe := CreateBaseTribe()
     lostTribe.Race = "Lost Tribe"
     lostTribe.Trait = "Lost"
+    lostTribe.IsActive = false
     lostPlayer := Player{
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
+        Index: -1,
     }
     lostTribe.Owner = &lostPlayer
 
@@ -748,9 +756,11 @@ func MapIsles3(gs *GameState) map[string]*Tile {
     lostTribe := CreateBaseTribe()
     lostTribe.Race = "Lost Tribe"
     lostTribe.Trait = "Lost"
+    lostTribe.IsActive = false
     lostPlayer := Player{
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
+        Index: -1,
     }
     lostTribe.Owner = &lostPlayer
 
@@ -1191,9 +1201,11 @@ func Map5(gs *GameState) map[string]*Tile {
     lostTribe := CreateBaseTribe()
     lostTribe.Race = "Lost Tribe"
     lostTribe.Trait = "Lost"
+    lostTribe.IsActive = false
     lostPlayer := Player{
         PieceStacks : []PieceStack{},
         ActiveTribe: lostTribe,
+        Index: -1,
     }
     lostTribe.Owner = &lostPlayer
 

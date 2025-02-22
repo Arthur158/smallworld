@@ -41,24 +41,24 @@ var TraitMap = map[Trait]TraitValue {
 			return max(0, count)
 		}
 		}, Count: 4},
-	"Goldsmith": {Transform: func(t *Tribe) {
-		oldCountPoints := t.countPoints
-		t.countPoints = func(tile *Tile) int {
-			count := oldCountPoints(tile)
-			containsMine := false
-			for _, attr := range tile.Attributes {
-				if attr == Mine {
-					containsMine = true
-				}
-			}
-			if t.IsActive && containsMine {
-				count += 2
-			} else if t.IsActive {
-				count -= 1
-			}
-			return max(0, count)
-		}
-		}, Count: 4},
+	// "Goldsmith": {Transform: func(t *Tribe) {
+	// 	oldCountPoints := t.countPoints
+	// 	t.countPoints = func(tile *Tile) int {
+	// 		count := oldCountPoints(tile)
+	// 		containsMine := false
+	// 		for _, attr := range tile.Attributes {
+	// 			if attr == Mine {
+	// 				containsMine = true
+	// 			}
+	// 		}
+	// 		if t.IsActive && containsMine {
+	// 			count += 2
+	// 		} else if t.IsActive {
+	// 			count -= 1
+	// 		}
+	// 		return max(0, count)
+	// 	}
+	// 	}, Count: 4},
 	"Aquatic": {Transform: func(t *Tribe) {
 		oldCountPoints := t.countPoints
 		t.countPoints = func(tile *Tile) int {
@@ -248,17 +248,6 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return false
 		}
-	// 	oldhandleAbandonment := t.handleAbandonment
-	// 	t.handleAbandonment = func(tile *Tile) {
-	// 		oldhandleAbandonment(tile)
-	// 		for i, stack := range(tile.PieceStacks) {
-	// 			if stack.Type == "Fortress" {
-	// 				tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-	// 				break
-	// 			}
-	// 		}
-	// 	}
-
 		oldCountPoints := t.countPoints
 		t.countPoints = func(tile *Tile) int {
 			count := oldCountPoints(tile)
@@ -330,13 +319,6 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return oldStacks
 		}
-		// oldgetRedeploymentStack := t.getRedeploymentStack
-		// t.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {
-		// 	if s == "Encampment" {
-		// 		return []PieceStack{{Type: s, Amount: 1}}
-		// 	}
-		// 	return oldgetRedeploymentStack(s, ps)
-		// }
 		oldGetStacksOutRedeployment := t.getStacksOutRedeployment
 		t.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
 			stacks, err := oldGetStacksOutRedeployment(tile, stackType)
@@ -386,13 +368,6 @@ var TraitMap = map[Trait]TraitValue {
 			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Hero", Amount: 2}})
 			return stacks
 		}
-		// oldgetRedeploymentStack := t.getRedeploymentStack
-		// t.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {
-		// 	if s == "Hero" {
-		// 		return []PieceStack{{Type: s, Amount: 1}}
-		// 	}
-		// 	return oldgetRedeploymentStack(s, ps)
-		// }
 		oldCountDefense := t.countDefense
 		t.countDefense = func(tile *Tile) (int, int, int, error) {
 			old, g, l, err := oldCountDefense(tile)
@@ -420,7 +395,7 @@ var TraitMap = map[Trait]TraitValue {
 			for i, stack := range tile.PieceStacks {
 				if stack.Type == "Hero" {
 					tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-					p.PieceStacks = append(p.PieceStacks, stack)
+					p.PieceStacks = AddPieceStacks(p.PieceStacks, []PieceStack{stack})
 				}
 			}
 		}
@@ -448,6 +423,16 @@ var TraitMap = map[Trait]TraitValue {
 		t.countRemovablePieces = func(tile *Tile) []PieceStack {
 			oldStacks := oldcountRemovablePieces(tile)
 			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Hero" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
 				if stack.Type == "Hero" {
 					oldStacks = append(oldStacks, stack)
 				}
@@ -574,182 +559,182 @@ var TraitMap = map[Trait]TraitValue {
 			return old
 		}
 		}, Count: 4},
-	"Behemoth": {Transform: func(t *Tribe) {
-		addBehemoth := func(gs *GameState) {
-			maleFound, femaleFound := false, false
-			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
-					for _, stack := range(tile.PieceStacks) {
-						if stack.Type == "Male Behemoth" {
-							tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
-							maleFound = true
-						}
-						if stack.Type == "Female Behemoth" {
-							tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Female Behemoth", Amount: 1}})
-							femaleFound = true
-						}
-					}
-				}
-			}
-			if !maleFound {
-				t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
-			}
-			if !femaleFound {
-				t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Female Behemoth", Amount: 1}})
-			}
-		}
-		deleteBehemoth := func(gs *GameState) {
-			maleFound, femaleFound := false, false
-			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
-					for _, stack := range(tile.PieceStacks) {
-						if stack.Type == "Male Behemoth" {
-							tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
-							maleFound = true
-						}
-						if stack.Type == "Female Behemoth" {
-							tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Female Behemoth", Amount: 1}})
-							femaleFound = true
-						}
-					}
-				}
-			}
-			if !maleFound {
-				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
-			}
-			if !femaleFound {
-				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Female Behemoth", Amount: 1}})
-			}
-		}
-		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
-		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
-			stacks, diceUsed, ok, err := oldCalculateRemainingAttackingStacks(ps, tile, gs)
-			if err != nil || !ok {
-				return stacks, diceUsed, ok, err
-			}
-			if tile.Biome == Swamp {
-				addBehemoth(gs)
-				for i := range(stacks) {
-					if stacks[i].Type == "Male Behemoth" || stacks[i].Type == "Female Behemoth" {
-						stacks[i].Amount += 1
-					}
-				}
-			}
-			return stacks, diceUsed, ok, err
-		}
-		oldClearTile := t.clearTile
-		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
-			oldClearTile(tile, gs, pk)
-			for i := len(tile.PieceStacks) - 1; i >= 0; i-- { // Loop backward
-			    stack := tile.PieceStacks[i]
-			    if stack.Type == "Male Behemoth" || stack.Type == "Female Behemoth" {
-				tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-				t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{stack})
-			    }
-			}
-			if tile.Biome == Swamp {
-				deleteBehemoth(gs)
-			}
-		}
-		oldgetRedeploymentStack := t.getRedeploymentStack
-		t.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {
-			if s == "Female Behemoth" || s == "Male Behemoth" {
-				amount := 0
-				for _, stack := range(ps) {
-					if stack.Type == s {
-						amount = stack.Amount
-					}
-				}
-				return []PieceStack{{Type: s, Amount: amount}}
-			}
-			return oldgetRedeploymentStack(s, ps)
-		}
-		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
-			if err != nil {
-				return old, g, l, err
-			}
-			for _, stack := range tile.PieceStacks {
-				if stack.Type == "Male Behemoth" || stack.Type == "Female Behemoth" {
-					old += stack.Amount
-				}
-			}
-			return old, g, l, nil
-		}
-		oldCountAttack := t.countAttack
-		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
-			stacks, a, b, c := oldCountAttack(tile, cost, stackType)
-			if stackType == "Male Behemoth" || stackType == "Female Behemoth" {
-				for _, stack := range(t.Owner.PieceStacks) {
-					if stack.Type == stackType {
-						return []PieceStack{stack, {Type: string(t.Race), Amount: max(t.Minimum, cost - stack.Amount)}}, a, b, c
-					}
-				}
-			}
-			return stacks, a, b, c
-		}
-		oldIsStackValid := t.IsStackValid
-		t.IsStackValid = func(stackType string) bool {
-			return (stackType == "Female Behemoth" && t.IsActive) || (stackType == "Male Behemoth" && t.IsActive) || oldIsStackValid(stackType)
-		}
-		oldCanBeRedeployedIn := t.canBeRedeployedIn
-		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
-			if oldCanBeRedeployedIn(tile, stackType, gs) {
-				return true
-			}
-			return stackType == "Female Behemoth" || stackType == "Male Behemoth"
-		}
-		oldGetStacksOutRedeployment := t.getStacksOutRedeployment
-		t.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
-			stacks, err := oldGetStacksOutRedeployment(tile, stackType)
-			if err != nil {
-				if stackType == "Female Behemoth" || stackType == "Male Behemoth" {
-					for _, stack := range tile.PieceStacks {
-						if stack.Type == stackType {
-							return []PieceStack{{Type: stackType, Amount: stack.Amount}}, nil
-						}
-
-					}
-				}
-			}
-			return stacks, err
-		}
-		oldGetStacksForConquest := t.getStacksForConquest
-		t.getStacksForConquest = func(tile *Tile, p *Player) {
-		    oldGetStacksForConquest(tile, p)
-
-		    for i := len(tile.PieceStacks) - 1; i >= 0; i-- { // Loop backward
-			stack := tile.PieceStacks[i]
-			if stack.Type == "Female Behemoth" || stack.Type == "Male Behemoth" {
-			    // Remove stack safely
-			    tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-			    p.PieceStacks = AddPieceStacks(p.PieceStacks, []PieceStack{stack})
-			}
-		    }
-		}
-		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
-		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
-			oldStacks := oldcountRemovableAttackingStacks(p)
-			for _, stack := range(p.PieceStacks) {
-				if stack.Type == "Female Behemoth" || stack.Type == "Male Behemoth" {
-					oldStacks = append(oldStacks, stack)
-				}
-			}
-			return oldStacks
-		}
-		oldcountRemovablePieces := t.countRemovablePieces
-		t.countRemovablePieces = func(tile *Tile) []PieceStack {
-			oldStacks := oldcountRemovablePieces(tile)
-			for _, stack := range(tile.PieceStacks) {
-				if stack.Type == "Female Behemoth" || stack.Type == "Male Behemoth" {
-					oldStacks = append(oldStacks, stack)
-				}
-			}
-			return oldStacks
-		}
-
-		}, Count: 4},
+	// "Behemoth": {Transform: func(t *Tribe) {
+	// 	addBehemoth := func(gs *GameState) {
+	// 		maleFound, femaleFound := false, false
+	// 		for _, tile := range(gs.TileList) {
+	// 			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+	// 				for _, stack := range(tile.PieceStacks) {
+	// 					if stack.Type == "Male Behemoth" {
+	// 						tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
+	// 						maleFound = true
+	// 					}
+	// 					if stack.Type == "Female Behemoth" {
+	// 						tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Female Behemoth", Amount: 1}})
+	// 						femaleFound = true
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		if !maleFound {
+	// 			t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
+	// 		}
+	// 		if !femaleFound {
+	// 			t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Female Behemoth", Amount: 1}})
+	// 		}
+	// 	}
+	// 	deleteBehemoth := func(gs *GameState) {
+	// 		maleFound, femaleFound := false, false
+	// 		for _, tile := range(gs.TileList) {
+	// 			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+	// 				for _, stack := range(tile.PieceStacks) {
+	// 					if stack.Type == "Male Behemoth" {
+	// 						tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
+	// 						maleFound = true
+	// 					}
+	// 					if stack.Type == "Female Behemoth" {
+	// 						tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Female Behemoth", Amount: 1}})
+	// 						femaleFound = true
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		if !maleFound {
+	// 			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
+	// 		}
+	// 		if !femaleFound {
+	// 			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Female Behemoth", Amount: 1}})
+	// 		}
+	// 	}
+	// 	oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
+	// 	t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
+	// 		stacks, diceUsed, ok, err := oldCalculateRemainingAttackingStacks(ps, tile, gs)
+	// 		if err != nil || !ok {
+	// 			return stacks, diceUsed, ok, err
+	// 		}
+	// 		if tile.Biome == Swamp {
+	// 			addBehemoth(gs)
+	// 			for i := range(stacks) {
+	// 				if stacks[i].Type == "Male Behemoth" || stacks[i].Type == "Female Behemoth" {
+	// 					stacks[i].Amount += 1
+	// 				}
+	// 			}
+	// 		}
+	// 		return stacks, diceUsed, ok, err
+	// 	}
+	// 	oldClearTile := t.clearTile
+	// 	t.clearTile = func(tile *Tile, gs *GameState, pk int) {
+	// 		oldClearTile(tile, gs, pk)
+	// 		for i := len(tile.PieceStacks) - 1; i >= 0; i-- { // Loop backward
+	// 		    stack := tile.PieceStacks[i]
+	// 		    if stack.Type == "Male Behemoth" || stack.Type == "Female Behemoth" {
+	// 			tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+	// 			t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{stack})
+	// 		    }
+	// 		}
+	// 		if tile.Biome == Swamp {
+	// 			deleteBehemoth(gs)
+	// 		}
+	// 	}
+	// 	oldgetRedeploymentStack := t.getRedeploymentStack
+	// 	t.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {
+	// 		if s == "Female Behemoth" || s == "Male Behemoth" {
+	// 			amount := 0
+	// 			for _, stack := range(ps) {
+	// 				if stack.Type == s {
+	// 					amount = stack.Amount
+	// 				}
+	// 			}
+	// 			return []PieceStack{{Type: s, Amount: amount}}
+	// 		}
+	// 		return oldgetRedeploymentStack(s, ps)
+	// 	}
+	// 	oldCountDefense := t.countDefense
+	// 	t.countDefense = func(tile *Tile) (int, int, int, error) {
+	// 		old, g, l, err := oldCountDefense(tile)
+	// 		if err != nil {
+	// 			return old, g, l, err
+	// 		}
+	// 		for _, stack := range tile.PieceStacks {
+	// 			if stack.Type == "Male Behemoth" || stack.Type == "Female Behemoth" {
+	// 				old += stack.Amount
+	// 			}
+	// 		}
+	// 		return old, g, l, nil
+	// 	}
+	// 	oldCountAttack := t.countAttack
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+	// 		stacks, a, b, c := oldCountAttack(tile, cost, stackType)
+	// 		if stackType == "Male Behemoth" || stackType == "Female Behemoth" {
+	// 			for _, stack := range(t.Owner.PieceStacks) {
+	// 				if stack.Type == stackType {
+	// 					return []PieceStack{stack, {Type: string(t.Race), Amount: max(t.Minimum, cost - stack.Amount)}}, a, b, c
+	// 				}
+	// 			}
+	// 		}
+	// 		return stacks, a, b, c
+	// 	}
+	// 	oldIsStackValid := t.IsStackValid
+	// 	t.IsStackValid = func(stackType string) bool {
+	// 		return (stackType == "Female Behemoth" && t.IsActive) || (stackType == "Male Behemoth" && t.IsActive) || oldIsStackValid(stackType)
+	// 	}
+	// 	oldCanBeRedeployedIn := t.canBeRedeployedIn
+	// 	t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+	// 		if oldCanBeRedeployedIn(tile, stackType, gs) {
+	// 			return true
+	// 		}
+	// 		return stackType == "Female Behemoth" || stackType == "Male Behemoth"
+	// 	}
+	// 	oldGetStacksOutRedeployment := t.getStacksOutRedeployment
+	// 	t.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
+	// 		stacks, err := oldGetStacksOutRedeployment(tile, stackType)
+	// 		if err != nil {
+	// 			if stackType == "Female Behemoth" || stackType == "Male Behemoth" {
+	// 				for _, stack := range tile.PieceStacks {
+	// 					if stack.Type == stackType {
+	// 						return []PieceStack{{Type: stackType, Amount: stack.Amount}}, nil
+	// 					}
+	//
+	// 				}
+	// 			}
+	// 		}
+	// 		return stacks, err
+	// 	}
+	// 	oldGetStacksForConquest := t.getStacksForConquest
+	// 	t.getStacksForConquest = func(tile *Tile, p *Player) {
+	// 	    oldGetStacksForConquest(tile, p)
+	//
+	// 	    for i := len(tile.PieceStacks) - 1; i >= 0; i-- { // Loop backward
+	// 		stack := tile.PieceStacks[i]
+	// 		if stack.Type == "Female Behemoth" || stack.Type == "Male Behemoth" {
+	// 		    // Remove stack safely
+	// 		    tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+	// 		    p.PieceStacks = AddPieceStacks(p.PieceStacks, []PieceStack{stack})
+	// 		}
+	// 	    }
+	// 	}
+	// 	oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+	// 	t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+	// 		oldStacks := oldcountRemovableAttackingStacks(p)
+	// 		for _, stack := range(p.PieceStacks) {
+	// 			if stack.Type == "Female Behemoth" || stack.Type == "Male Behemoth" {
+	// 				oldStacks = append(oldStacks, stack)
+	// 			}
+	// 		}
+	// 		return oldStacks
+	// 	}
+	// 	oldcountRemovablePieces := t.countRemovablePieces
+	// 	t.countRemovablePieces = func(tile *Tile) []PieceStack {
+	// 		oldStacks := oldcountRemovablePieces(tile)
+	// 		for _, stack := range(tile.PieceStacks) {
+	// 			if stack.Type == "Female Behemoth" || stack.Type == "Male Behemoth" {
+	// 				oldStacks = append(oldStacks, stack)
+	// 			}
+	// 		}
+	// 		return oldStacks
+	// 	}
+	//
+	// 	}, Count: 4},
 	"Catapult": {Transform: func(t *Tribe) {
 		t.State["justPlaced"] = false
 		t.State["justUsed"] = false
@@ -875,103 +860,103 @@ var TraitMap = map[Trait]TraitValue {
 			return points
 		}
 		}, Count: 4},
-	"Fireball": {Transform: func(t *Tribe) {
-		oldStartRedeployment := t.startRedeployment
-		t.startRedeployment = func(gs *GameState) []PieceStack {
-			stacks := oldStartRedeployment(gs)
-			count := 0
-			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
-					for _, attr := range(tile.Attributes) {
-						if attr == Magic {
-							count += 1
-						}
-					}
-				}
-			}
-			stacks = append(stacks, PieceStack{Type:"Fireball", Amount: count})
-			return stacks
-		}
-		oldCountAttack := t.countAttack
-		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
-			stacks, a, b, c := oldCountAttack(tile, cost, stackType)
-			if stackType == "Fireball" {
-				for _, stack := range(t.Owner.PieceStacks) {
-					if stack.Type == stackType {
-						return []PieceStack{{Type: "Fireball", Amount: 1}, {Type: string(t.Race), Amount: max(t.Minimum, cost - 2)}}, a, b, c
-					}
-				}
-			}
-			return stacks, a, b, c
-		}
-		oldcountNewTileStacks := t.countNewTileStacks
-		t.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
-			stacks := oldcountNewTileStacks(ps, tile)
-			for i := range(stacks) {
-				if stacks[i].Type == "Fireball" {
-					return append(stacks[:i], stacks[i+1:]...)
-				}
-			}
-			return stacks
-		}
-		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
-		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
-			oldStacks := oldcountRemovableAttackingStacks(p)
-			for _, stack := range(p.PieceStacks) {
-				if stack.Type == "Fireball" {
-					oldStacks = append(oldStacks, stack)
-				}
-			}
-			return oldStacks
-		}
-		oldIsStackValid := t.IsStackValid
-		t.IsStackValid = func(s string) bool {
-			return oldIsStackValid(s) || s == "Fireball"
-		}
-		}, Count: 5},
-	"Imperial": {Transform: func(t *Tribe) {
-		oldCountExtraPoints := t.countExtrapoints
-		t.countExtrapoints = func(gs *GameState) int {
-			count := oldCountExtraPoints(gs)
-			amount := 0
-			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
-					amount += 1
-				}
-			}
-			return count + max(0, amount - 3)
-		}
-		}, Count: 4},
-	"Mercenary": {Transform: func(t *Tribe) {
-		oldgiveInitialStacks := t.giveInitialStacks
-		t.giveInitialStacks = func() []PieceStack {
-			stacks := oldgiveInitialStacks()
-			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Mercenary", Amount: 1}})
-			return stacks
-		}
-		oldCountAttack := t.countAttack
-		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
-			stacks, moneyGainAttacker, b, c := oldCountAttack(tile, cost, stackType)
-			if stackType == "Mercenary" {
-				return []PieceStack{{Type: string(t.Race), Amount: max(t.Minimum, cost - 2 - t.computeDiscount(stackType, tile))}}, moneyGainAttacker - 1, b, c
-			}
-			return stacks, moneyGainAttacker, b, c
-		}
-		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
-		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
-			oldStacks := oldcountRemovableAttackingStacks(p)
-			for _, stack := range(p.PieceStacks) {
-				if stack.Type == "Mercenary" {
-					oldStacks = append(oldStacks, stack)
-				}
-			}
-			return oldStacks
-		}
-		oldIsStackValid := t.IsStackValid
-		t.IsStackValid = func(s string) bool {
-			return oldIsStackValid(s) || s == "Mercenary"
-		}
-		}, Count: 4},
+	// "Fireball": {Transform: func(t *Tribe) {
+	// 	oldStartRedeployment := t.startRedeployment
+	// 	t.startRedeployment = func(gs *GameState) []PieceStack {
+	// 		stacks := oldStartRedeployment(gs)
+	// 		count := 0
+	// 		for _, tile := range(gs.TileList) {
+	// 			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+	// 				for _, attr := range(tile.Attributes) {
+	// 					if attr == Magic {
+	// 						count += 1
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		stacks = append(stacks, PieceStack{Type:"Fireball", Amount: count})
+	// 		return stacks
+	// 	}
+	// 	oldCountAttack := t.countAttack
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+	// 		stacks, a, b, c := oldCountAttack(tile, cost, stackType)
+	// 		if stackType == "Fireball" {
+	// 			for _, stack := range(t.Owner.PieceStacks) {
+	// 				if stack.Type == stackType {
+	// 					return []PieceStack{{Type: "Fireball", Amount: 1}, {Type: string(t.Race), Amount: max(t.Minimum, cost - 2)}}, a, b, c
+	// 				}
+	// 			}
+	// 		}
+	// 		return stacks, a, b, c
+	// 	}
+	// 	oldcountNewTileStacks := t.countNewTileStacks
+	// 	t.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
+	// 		stacks := oldcountNewTileStacks(ps, tile)
+	// 		for i := range(stacks) {
+	// 			if stacks[i].Type == "Fireball" {
+	// 				return append(stacks[:i], stacks[i+1:]...)
+	// 			}
+	// 		}
+	// 		return stacks
+	// 	}
+	// 	oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+	// 	t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+	// 		oldStacks := oldcountRemovableAttackingStacks(p)
+	// 		for _, stack := range(p.PieceStacks) {
+	// 			if stack.Type == "Fireball" {
+	// 				oldStacks = append(oldStacks, stack)
+	// 			}
+	// 		}
+	// 		return oldStacks
+	// 	}
+	// 	oldIsStackValid := t.IsStackValid
+	// 	t.IsStackValid = func(s string) bool {
+	// 		return oldIsStackValid(s) || s == "Fireball"
+	// 	}
+	// 	}, Count: 5},
+	// "Imperial": {Transform: func(t *Tribe) {
+	// 	oldCountExtraPoints := t.countExtrapoints
+	// 	t.countExtrapoints = func(gs *GameState) int {
+	// 		count := oldCountExtraPoints(gs)
+	// 		amount := 0
+	// 		for _, tile := range(gs.TileList) {
+	// 			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+	// 				amount += 1
+	// 			}
+	// 		}
+	// 		return count + max(0, amount - 3)
+	// 	}
+	// 	}, Count: 4},
+	// "Mercenary": {Transform: func(t *Tribe) {
+	// 	oldgiveInitialStacks := t.giveInitialStacks
+	// 	t.giveInitialStacks = func() []PieceStack {
+	// 		stacks := oldgiveInitialStacks()
+	// 		stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Mercenary", Amount: 1}})
+	// 		return stacks
+	// 	}
+	// 	oldCountAttack := t.countAttack
+	// 	t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
+	// 		stacks, moneyGainAttacker, b, c := oldCountAttack(tile, cost, stackType)
+	// 		if stackType == "Mercenary" {
+	// 			return []PieceStack{{Type: string(t.Race), Amount: max(t.Minimum, cost - 2 - t.computeDiscount(stackType, tile))}}, moneyGainAttacker - 1, b, c
+	// 		}
+	// 		return stacks, moneyGainAttacker, b, c
+	// 	}
+	// 	oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+	// 	t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+	// 		oldStacks := oldcountRemovableAttackingStacks(p)
+	// 		for _, stack := range(p.PieceStacks) {
+	// 			if stack.Type == "Mercenary" {
+	// 				oldStacks = append(oldStacks, stack)
+	// 			}
+	// 		}
+	// 		return oldStacks
+	// 	}
+	// 	oldIsStackValid := t.IsStackValid
+	// 	t.IsStackValid = func(s string) bool {
+	// 		return oldIsStackValid(s) || s == "Mercenary"
+	// 	}
+	// 	}, Count: 4},
 	"Peace-loving": {Transform: func(t *Tribe) {
 		t.State["hasattacked"] = false
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
@@ -999,93 +984,93 @@ var TraitMap = map[Trait]TraitValue {
 			return false
 		}
 		}, Count: 4},
-	"Lava": {Transform: func(t *Tribe) {
-		t.State["mountains"] = []string{}
-		oldIsStackValid := t.IsStackValid
-		t.IsStackValid = func(s string) bool {
-			return oldIsStackValid(s) || s == "Lava"
-		}
-		oldStartRedeployment := t.startRedeployment
-		t.startRedeployment = func(gs *GameState) []PieceStack {
-			stacks := oldStartRedeployment(gs)
-			count := 0
-			mountains, _ := t.State["mountains"].([]string)
-			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) && tile.Biome == Mountain {
-					mountains = append(mountains, tile.Id)
-					count += 1
-				}
-			}
-			t.State["mountains"] = mountains
-			stacks = append(stacks, PieceStack{Type:"Lava", Amount: count})
-			return stacks
-		}
-		oldCanBeRedeployedIn := t.canBeRedeployedIn
-		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
-			if oldCanBeRedeployedIn(tile, stackType, gs) {
-				return true
-			}
-			if stackType == "Lava" {
-				for _, stack := range tile.PieceStacks {
-					if stack.Type == "Lava" {
-						return false
-					}
-				}
-				return true
-			}
-			return false
-		}
-		oldhandleDeploymentIn := t.handleDeploymentIn
-		t.handleDeploymentIn = func(tile *Tile, stackType string, i int, gs *GameState) error {
-			if stackType == "Lava" {
-				mountains, _ := t.State["mountains"].([]string)
-				for _, neighbor := range(tile.AdjacentTiles) {
-					if neighbor.Biome == Mountain {
-						for i, id := range(mountains) {
-							if neighbor.Id == id {
-								t.State["mountains"] = append(mountains[:i], mountains[i+1:]...)
-								player := t.Owner
-
-								movingStack := t.getRedeploymentStack(stackType, player.PieceStacks)
-
-								newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
-								if !ok {
-									return fmt.Errorf("Cannot redeploy pieces you don't have")
-								}
-								player.PieceStacks = newStacks
-
-								if tile.Presence != None {
-									tile.OwningTribe.clearTile(tile, gs, 0)
-								}
-
-								tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
-								tile.ModifierDefenses["Lava"] = TileModifierDefenses["Lava"]
-							}
-						}
-					}
-				}
-
-
-			}
-			return oldhandleDeploymentIn(tile, stackType, i, gs)
-		}
-		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
-		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
-			for _, tile := range(gs.TileList) {
-				for i := range(tile.PieceStacks) {
-					if tile.PieceStacks[i].Type == "Lava" {
-						tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-						delete(tile.ModifierPoints, "Lava")
-					}
-				}
-			}
-			for i := range(p.PieceStacks) {
-				if p.PieceStacks[i].Type == "Lava" {
-					p.PieceStacks = append(p.PieceStacks[:i], p.PieceStacks[i+1:]...)
-				}
-			}
-			t.State["mountains"] = []string{}
-			oldgetStacksForConquestTurn(p, gs)
-		}
-		}, Count: 5},
+	// "Lava": {Transform: func(t *Tribe) {
+	// 	t.State["mountains"] = []string{}
+	// 	oldIsStackValid := t.IsStackValid
+	// 	t.IsStackValid = func(s string) bool {
+	// 		return oldIsStackValid(s) || s == "Lava"
+	// 	}
+	// 	oldStartRedeployment := t.startRedeployment
+	// 	t.startRedeployment = func(gs *GameState) []PieceStack {
+	// 		stacks := oldStartRedeployment(gs)
+	// 		count := 0
+	// 		mountains, _ := t.State["mountains"].([]string)
+	// 		for _, tile := range(gs.TileList) {
+	// 			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) && tile.Biome == Mountain {
+	// 				mountains = append(mountains, tile.Id)
+	// 				count += 1
+	// 			}
+	// 		}
+	// 		t.State["mountains"] = mountains
+	// 		stacks = append(stacks, PieceStack{Type:"Lava", Amount: count})
+	// 		return stacks
+	// 	}
+	// 	oldCanBeRedeployedIn := t.canBeRedeployedIn
+	// 	t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+	// 		if oldCanBeRedeployedIn(tile, stackType, gs) {
+	// 			return true
+	// 		}
+	// 		if stackType == "Lava" {
+	// 			for _, stack := range tile.PieceStacks {
+	// 				if stack.Type == "Lava" {
+	// 					return false
+	// 				}
+	// 			}
+	// 			return true
+	// 		}
+	// 		return false
+	// 	}
+	// 	oldhandleDeploymentIn := t.handleDeploymentIn
+	// 	t.handleDeploymentIn = func(tile *Tile, stackType string, i int, gs *GameState) error {
+	// 		if stackType == "Lava" {
+	// 			mountains, _ := t.State["mountains"].([]string)
+	// 			for _, neighbor := range(tile.AdjacentTiles) {
+	// 				if neighbor.Biome == Mountain {
+	// 					for i, id := range(mountains) {
+	// 						if neighbor.Id == id {
+	// 							t.State["mountains"] = append(mountains[:i], mountains[i+1:]...)
+	// 							player := t.Owner
+	//
+	// 							movingStack := t.getRedeploymentStack(stackType, player.PieceStacks)
+	//
+	// 							newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
+	// 							if !ok {
+	// 								return fmt.Errorf("Cannot redeploy pieces you don't have")
+	// 							}
+	// 							player.PieceStacks = newStacks
+	//
+	// 							if tile.Presence != None {
+	// 								tile.OwningTribe.clearTile(tile, gs, 0)
+	// 							}
+	//
+	// 							tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
+	// 							tile.ModifierDefenses["Lava"] = TileModifierDefenses["Lava"]
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+	//
+	//
+	// 		}
+	// 		return oldhandleDeploymentIn(tile, stackType, i, gs)
+	// 	}
+	// 	oldgetStacksForConquestTurn := t.getStacksForConquestTurn
+	// 	t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+	// 		for _, tile := range(gs.TileList) {
+	// 			for i := range(tile.PieceStacks) {
+	// 				if tile.PieceStacks[i].Type == "Lava" {
+	// 					tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+	// 					delete(tile.ModifierPoints, "Lava")
+	// 				}
+	// 			}
+	// 		}
+	// 		for i := range(p.PieceStacks) {
+	// 			if p.PieceStacks[i].Type == "Lava" {
+	// 				p.PieceStacks = append(p.PieceStacks[:i], p.PieceStacks[i+1:]...)
+	// 			}
+	// 		}
+	// 		t.State["mountains"] = []string{}
+	// 		oldgetStacksForConquestTurn(p, gs)
+	// 	}
+	// 	}, Count: 5},
 }

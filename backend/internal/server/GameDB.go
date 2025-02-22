@@ -84,11 +84,6 @@ type PieceStackCopy struct {
 }
 
 func transformGameState(state *gamestate.GameState) GameStateCopy {
-	playerIndex := make(map[*gamestate.Player]int)
-	for i, p := range state.Players {
-		playerIndex[p] = i
-	}
-
 	tileIDMap := make(map[*gamestate.Tile]string)
 	for id, tile := range state.TileList {
 		tileIDMap[tile] = id
@@ -165,7 +160,7 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 
 		owningPlayerIndex := -1
 		if t.OwningPlayer != nil {
-			owningPlayerIndex = playerIndex[t.OwningPlayer]
+			owningPlayerIndex = t.OwningPlayer.Index
 		}
 		if t.OwningPlayer != nil && t.OwningPlayer.ActiveTribe != nil && t.OwningPlayer.ActiveTribe.Race == "Lost Tribe" {
 			owningPlayerIndex = -1
@@ -283,6 +278,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		}
 	}
 
+
 	tileList := make(map[string]*gamestate.Tile)
 	for _, tc := range copyState.TileList {
 		piecestacks := make([]gamestate.PieceStack, len(tc.PieceStacks))
@@ -319,12 +315,16 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		tileList[tc.Id] = tile
 	}
 
-	lostPlayer := gamestate.Player{
-		PieceStacks: []gamestate.PieceStack{},
-	}
 	lostTribe := gamestate.CreateBaseTribe()
 	lostTribe.Race = "Lost Tribe"
 	lostTribe.Trait = "Lost"
+	lostTribe.IsActive = false
+	lostPlayer := gamestate.Player{
+	PieceStacks : []gamestate.PieceStack{},
+	ActiveTribe: lostTribe,
+	Index: -1,
+	}
+	lostTribe.Owner = &lostPlayer
 
 	for _, tc := range copyState.TileList {
 		tile := tileList[tc.Id]
@@ -334,28 +334,13 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		}
 
 		if tc.OwningPlayer >= 0 && tc.OwningPlayer < len(players) {
-			tile.OwningPlayer = playerMap[tc.OwningPlayer]
+			tile.OwningPlayer = players[tc.OwningPlayer]
+			tile.OwningTribe = tribeMap[tc.OwningTribe]
 		} else if tc.OwningPlayer == -1 && tc.Presence == "Passive" {
 			tile.OwningPlayer = &lostPlayer
+			tile.OwningTribe = lostTribe
 		}
 
-		if tile.OwningPlayer != nil {
-			if tile.Presence == gamestate.Active {
-				tile.OwningTribe = tile.OwningPlayer.ActiveTribe
-			} else if tile.Presence == gamestate.None {
-				tile.OwningTribe = nil
-			} else if tile.Presence == gamestate.Passive && tile.OwningPlayer == &lostPlayer {
-				tile.OwningTribe = lostTribe
-			} else {
-				for _, t := range tile.OwningPlayer.PassiveTribes {
-					for _, s := range tile.PieceStacks {
-						if string(t.Race) == s.Type {
-							tile.OwningTribe = t
-						}
-					}
-				}
-			}
-		}
 	}
 
 	turnInfo := &gamestate.TurnInfo{
