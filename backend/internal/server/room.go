@@ -909,6 +909,16 @@ func (room *Room) RollBack(client *Client) {
 	if err != nil {
 		client.sendError("Error rolling back")
 	}
+	playerNames := make([]string, len(room.Players))
+	for i, client := range(room.Players) {
+		playerNames[i] = client.Username
+		if client.DisplayRoom != nil {
+			client.DisplayRoom.EndDisplayRoom()
+		}
+	}
+	for i := range(playerNames) {
+		state.Players[i].Name = playerNames[i]
+	}
 	room.Gamestate = *state
 	room.sendMegaUpdate()
 }

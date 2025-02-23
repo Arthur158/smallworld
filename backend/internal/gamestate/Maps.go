@@ -633,7 +633,7 @@ func MapIsles2(gs *GameState) map[string]*Tile {
         tileMap["2i"], tileMap["5i"], tileMap["6i"], tileMap["8i"], 
     }
     tileMap["5i"].AdjacentTiles = []*Tile{
-        tileMap["4i"], tileMap["5i"], tileMap["6i"], 
+        tileMap["4i"], tileMap["6i"], tileMap["7i"], 
     }
     tileMap["6i"].AdjacentTiles = []*Tile{
         tileMap["4i"], tileMap["5i"], tileMap["7i"], tileMap["8i"],
