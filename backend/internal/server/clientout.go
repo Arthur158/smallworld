@@ -86,6 +86,7 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 	case "enterdisplayroom":
 		client.sendUserSaves()
 		createDisplayRoom(client)
+		client.DisplayRoom.sendMapChoices()
 		client.sendMessage("displayroom", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "leaveroom":
 		client.Room.removePlayer(client.Username)
@@ -257,7 +258,6 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		log.Println("Successfully parsed:", data)
 		RemoveGameIDFromUser(client.Username, data.SaveId)
 		client.sendUserSaves()
-		
 	case "loadgamedisplay":
 		var data struct {
 			SaveId int64 `json:"saveId"`
@@ -274,6 +274,23 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		client.DisplayRoom.LoadSave(client, data.SaveId)
 		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
+	case "loadmapdisplay":
+		var data struct {
+			Name string `json:"mapName"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+		if client.DisplayRoom == nil {
+			client.sendError("client not in a display room!")
+		}
+		log.Println(data.Name)
+		client.DisplayRoom.LoadMap(client, data.Name)
+		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "leavedisplayroom":
 		client.DisplayRoom.EndDisplayRoom()
 		sendRoomsUpdateToAll()

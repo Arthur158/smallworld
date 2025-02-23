@@ -149,10 +149,12 @@ const applicationSlice = createSlice({
         case 'displayroom':
           state.inDisplayRoom = true
           state.gameStarted = false
+          state.saveSelectionId = -1
           break;
         case 'leavedisplayroom':
           state.gameStarted = false
           state.inDisplayRoom = false
+          state.saveSelectionId = -1
           break;
         case 'error':
           state.error = parsedData.message;

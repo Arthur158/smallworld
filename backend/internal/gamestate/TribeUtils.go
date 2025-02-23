@@ -116,12 +116,11 @@ func CreateBaseTribe() *Tribe {
                 tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                 stack.Amount = max(0, stack.Amount - pawnKill)
                 if tile.Presence != None {
-                    tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, []PieceStack{stack})
+                    tribe.Owner.PieceStacks = AddPieceStacks(tribe.Owner.PieceStacks, []PieceStack{stack})
                 }
                 if tile.OwningTribe == &tribe {
                     tile.Presence = None
                     tile.OwningTribe = nil
-                    tile.OwningPlayer = nil
                 }
                 return // Exit after removal to avoid index shifting issues
             }
@@ -217,7 +216,6 @@ func CreateBaseTribe() *Tribe {
         }
     }
 
-    // the dilemma here is that we could make it return the piecestack, but then the action would not be atomic anymore since the piecestack would be removed from the tile and then returned and the stack would be given to the player later.
     tribe.getStacksForConquest = func(tile *Tile, player *Player) {
         if tribe.IsActive {
             for _, stack := range tile.PieceStacks {

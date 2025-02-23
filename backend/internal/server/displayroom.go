@@ -65,6 +65,21 @@ func (room *Room) LoadSave(client *Client, id int64) {
 	client.DisplayRoom.saveId = id
 	room.sendMegaUpdate()
 }
+func (room *Room) LoadMap(client *Client, mapName string) {
+	ok := room.ChangeMap(mapName)
+	room.sendSmallMapUpdate()
+	newstate, err := gamestate.New([]string{}, mapName)
+	if err != nil {
+		log.Println("Error loading game", err)
+		client.sendError("error loading game")
+		return
+	}
+	client.DisplayRoom.Gamestate = *newstate
+	if !ok {
+		client.sendError("Error changing map")
+	}
+	room.sendMegaUpdate()
+}
 
 func (room *Room) EndDisplayRoom() {
 	client := room.Players[0]

@@ -98,7 +98,7 @@ func Map3(gs *GameState) map[string]*Tile {
     }
 
     tileMap["9"].AdjacentTiles = []*Tile{
-        tileMap["8"], tileMap["10"], // ajustez si besoin
+        tileMap["8"], tileMap["10"],
     }
 
     tileMap["10"].AdjacentTiles = []*Tile{
@@ -178,13 +178,12 @@ func Map3(gs *GameState) map[string]*Tile {
     }
 
     tileMap["29"].AdjacentTiles = []*Tile{
-        tileMap["12"], tileMap["13"], tileMap["14"], // selon la frontière visible
+        tileMap["12"], tileMap["13"], tileMap["14"],
     }
 
-    // Step 3: Convert the map of pointers to a map of values
     result := make(map[string]*Tile, len(tileMap))
     for id, tile := range tileMap {
-        result[id] = tile // Dereference pointer to get a Tile value
+        result[id] = tile
     }
 
     lostTribe := CreateBaseTribe()
@@ -202,7 +201,6 @@ func Map3(gs *GameState) map[string]*Tile {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
         tileMap[id].Presence = Passive
-        tileMap[id].OwningPlayer = &lostPlayer
     }
 
 
@@ -336,7 +334,7 @@ func Map2(gs *GameState) map[string]*Tile {
     // Step 3: Convert the map of pointers to a map of values
     result := make(map[string]*Tile, len(tileMap))
     for id, tile := range tileMap {
-        result[id] = tile // Dereference pointer to get a Tile value
+        result[id] = tile 
     }
 
     lostTribe := CreateBaseTribe()
@@ -354,7 +352,6 @@ func Map2(gs *GameState) map[string]*Tile {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
         tileMap[id].Presence = Passive
-        tileMap[id].OwningPlayer = &lostPlayer
     }
 
 
@@ -535,7 +532,7 @@ func Map4(gs *GameState) map[string]*Tile {
     }
 
     tileMap["29"].AdjacentTiles = []*Tile{
-        tileMap["30"], tileMap["23"], tileMap["14"], // selon la frontière visible
+        tileMap["30"], tileMap["23"], tileMap["14"],
     }
     tileMap["30"].AdjacentTiles = []*Tile{
         tileMap["29"], tileMap["23"], tileMap["24"], tileMap["31"], 
@@ -576,7 +573,7 @@ func Map4(gs *GameState) map[string]*Tile {
     // Step 3: Convert the map of pointers to a map of values
     result := make(map[string]*Tile, len(tileMap))
     for id, tile := range tileMap {
-        result[id] = tile // Dereference pointer to get a Tile value
+        result[id] = tile
     }
 
     lostTribe := CreateBaseTribe()
@@ -594,7 +591,6 @@ func Map4(gs *GameState) map[string]*Tile {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
         tileMap[id].Presence = Passive
-        tileMap[id].OwningPlayer = &lostPlayer
     }
 
 
@@ -664,11 +660,10 @@ func MapIsles2(gs *GameState) map[string]*Tile {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
         tileMap[id].Presence = Passive
-        tileMap[id].OwningPlayer = &lostPlayer
     }
 
     gs.ModifierPoints["islands"] = func(i int, p *Player) int {
-        if tile, ok := tileMap["0i"]; ok && tile.Presence != None && tile.OwningPlayer == p {
+        if tile, ok := tileMap["0i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"1i", "2i", "3i"} {
@@ -685,7 +680,7 @@ func MapIsles2(gs *GameState) map[string]*Tile {
             }
         }
 
-        if tile, ok := tileMap["9i"]; ok && tile.Presence != None && tile.OwningPlayer == p {
+        if tile, ok := tileMap["9i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"4i", "5i", "7i", "8i"} {
@@ -768,11 +763,10 @@ func MapIsles3(gs *GameState) map[string]*Tile {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
         tileMap[id].Presence = Passive
-        tileMap[id].OwningPlayer = &lostPlayer
     }
 
     gs.ModifierPoints["islands"] = func(i int, p *Player) int {
-        if tile, ok := tileMap["0i"]; ok && tile.Presence != None && tile.OwningPlayer == p {
+        if tile, ok := tileMap["0i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"1i", "2i", "3i"} {
@@ -789,7 +783,7 @@ func MapIsles3(gs *GameState) map[string]*Tile {
             }
         }
 
-        if tile, ok := tileMap["4i"]; ok && tile.Presence != None && tile.OwningPlayer == p {
+        if tile, ok := tileMap["4i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"5i"} {
@@ -806,7 +800,7 @@ func MapIsles3(gs *GameState) map[string]*Tile {
             }
         }
 
-        if tile, ok := tileMap["6i"]; ok && tile.Presence != None && tile.OwningPlayer == p {
+        if tile, ok := tileMap["6i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"7i", "8i"} {
@@ -1124,8 +1118,8 @@ func Map5(gs *GameState) map[string]*Tile {
     }
 
     tileMap["29"].AdjacentTiles = []*Tile{
-        tileMap["23"], tileMap["24"], tileMap["30"], // selon la frontière visible
-        tileMap["34"], tileMap["33"], tileMap["28"], // selon la frontière visible
+        tileMap["23"], tileMap["24"], tileMap["30"],
+        tileMap["34"], tileMap["33"], tileMap["28"],
     }
     tileMap["30"].AdjacentTiles = []*Tile{
         tileMap["29"], tileMap["34"], tileMap["24"], tileMap["17"], 
@@ -1195,7 +1189,7 @@ func Map5(gs *GameState) map[string]*Tile {
     // Step 3: Convert the map of pointers to a map of values
     result := make(map[string]*Tile, len(tileMap))
     for id, tile := range tileMap {
-        result[id] = tile // Dereference pointer to get a Tile value
+        result[id] = tile
     }
 
     lostTribe := CreateBaseTribe()
@@ -1213,7 +1207,6 @@ func Map5(gs *GameState) map[string]*Tile {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
         tileMap[id].Presence = Passive
-        tileMap[id].OwningPlayer = &lostPlayer
     }
 
 

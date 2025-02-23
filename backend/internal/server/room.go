@@ -904,6 +904,7 @@ func (room *Room) AutoSave() {
 func (room *Room) RollBack(client *Client) {
 	if room.Gamestate.TurnInfo.PlayerIndex != client.Index {
 		client.sendError("Not able to roll back on someone else's turn!")
+		return
 	}
 	state, _, err := LoadGameState(room.autoSaveId)
 	if err != nil {

@@ -36,6 +36,7 @@ func (client *Client) handleTribePick (msg messages.Message) {
 func (client *Client) handleAbandonment (msg messages.Message) {
 	var abandonmentData struct {
 		TileID string `json:"tileId"`
+		StackType string `json:"stackType"`
 	}
 	if err := json.Unmarshal([]byte(msg.Data), &abandonmentData); err != nil {
 		client.sendError("Invalid abandon data")
@@ -51,7 +52,7 @@ func (client *Client) handleAbandonment (msg messages.Message) {
 		return
 	}
 
-	if err := client.Room.Gamestate.HandleAbandonment(client.Index, abandonmentData.TileID); err != nil {
+	if err := client.Room.Gamestate.HandleAbandonment(client.Index, abandonmentData.TileID, abandonmentData.StackType); err != nil {
 		client.sendError(err.Error())
 	} else {
 		client.Room.sendBigUpdate()

@@ -59,7 +59,6 @@ type TileCopy struct {
 	Id                  string
 	AdjacentTiles       []string
 	PieceStacks         []PieceStackCopy
-	OwningPlayer        int
 	OwningTribe         string
 	Biome               string
 	Attributes          []string
@@ -158,14 +157,6 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 			attributes[i] = attr.String()
 		}
 
-		owningPlayerIndex := -1
-		if t.OwningPlayer != nil {
-			owningPlayerIndex = t.OwningPlayer.Index
-		}
-		if t.OwningPlayer != nil && t.OwningPlayer.ActiveTribe != nil && t.OwningPlayer.ActiveTribe.Race == "Lost Tribe" {
-			owningPlayerIndex = -1
-		}
-
 		owningTribe := ""
 		if t.OwningTribe != nil {
 			owningTribe = string(t.OwningTribe.Race)
@@ -198,7 +189,6 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 			Id:                   t.Id,
 			AdjacentTiles:        adjacentIDs,
 			PieceStacks:          pieceStacks,
-			OwningPlayer:         owningPlayerIndex,
 			OwningTribe:          owningTribe,
 			Biome:                t.Biome.String(),
 			Attributes:           attributes,
@@ -303,7 +293,6 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		tile := &gamestate.Tile{
 			Id:              tc.Id,
 			PieceStacks:     piecestacks,
-			OwningPlayer:    nil,
 			OwningTribe:     nil,
 			Biome:           parseBiome(tc.Biome),
 			Attributes:      parseAttributes(tc.Attributes),
@@ -320,11 +309,12 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 	lostTribe.Trait = "Lost"
 	lostTribe.IsActive = false
 	lostPlayer := gamestate.Player{
-	PieceStacks : []gamestate.PieceStack{},
-	ActiveTribe: lostTribe,
-	Index: -1,
+		PieceStacks : []gamestate.PieceStack{},
+		ActiveTribe: lostTribe,
+		Index: -1,
 	}
 	lostTribe.Owner = &lostPlayer
+	tribeMap["Lost Tribe"] = lostTribe
 
 	for _, tc := range copyState.TileList {
 		tile := tileList[tc.Id]
@@ -333,14 +323,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			tile.AdjacentTiles[i] = tileList[adjID]
 		}
 
-		if tc.OwningPlayer >= 0 && tc.OwningPlayer < len(players) {
-			tile.OwningPlayer = players[tc.OwningPlayer]
-			tile.OwningTribe = tribeMap[tc.OwningTribe]
-		} else if tc.OwningPlayer == -1 && tc.Presence == "Passive" {
-			tile.OwningPlayer = &lostPlayer
-			tile.OwningTribe = lostTribe
-		}
-
+		tile.OwningTribe = tribeMap[tc.OwningTribe]
 	}
 
 	turnInfo := &gamestate.TurnInfo{
