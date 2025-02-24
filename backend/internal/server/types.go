@@ -11,3 +11,8 @@ type TileData struct {
     Polygon TilePolygon `json:"polygon"`
     // ...
 }
+
+type ChoiceEntry struct {
+    Choice string `json:"choice"`
+    IsChecked bool `json:"isChecked"`
+}

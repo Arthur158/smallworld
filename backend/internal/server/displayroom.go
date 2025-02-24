@@ -33,7 +33,7 @@ func createDisplayRoom(client *Client) {
 	client.DisplayRoom = room
 	room.Players[0] = client
 
-	newstate, err := gamestate.New([]string{}, client.DisplayRoom.Map.Name)
+	newstate, err := gamestate.New([]string{}, client.DisplayRoom.Map.Name, []string{}, []string{})
 	if err != nil {
 		log.Println("error creating state")
 	}
@@ -68,7 +68,7 @@ func (room *Room) LoadSave(client *Client, id int64) {
 func (room *Room) LoadMap(client *Client, mapName string) {
 	ok := room.ChangeMap(mapName)
 	room.sendSmallMapUpdate()
-	newstate, err := gamestate.New([]string{}, mapName)
+	newstate, err := gamestate.New([]string{}, mapName, []string{}, []string{})
 	if err != nil {
 		log.Println("Error loading game", err)
 		client.sendError("error loading game")

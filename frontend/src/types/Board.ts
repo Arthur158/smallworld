@@ -4,6 +4,11 @@ export interface Tile {
   pieceStack: PieceStack[];
 }
 
+export interface ChoiceEntry {
+    choice: string; 
+    isChecked: boolean; 
+}
+
 export interface Polygon {
   // id: number
   coords: number[];

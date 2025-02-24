@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"log"
 	"strconv"
-	"time"
 	"sync"
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -24,6 +25,10 @@ type Room struct {
 	autoSaveId   int64
 	playerStatuses []string
 	IsDisplayRoom  bool
+	RaceChoices []ChoiceEntry
+	TraitChoices []ChoiceEntry
+	ExtensionChoices []ChoiceEntry
+	ExtensionToggle bool
 }
 
 func createRoom(client *Client, roomName, username string) {
@@ -52,6 +57,25 @@ func createRoom(client *Client, roomName, username string) {
 		room.Players[i] = nil
 	}
 
+	i := 0
+	room.RaceChoices = make([]ChoiceEntry, len(gamestate.RaceMap))
+	for key := range(gamestate.RaceMap) {
+		room.RaceChoices[i] = ChoiceEntry{Choice: string(key), IsChecked: true}
+		i += 1
+	}
+
+	i = 0
+	room.TraitChoices = make([]ChoiceEntry, len(gamestate.TraitMap))
+	for key := range(gamestate.TraitMap) {
+		room.TraitChoices[i] = ChoiceEntry{Choice: string(key), IsChecked: true}
+		i += 1
+	}
+
+	room.ExtensionChoices = make([]ChoiceEntry, len(extensions))
+	for i, choice := range(extensions) {
+		room.ExtensionChoices[i] = ChoiceEntry{Choice: choice.Name, IsChecked: true}
+	}
+
 	client.Room = room
 	room.Players[0] = client
 
@@ -59,6 +83,7 @@ func createRoom(client *Client, roomName, username string) {
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 
 	room.sendMapChoices()
+	room.sendChoices()
 }
 
 func (room *Room) sendPlayerStatuses() {
@@ -98,7 +123,68 @@ func (room *Room) sendMapChoices() {
 	host.sendMessage("mapChoices", json.RawMessage(messageJSON))
 }
 
-// ChangeSize modifies the room size while preserving existing players
+func (room *Room) sendChoices() {
+	log.Println("here")
+	var host *Client
+	for i, client := range(room.Players) {
+		if client != nil && client.Username == room.HostUsername {
+			host = room.Players[i]
+			break
+		}
+	}
+	log.Println(host.Username)
+
+	message := map[string]interface{}{
+		"raceChoices": room.RaceChoices, 
+		"traitChoices": room.TraitChoices, 
+		"extensionChoices": room.ExtensionChoices, 
+		"toggle": room.ExtensionToggle,
+	}
+
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		host.sendMessage("error", json.RawMessage(`{"error": "Failed to marshal message"}`))
+		return
+	}
+
+	host.sendMessage("choices", json.RawMessage(messageJSON))
+}
+
+
+
+func (room *Room) toggleRace(label string) {
+	for i, entry := range(room.RaceChoices) {
+		if entry.Choice == label {
+			room.RaceChoices[i].IsChecked = !entry.IsChecked
+			break
+		}
+	}
+	room.sendChoices()
+}
+
+func (room *Room) toggleTrait(label string) {
+	for i, entry := range(room.TraitChoices) {
+		if entry.Choice == label {
+			room.TraitChoices[i].IsChecked = !entry.IsChecked
+		}
+	}
+	room.sendChoices()
+}
+
+func (room *Room) toggleExtension(label string) {
+	for i, entry := range(room.ExtensionChoices) {
+		if entry.Choice == label {
+			room.ExtensionChoices[i].IsChecked = !entry.IsChecked
+		}
+	}
+	room.sendChoices()
+}
+
+func (room *Room) toggleMode() {
+	room.ExtensionToggle = !room.ExtensionToggle
+	room.sendChoices()
+}
+
 func (room *Room) ChangeMap(newMap string) bool {
 
 	roomsMu.Lock()
@@ -333,7 +419,31 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	}
 
 	if room.saveId == -1 {
-		newstate, err := gamestate.New(playerNames, client.Room.Map.Name)
+		raceKeys := []string{}
+		traitKeys := []string{}
+		if room.ExtensionToggle {
+			for _, entry := range(room.ExtensionChoices) {
+				for _, extension := range(extensions) {
+					if entry.Choice == extension.Name && entry.IsChecked {
+						raceKeys = append(raceKeys, extension.Races...)
+						traitKeys = append(traitKeys, extension.Traits...)
+					}
+				}
+			}
+		} else {
+			for _, entry := range(room.RaceChoices) {
+				if entry.IsChecked {
+					raceKeys = append(raceKeys, entry.Choice)
+				}
+			}
+
+			for _, entry := range(room.TraitChoices) {
+				if entry.IsChecked {
+					traitKeys = append(traitKeys, entry.Choice)
+				}
+			}
+		}
+		newstate, err := gamestate.New(playerNames, client.Room.Map.Name, raceKeys, traitKeys)
 		if err != nil {
 			log.Println("error creating state")
 		}

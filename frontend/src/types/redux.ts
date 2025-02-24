@@ -1,5 +1,5 @@
 import { Language } from './misc';
-import { TribeEntry, Tile, Player, Room, SaveGameInfo } from './Board'
+import { TribeEntry, Tile, Player, Room, SaveGameInfo, ChoiceEntry } from './Board'
 
 
 export interface ApplicationState {
@@ -33,6 +33,10 @@ export interface ApplicationState {
   Xmult: number
   Ymult: number
   inDisplayRoom: boolean
+  raceChoices: ChoiceEntry[]
+  traitChoices: ChoiceEntry[]
+  extensionChoices: ChoiceEntry[]
+  extensionToggle: boolean
 }
 
 export type RootState = {

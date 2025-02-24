@@ -13,7 +13,7 @@ type GameState struct {
 	ModifierPoints map[string]func(int, *Player) int;
 }
 
-func New(playerNames []string, mapName string) (*GameState, error) {
+func New(playerNames []string, mapName string, raceKeys []string, traitKeys []string) (*GameState, error) {
 	// Create a list of initialized players
 	gs := &GameState{}
 	gs.Players = make([]*Player, len(playerNames))
@@ -37,7 +37,7 @@ func New(playerNames []string, mapName string) (*GameState, error) {
 	}
 
 	var err error;
-	gs.TribeList, err = createTribeList()
+	gs.TribeList, err = createTribeList(raceKeys, traitKeys)
 
 	gs.ModifierPoints = make(map[string]func(int, *Player) int)
 	function, ok := MapRegistry[mapName]

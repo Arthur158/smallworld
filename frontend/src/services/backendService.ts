@@ -5,7 +5,7 @@ let socket: WebSocket | null = null;
 
 // Connect WebSocket
 export const connectWebSocket = () => {
-  socket = new WebSocket('ws://192.168.0.24:8080/ws');
+  socket = new WebSocket('ws://localhost:8080/ws');
    wss://60cd-2a02-2788-11ca-f01-f686-5fff-fe1c-ff6f.ngrok-free.app/ws
   // 'https://397a-2a02-2788-11ca-f01-2e0-4cff-fe68-ed.ngrok-free.app/' 
   // -> 'wss://397a-2a02-2788-11ca-f01-2e0-4cff-fe68-ed.ngrok-free.app/ws'

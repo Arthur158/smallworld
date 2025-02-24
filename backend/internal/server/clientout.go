@@ -294,6 +294,72 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 	case "leavedisplayroom":
 		client.DisplayRoom.EndDisplayRoom()
 		sendRoomsUpdateToAll()
+	case "toggleRace":
+		var data struct {
+			Choice string `json:"choice"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
+		log.Println("got here")
+		client.Room.toggleRace(data.Choice)
+	case "toggleTrait":
+		var data struct {
+			Choice string `json:"choice"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
+		client.Room.toggleTrait(data.Choice)
+	case "toggleExtension":
+		var data struct {
+			Choice string `json:"choice"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
+		client.Room.toggleExtension(data.Choice)
+	case "toggleMode":
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
+		client.Room.toggleMode()
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
 	}
@@ -339,6 +405,9 @@ func (client *Client) handleLogin(userName string, password string) {
 			room.sendSmallMapUpdate()
 			room.sendBigUpdate()
 		}
+		client.Room.sendMapChoices()
+		client.sendUserSaves()
+		client.Room.sendChoices()
 		client.Room.sendPlayerStatuses()
 		client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 	}

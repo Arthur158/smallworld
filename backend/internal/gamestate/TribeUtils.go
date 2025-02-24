@@ -29,16 +29,7 @@ func CreateTribe(race Race, trait Trait) (*Tribe, error) {
     return tribe, nil
 }
 
-func createTribeList() ([]*TribeEntry, error) {
-    raceKeys := make([]Race, 0, len(RaceMap))
-    for race := range RaceMap {
-        raceKeys = append(raceKeys, race)
-    }
-
-    traitKeys := make([]Trait, 0, len(TraitMap))
-    for trait := range TraitMap {
-        traitKeys = append(traitKeys, trait)
-    }
+func createTribeList(raceKeys []string, traitKeys []string) ([]*TribeEntry, error) {
 
     r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -50,10 +41,10 @@ func createTribeList() ([]*TribeEntry, error) {
 
     for i := 0; i < pairCount; i++ {
         tribeEntries = append(tribeEntries, &TribeEntry{
-            Race: raceKeys[i],
-            Trait: traitKeys[i],
+            Race: Race(raceKeys[i]),
+            Trait: Trait(traitKeys[i]),
             CoinPile: 0,
-            PiecePile: RaceMap[raceKeys[i]].Count + TraitMap[traitKeys[i]].Count,
+            PiecePile: RaceMap[Race(raceKeys[i])].Count + TraitMap[Trait(traitKeys[i])].Count,
         })
     }
 

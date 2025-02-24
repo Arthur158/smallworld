@@ -128,10 +128,6 @@ export default function LobbyPage() {
     sendMessageToBackend('moveUp', { roomId: currentRoom.id, username: playerName });
   };
 
-  const handleLogout = () => {
-    sendMessageToBackend('logout', {});
-  };
-
   const handleMoveDown = (playerName: string) => {
     if (!currentRoom) return;
     sendMessageToBackend('moveDown', { roomId: currentRoom.id, username: playerName });
@@ -140,6 +136,10 @@ export default function LobbyPage() {
   const handleKickPlayer = (playerName: string) => {
     if (!currentRoom) return;
     sendMessageToBackend('kickPlayer', { roomId: currentRoom.id, username: playerName });
+  };
+
+  const handleLogout = () => {
+    sendMessageToBackend('logout', {});
   };
 
   const userInRoom = !!currentRoom;
@@ -191,9 +191,15 @@ export default function LobbyPage() {
                   ) : (
                     <ul className="space-y-3">
                       {rooms.map((rm) => (
-                        <li key={rm.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border border-transparent hover:border-[#8B4513] transition-colors">
+                        <li
+                          key={rm.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded border border-transparent hover:border-[#8B4513] transition-colors"
+                        >
                           <div className="text-md font-medium">
-                            <strong>{rm.name}</strong> <span className="text-sm text-gray-600">({rm.players?.length || 0})</span>
+                            <strong>{rm.name}</strong>{' '}
+                            <span className="text-sm text-gray-600">
+                              ({rm.players?.length || 0})
+                            </span>
                           </div>
                           <button
                             type="button"
@@ -234,7 +240,10 @@ export default function LobbyPage() {
                   {currentRoom.players?.map((p, idx) => {
                     if (!p || !p.trim().length) return null;
                     return (
-                      <div key={p} className="flex items-center justify-between p-3 bg-[#EED5B7] rounded-lg shadow-sm">
+                      <div
+                        key={p}
+                        className="flex items-center justify-between p-3 bg-[#EED5B7] rounded-lg shadow-sm"
+                      >
                         <span className="font-semibold">
                           {idx + 1}: {p}
                           {playerStatuses[idx] && playerStatuses[idx].trim() !== '' && (
@@ -303,35 +312,40 @@ export default function LobbyPage() {
               Enter Display Room
             </button>
             {userInRoom && currentRoom && currentRoom.creator === username ? (
-              saveGames && saveGames.length > 0 ? (
-                <ul className="space-y-4">
-                  {saveGames.map((gameSave) => (
-                    <li
-                      key={gameSave.saveId}
-                      className={`relative flex items-center p-4 cursor-pointer bg-white rounded border-2 transition-colors ${
-                        gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
-                      }`}
-                      onClick={() => handleGameIdClick(gameSave.saveId)}
-                    >
-                      <div className="flex-1">
-                        <div className="font-bold">Game ID: {gameSave.saveId}</div>
-                        <div className="text-sm text-gray-600">Summary: {gameSave.summary}</div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteGame(gameSave.saveId);
-                        }}
-                        className="absolute right-4 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded transition-colors"
+              <>
+                {saveGames && saveGames.length > 0 ? (
+                  <ul className="space-y-4">
+                    {saveGames.map((gameSave) => (
+                      <li
+                        key={gameSave.saveId}
+                        className={`relative flex items-center p-4 cursor-pointer bg-white rounded border-2 transition-colors ${
+                          gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
+                        }`}
+                        onClick={() => handleGameIdClick(gameSave.saveId)}
                       >
-                        Delete
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-600">No saved games available.</p>
-              )
+                        <div className="flex-1">
+                          <div className="font-bold">Game ID: {gameSave.saveId}</div>
+                          <div className="text-sm text-gray-600">Summary: {gameSave.summary}</div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteGame(gameSave.saveId);
+                          }}
+                          className="absolute right-4 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-600">No saved games available.</p>
+                )}
+
+                {/* RENDER EXTRA CHOICES BELOW SAVED GAMES IF HOST */}
+                {saveSelectionId === -1 && <ExtraChoices />}
+              </>
             ) : (
               <p className="text-gray-600">You are not the owner</p>
             )}
@@ -342,6 +356,121 @@ export default function LobbyPage() {
       {error && (
         <div className="fixed bottom-0 left-0 w-full bg-red-500 text-white text-center py-2 z-50">
           {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// New component rendered below the saved games if the user is the host
+function ExtraChoices() {
+  // Dummy data to simulate the structure: [string, boolean]
+  const {
+    extensionChoices,
+    raceChoices,
+    traitChoices,
+    extensionToggle
+  } = useSelector((state: RootState) => ({
+    extensionChoices: state.application.extensionChoices,
+    raceChoices: state.application.raceChoices,
+    traitChoices: state.application.traitChoices,
+    extensionToggle: state.application.extensionToggle,
+  }));
+
+
+  // Example toggle for extension checkboxes
+  const handleToggle = () => {
+    sendMessageToBackend('toggleMode', {});
+  };
+
+  // Example toggle for extension checkboxes
+  const handleToggleExtension = (choice: string) => {
+    sendMessageToBackend('toggleExtension', {
+      choice: choice,
+    });
+  };
+
+  // Example toggle for race checkboxes
+  const handleToggleRace = (choice: string) => {
+    sendMessageToBackend('toggleRace', {
+      choice: choice,
+    });
+  };
+
+  // Example toggle for trait checkboxes
+  const handleToggleTrait = (choice: string) => {
+    sendMessageToBackend('toggleTrait', {
+      choice: choice,
+    });
+  };
+
+  return (
+    <div className="mt-8 p-4 bg-white rounded border border-[#8B4513]">
+      <div className="mb-4 flex space-x-2">
+        <button
+          onClick={handleToggle}
+          className={`px-16 py-2 rounded ${
+            'bg-[#8B4513] text-white'          }`}
+        >
+                {extensionToggle ? 'Races & Traits' : 'Extensions'}
+        </button>
+      </div>
+
+      {extensionToggle && (
+        <div>
+          <h3 className="font-bold text-lg mb-2">Extension Choices</h3>
+          <div className="space-y-2">
+            {extensionChoices.map(({choice, isChecked}, idx) => (
+              <label key={idx} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => handleToggleExtension(choice)}
+                />
+                <span>{choice}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!extensionToggle && (
+        <div className="space-y-6">
+<div className="flex space-x-8">
+  {/* Races */}
+  <div className="w-1/2">
+    <h3 className="font-bold text-lg mb-2">Race Choices</h3>
+    <div className="space-y-2">
+      {raceChoices.map(({ choice, isChecked }, idx) => (
+        <label key={idx} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={() => handleToggleRace(choice)}
+          />
+          <span>{choice}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+
+  {/* Traits */}
+  <div className="w-1/2">
+    <h3 className="font-bold text-lg mb-2">Trait Choices</h3>
+    <div className="space-y-2">
+      {traitChoices.map(({ choice, isChecked }, idx) => (
+        <label key={idx} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={() => handleToggleTrait(choice)}
+          />
+          <span>{choice}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+</div>
         </div>
       )}
     </div>
