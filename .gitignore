@@ -1,0 +1,77 @@
+# Ignore database files
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.nosql
+*.db-shm
+*.db-wal
+*.db-journal
+*.bak
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore log files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore dependency directories
+node_modules/
+vendor/
+venv/
+.env
+.venv
+pip-log.txt
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore build and compiled files
+dist/
+build/
+target/
+out/
+*.o
+*.a
+*.so
+*.dll
+*.exe
+*.class
+*.jar
+
+# Ignore IDE/editor-specific files
+.vscode/
+.idea/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.bak
+
+# Ignore Docker & Kubernetes files
+docker-compose.override.yml
+.kube/
+
+# Ignore temporary files
+tmp/
+temp/
+.cache/
+*.swp
+*.swo
+*.pid
+
+# Ignore git hooks
+.husky/
+
+# Ignore generated files
+coverage/
+*.coverage
+*.lcov

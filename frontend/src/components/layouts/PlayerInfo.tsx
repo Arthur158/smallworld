@@ -75,7 +75,7 @@ export default function PlayerInfo() {
   };
   const handlePlayerClick = () => {
     if ((phase === 'TileAbandonment' || phase === 'DeclineChoice') && selectedTile != null && selectedStack != null) {
-      sendMessageToBackend('abandonment', { tileId: selectedTile.toString() });
+        sendMessageToBackend('abandonment', { tileId: selectedTile.toString(), stackType: selectedStack.toString() });
     } else if (phase === 'Redeployment' && selectedTile != null && selectedStack != null && !isStackFromBank) {
       sendMessageToBackend('deploymentout', {
         tileId: selectedTile.toString(),
