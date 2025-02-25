@@ -201,7 +201,6 @@ const applicationSlice = createSlice({
         }
         case 'mapChoices': {
           state.mapChoices = parsedData.mapChoices
-          state.mapName = parsedData.MapName
           break;
         }
         case 'choices': {
