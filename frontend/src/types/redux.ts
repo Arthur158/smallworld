@@ -33,10 +33,13 @@ export interface ApplicationState {
   Xmult: number
   Ymult: number
   inDisplayRoom: boolean
-  raceChoices: ChoiceEntry[]
-  traitChoices: ChoiceEntry[]
-  extensionChoices: ChoiceEntry[]
-  extensionToggle: boolean
+  extensionChoices: {
+    extensionName: string;
+    isChecked: boolean;
+    raceChoices: { choice: string; isChecked: boolean }[];
+    traitChoices: { choice: string; isChecked: boolean }[];
+  }[];
+  globalToggle: boolean
 }
 
 export type RootState = {

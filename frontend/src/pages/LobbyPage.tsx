@@ -362,117 +362,120 @@ export default function LobbyPage() {
   );
 }
 
-// New component rendered below the saved games if the user is the host
 function ExtraChoices() {
-  // Dummy data to simulate the structure: [string, boolean]
-  const {
-    extensionChoices,
-    raceChoices,
-    traitChoices,
-    extensionToggle
-  } = useSelector((state: RootState) => ({
+  const { extensionChoices, globalToggle } = useSelector((state: RootState) => ({
     extensionChoices: state.application.extensionChoices,
-    raceChoices: state.application.raceChoices,
-    traitChoices: state.application.traitChoices,
-    extensionToggle: state.application.extensionToggle,
+    globalToggle: state.application.globalToggle,
   }));
 
-
-  // Example toggle for extension checkboxes
-  const handleToggle = () => {
-    sendMessageToBackend('toggleMode', {});
+  const handleToggleAll = (checked: boolean) => {
+    sendMessageToBackend('toggleAll', { checked });
   };
 
-  // Example toggle for extension checkboxes
-  const handleToggleExtension = (choice: string) => {
+  const handleToggleExtension = (extensionName: string, checked: boolean) => {
     sendMessageToBackend('toggleExtension', {
-      choice: choice,
+      extensionName,
+      checked,
     });
   };
 
-  // Example toggle for race checkboxes
-  const handleToggleRace = (choice: string) => {
+  const handleToggleRace = (
+    extensionName: string,
+    raceChoice: string,
+    checked: boolean
+  ) => {
     sendMessageToBackend('toggleRace', {
-      choice: choice,
+      extensionName,
+      raceChoice,
+      checked,
     });
   };
 
-  // Example toggle for trait checkboxes
-  const handleToggleTrait = (choice: string) => {
+  const handleToggleTrait = (
+    extensionName: string,
+    traitChoice: string,
+    checked: boolean
+  ) => {
     sendMessageToBackend('toggleTrait', {
-      choice: choice,
+      extensionName,
+      traitChoice,
+      checked,
     });
   };
 
   return (
     <div className="mt-8 p-4 bg-white rounded border border-[#8B4513]">
-      <div className="mb-4 flex space-x-2">
-        <button
-          onClick={handleToggle}
-          className={`px-16 py-2 rounded ${
-            'bg-[#8B4513] text-white'          }`}
-        >
-                {extensionToggle ? 'Races & Traits' : 'Extensions'}
-        </button>
+      <div className="mb-4">
+        <label className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={globalToggle}
+            onChange={(e) => handleToggleAll(e.target.checked)}
+          />
+          <span>Toggle All</span>
+        </label>
       </div>
 
-      {extensionToggle && (
-        <div>
-          <h3 className="font-bold text-lg mb-2">Extension Choices</h3>
-          <div className="space-y-2">
-            {extensionChoices.map(({choice, isChecked}, idx) => (
-              <label key={idx} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => handleToggleExtension(choice)}
-                />
-                <span>{choice}</span>
-              </label>
-            ))}
+      <div className="space-y-6">
+        {extensionChoices.map((ext, index) => (
+          <div key={index} className="p-4 border rounded border-[#8B4513]">
+            <label className="flex items-center space-x-2 mb-4">
+              <input
+                type="checkbox"
+                checked={ext.isChecked}
+                onChange={(e) =>
+                  handleToggleExtension(ext.extensionName, e.target.checked)
+                }
+              />
+              <span>{ext.extensionName}</span>
+            </label>
+            <div className="flex space-x-8">
+              <div className="w-1/2">
+                <h4 className="font-bold text-md mb-2">Races</h4>
+                <div className="space-y-2">
+                  {ext.raceChoices.map((race, rIdx) => (
+                    <label key={rIdx} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={race.isChecked}
+                        onChange={(e) =>
+                          handleToggleRace(
+                            ext.extensionName,
+                            race.choice,
+                            e.target.checked
+                          )
+                        }
+                      />
+                      <span>{race.choice}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="w-1/2">
+                <h4 className="font-bold text-md mb-2">Traits</h4>
+                <div className="space-y-2">
+                  {ext.traitChoices.map((trait, tIdx) => (
+                    <label key={tIdx} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={trait.isChecked}
+                        onChange={(e) =>
+                          handleToggleTrait(
+                            ext.extensionName,
+                            trait.choice,
+                            e.target.checked
+                          )
+                        }
+                      />
+                      <span>{trait.choice}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-
-      {!extensionToggle && (
-        <div className="space-y-6">
-<div className="flex space-x-8">
-  {/* Races */}
-  <div className="w-1/2">
-    <h3 className="font-bold text-lg mb-2">Race Choices</h3>
-    <div className="space-y-2">
-      {raceChoices.map(({ choice, isChecked }, idx) => (
-        <label key={idx} className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={() => handleToggleRace(choice)}
-          />
-          <span>{choice}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-
-  {/* Traits */}
-  <div className="w-1/2">
-    <h3 className="font-bold text-lg mb-2">Trait Choices</h3>
-    <div className="space-y-2">
-      {traitChoices.map(({ choice, isChecked }, idx) => (
-        <label key={idx} className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            checked={isChecked}
-            onChange={() => handleToggleTrait(choice)}
-          />
-          <span>{choice}</span>
-        </label>
-      ))}
-    </div>
-  </div>
-</div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }

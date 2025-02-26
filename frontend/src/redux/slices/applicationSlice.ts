@@ -39,10 +39,8 @@ const initialState: ApplicationState = {
   Xmult: 1,
   Ymult: 1,
   inDisplayRoom: false,
-  raceChoices: [],
-  traitChoices: [],
   extensionChoices: [],
-  extensionToggle: true,
+  globalToggle: true,
 };
 
 const applicationSlice = createSlice({
@@ -205,9 +203,7 @@ const applicationSlice = createSlice({
         }
         case 'choices': {
           state.extensionChoices = parsedData.extensionChoices
-          state.raceChoices = parsedData.raceChoices
-          state.traitChoices = parsedData.traitChoices
-          state.extensionToggle = parsedData.toggle
+          state.globalToggle = parsedData.globalToggle
           break;
         }
         case 'smallmapupdate': {

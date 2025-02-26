@@ -295,8 +295,16 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.DisplayRoom.EndDisplayRoom()
 		sendRoomsUpdateToAll()
 	case "toggleRace":
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
 		var data struct {
-			Choice string `json:"choice"`
+			ExtensionName string `json:"extensionName"`
+			RaceChoice string `json:"raceChoice"`
+			Checked bool `json:"checked"`
 		}
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling loadGame data:", err)
@@ -306,17 +314,18 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		log.Println("Successfully parsed:", data)
 
-		if client.Room == nil {
-			return
-		}
-		if client.Username != client.Room.HostUsername {
-			return
-		}
-		log.Println("got here")
-		client.Room.toggleRace(data.Choice)
+		client.Room.toggleRace(data.ExtensionName, data.RaceChoice, data.Checked)
 	case "toggleTrait":
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
 		var data struct {
-			Choice string `json:"choice"`
+			ExtensionName string `json:"extensionName"`
+			TraitChoice string `json:"traitChoice"`
+			Checked bool `json:"checked"`
 		}
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling loadGame data:", err)
@@ -326,16 +335,17 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		log.Println("Successfully parsed:", data)
 
-		if client.Room == nil {
-			return
-		}
-		if client.Username != client.Room.HostUsername {
-			return
-		}
-		client.Room.toggleTrait(data.Choice)
+		client.Room.toggleTrait(data.ExtensionName, data.TraitChoice, data.Checked)
 	case "toggleExtension":
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
 		var data struct {
-			Choice string `json:"choice"`
+			ExtensionName string `json:"extensionName"`
+			Checked bool `json:"checked"`
 		}
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling loadGame data:", err)
@@ -345,21 +355,26 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		log.Println("Successfully parsed:", data)
 
+		client.Room.toggleExtension(data.ExtensionName, data.Checked)
+	case "toggleAll":
 		if client.Room == nil {
 			return
 		}
 		if client.Username != client.Room.HostUsername {
 			return
 		}
-		client.Room.toggleExtension(data.Choice)
-	case "toggleMode":
-		if client.Room == nil {
+		var data struct {
+			Checked bool `json:"checked"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
 			return
 		}
-		if client.Username != client.Room.HostUsername {
-			return
-		}
-		client.Room.toggleMode()
+		log.Println("Successfully parsed:", data)
+
+		client.Room.toggleAll(data.Checked)
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
 	}

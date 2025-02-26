@@ -1,12 +1,24 @@
 package server
 
-type Extension struct {
+type ExtensionList struct {
 	Name string
 	Races []string
 	Traits []string
 }
 
-var extensions = []Extension {
+type Extension struct {
+	ExtensionName string      `json:"extensionName"`
+	IsChecked     bool        `json:"isChecked"`
+	RaceChoices   []ChoiceEntry `json:"raceChoices"`
+	TraitChoices  []ChoiceEntry `json:"traitChoices"`
+}
+
+type ChoiceEntry struct {
+    Choice string `json:"choice"`
+    IsChecked bool `json:"isChecked"`
+}
+
+var extensions = []ExtensionList {
 	{
 		Name: "Base Game",
 		Races : []string{"Amazons", "Elves", "Ghouls", "Giants", "Halflings", "Humans", "Orcs", "Ratmen", "Skeletons", "Sorcerers", "Tritons", "Trolls", "Wizards"},

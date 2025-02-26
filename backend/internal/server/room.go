@@ -25,10 +25,8 @@ type Room struct {
 	autoSaveId   int64
 	playerStatuses []string
 	IsDisplayRoom  bool
-	RaceChoices []ChoiceEntry
-	TraitChoices []ChoiceEntry
-	ExtensionChoices []ChoiceEntry
-	ExtensionToggle bool
+	ExtensionChoices []Extension
+	GlobalToggle	bool
 }
 
 func createRoom(client *Client, roomName, username string) {
@@ -50,6 +48,7 @@ func createRoom(client *Client, roomName, username string) {
 		Map:          gameMap,
 		saveId:	      -1,
 		playerStatuses: []string{},
+		GlobalToggle: true,
 	}
 	rooms[room.ID] = room
 
@@ -57,23 +56,17 @@ func createRoom(client *Client, roomName, username string) {
 		room.Players[i] = nil
 	}
 
-	i := 0
-	room.RaceChoices = make([]ChoiceEntry, len(gamestate.RaceMap))
-	for key := range(gamestate.RaceMap) {
-		room.RaceChoices[i] = ChoiceEntry{Choice: string(key), IsChecked: true}
-		i += 1
-	}
-
-	i = 0
-	room.TraitChoices = make([]ChoiceEntry, len(gamestate.TraitMap))
-	for key := range(gamestate.TraitMap) {
-		room.TraitChoices[i] = ChoiceEntry{Choice: string(key), IsChecked: true}
-		i += 1
-	}
-
-	room.ExtensionChoices = make([]ChoiceEntry, len(extensions))
-	for i, choice := range(extensions) {
-		room.ExtensionChoices[i] = ChoiceEntry{Choice: choice.Name, IsChecked: true}
+	room.ExtensionChoices = make([]Extension, len(extensions))
+	for i, extension := range(extensions) {
+		room.ExtensionChoices[i] = Extension{ExtensionName: extension.Name, IsChecked: true}
+		room.ExtensionChoices[i].RaceChoices = make([]ChoiceEntry, len(extension.Races))
+		for j, race := range(extension.Races) {
+			room.ExtensionChoices[i].RaceChoices[j] = ChoiceEntry{Choice: race, IsChecked: true}
+		}
+		room.ExtensionChoices[i].TraitChoices = make([]ChoiceEntry, len(extension.Traits))
+		for j, trait := range(extension.Traits) {
+			room.ExtensionChoices[i].TraitChoices[j] = ChoiceEntry{Choice: trait, IsChecked: true}
+		}
 	}
 
 	client.Room = room
@@ -124,7 +117,6 @@ func (room *Room) sendMapChoices() {
 }
 
 func (room *Room) sendChoices() {
-	log.Println("here")
 	var host *Client
 	for i, client := range(room.Players) {
 		if client != nil && client.Username == room.HostUsername {
@@ -135,10 +127,8 @@ func (room *Room) sendChoices() {
 	log.Println(host.Username)
 
 	message := map[string]interface{}{
-		"raceChoices": room.RaceChoices, 
-		"traitChoices": room.TraitChoices, 
-		"extensionChoices": room.ExtensionChoices, 
-		"toggle": room.ExtensionToggle,
+		"extensionChoices": room.ExtensionChoices,
+		"globalToggle": room.GlobalToggle,
 	}
 
 	messageJSON, err := json.Marshal(message)
@@ -152,36 +142,56 @@ func (room *Room) sendChoices() {
 
 
 
-func (room *Room) toggleRace(label string) {
-	for i, entry := range(room.RaceChoices) {
-		if entry.Choice == label {
-			room.RaceChoices[i].IsChecked = !entry.IsChecked
-			break
-		}
-	}
-	room.sendChoices()
-}
-
-func (room *Room) toggleTrait(label string) {
-	for i, entry := range(room.TraitChoices) {
-		if entry.Choice == label {
-			room.TraitChoices[i].IsChecked = !entry.IsChecked
-		}
-	}
-	room.sendChoices()
-}
-
-func (room *Room) toggleExtension(label string) {
+func (room *Room) toggleRace(extension string, race string, check bool) {
 	for i, entry := range(room.ExtensionChoices) {
-		if entry.Choice == label {
-			room.ExtensionChoices[i].IsChecked = !entry.IsChecked
+		if entry.ExtensionName == extension {
+			for j, entry2 := range(entry.RaceChoices) {
+				if entry2.Choice == race {
+					room.ExtensionChoices[i].RaceChoices[j].IsChecked = check
+				}
+			}
+		}
+	}
+	room.sendChoices()
+}
+func (room *Room) toggleTrait(extension string, trait string, check bool) {
+	for i, entry := range(room.ExtensionChoices) {
+		if entry.ExtensionName == extension {
+			for j, entry2 := range(entry.TraitChoices) {
+				if entry2.Choice == trait {
+					room.ExtensionChoices[i].TraitChoices[j].IsChecked = check
+				}
+			}
 		}
 	}
 	room.sendChoices()
 }
 
-func (room *Room) toggleMode() {
-	room.ExtensionToggle = !room.ExtensionToggle
+func (room *Room) toggleExtension(name string, check bool) {
+	for i := range(room.ExtensionChoices) {
+		if room.ExtensionChoices[i].ExtensionName == name {
+			room.ExtensionChoices[i].IsChecked = check
+			for j := range(room.ExtensionChoices[i].RaceChoices) {
+				room.ExtensionChoices[i].RaceChoices[j].IsChecked = check
+			}
+			for j := range(room.ExtensionChoices[i].TraitChoices) {
+				room.ExtensionChoices[i].TraitChoices[j].IsChecked = check
+			}
+		}
+	}
+	room.sendChoices()
+}
+func (room *Room) toggleAll(check bool) {
+	room.GlobalToggle = check
+	for i := range(room.ExtensionChoices) {
+		room.ExtensionChoices[i].IsChecked = check
+		for j := range(room.ExtensionChoices[i].RaceChoices) {
+			room.ExtensionChoices[i].RaceChoices[j].IsChecked = check
+		}
+		for j := range(room.ExtensionChoices[i].TraitChoices) {
+			room.ExtensionChoices[i].TraitChoices[j].IsChecked = check
+		}
+	}
 	room.sendChoices()
 }
 
@@ -421,28 +431,20 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	if room.saveId == -1 {
 		raceKeys := []string{}
 		traitKeys := []string{}
-		if room.ExtensionToggle {
-			for _, entry := range(room.ExtensionChoices) {
-				for _, extension := range(extensions) {
-					if entry.Choice == extension.Name && entry.IsChecked {
-						raceKeys = append(raceKeys, extension.Races...)
-						traitKeys = append(traitKeys, extension.Traits...)
-					}
-				}
-			}
-		} else {
-			for _, entry := range(room.RaceChoices) {
-				if entry.IsChecked {
-					raceKeys = append(raceKeys, entry.Choice)
-				}
-			}
 
-			for _, entry := range(room.TraitChoices) {
-				if entry.IsChecked {
-					traitKeys = append(traitKeys, entry.Choice)
+		for _, entry := range(room.ExtensionChoices) {
+			for _, entry2 := range(entry.RaceChoices) {
+				if entry2.IsChecked {
+					raceKeys = append(raceKeys, entry2.Choice)
+				}
+			}
+			for _, entry2 := range(entry.TraitChoices) {
+				if entry2.IsChecked {
+					traitKeys = append(traitKeys, entry2.Choice)
 				}
 			}
 		}
+
 		newstate, err := gamestate.New(playerNames, client.Room.Map.Name, raceKeys, traitKeys)
 		if err != nil {
 			log.Println("error creating state")

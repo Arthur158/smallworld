@@ -12,7 +12,3 @@ type TileData struct {
     // ...
 }
 
-type ChoiceEntry struct {
-    Choice string `json:"choice"`
-    IsChecked bool `json:"isChecked"`
-}

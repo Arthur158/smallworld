@@ -96,7 +96,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
 	gs.GetPieceStackForConquest(gs.Players[gs.TurnInfo.PlayerIndex])
 
-	gs.TurnInfo.Phase = Conquest
+	gs.TurnInfo.Phase = TileAbandonment
 
 	return nil;
 }
