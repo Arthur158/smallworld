@@ -535,7 +535,7 @@ var TraitMap = map[Trait]TraitValue {
 		oldCountAttack := t.countAttack
 		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
 			old, g, l, k := oldCountAttack(tile, cost, stackType)
-			if tile.Presence != None {
+			if tile.Presence != None && t.IsActive {
 				g += 1
 			}
 			return old, g , l, k
@@ -817,12 +817,10 @@ var TraitMap = map[Trait]TraitValue {
 		oldcheckAdjacency := t.checkAdjacency
 		t.checkAdjacency = func(tile *Tile, gs *GameState) error {
 			err := oldcheckAdjacency(tile, gs)
-			if err == nil {
-				return nil
-			}
 			if b, ok := t.State["justPlaced"].(bool); ok && !b {
 				return err
 			}
+			t.State["justPlaced"] = false
 			for _, tile2 := range(gs.TileList) {
 				if tile2.Presence != None && tile2.OwningTribe.checkPresence(tile2, t.Race) {
 					for _, stack := range(tile2.PieceStacks) {
@@ -838,6 +836,7 @@ var TraitMap = map[Trait]TraitValue {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			if b, ok := t.State["justUsed"].(bool); ok && b {
+				t.State["justUsed"] = false
 				return oldcomputeDiscount(stackType, tile) + 1
 			}
 			return oldcomputeDiscount(stackType, tile)

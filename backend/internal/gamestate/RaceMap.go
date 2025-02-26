@@ -666,6 +666,7 @@ var RaceMap = map[Race]RaceValue {
 				    player.PieceStacks = AddPieceStacks(player.PieceStacks, movingStack)
 				}
 			    }
+			    t.State["hasThrownDice"] = false
 			}
 		}
 		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
