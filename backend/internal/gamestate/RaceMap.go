@@ -413,6 +413,7 @@ var RaceMap = map[Race]RaceValue {
 			tile.Presence = None
 			attacker.PieceStacks = AddPieceStacks(attacker.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
 			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Power", Amount: 1}})
+			gs.TurnInfo.Phase = Conquest
 			return true, nil
 		}
 		}, Count: 6},

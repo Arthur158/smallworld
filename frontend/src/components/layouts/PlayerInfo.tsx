@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { Player, PieceStack, Tribe } from '../../types/Board';
@@ -14,7 +14,7 @@ export default function PlayerInfo() {
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
   const phase = useSelector((state: RootState) => state.application.phase);
-  const hasExecutedRef = useRef(false);
+  const player = allPlayers?.[playerIndex] || null;
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -34,34 +34,32 @@ export default function PlayerInfo() {
         dispatch(setSelectedStack(null));
         dispatch(setSelectedTile(null));
       }
+      if (event.key === 'g' && isStackFromBank && player) {
+        for (let i = 0; i < player.pieceStacks.length; i++) {
+          if (selectedStack == player.pieceStacks[i].type && i == player.pieceStacks.length - 1) {
+            dispatch(setSelectedStack(null))
+            dispatch(setIsStackFromBank(false))
+          } else if (selectedStack == player.pieceStacks[i].type) {
+            dispatch(setSelectedStack(player.pieceStacks[i+1].type))
+          }
+        }
+      }
+      if (event.key === 'g' && !isStackFromBank && player) {
+        if (player.pieceStacks.length != 0) {
+          dispatch(setSelectedStack(player.pieceStacks[0].type))
+          dispatch(setIsStackFromBank(true))
+          dispatch(setSelectedTile(null))
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [dispatch, selectedTile, selectedStack]);
+  }, [dispatch, selectedTile, selectedStack, player]);
 
-  useEffect(() => {
-    if (!allPlayers || allPlayers.length === 0) return;
-    const player = allPlayers[playerIndex];
-    if (!player) return;
 
-    // Run only once when the phase changes to "DeclineChoice"
-    if ((phase === "DeclineChoice" || phase === "TileAbandonment") && !hasExecutedRef.current) {
-      hasExecutedRef.current = true; // Mark as executed
-
-      if (playerIndex === playerNumber && player.pieceStacks.length !== 0) {
-        dispatch(setIsStackFromBank(true));
-        dispatch(setSelectedTile(null));
-        dispatch(setSelectedStack(player.pieceStacks[0].type));
-      }
-    } else if (phase !== "DeclineChoice") {
-      hasExecutedRef.current = false; // Reset when phase changes away
-    }
-  }, [dispatch, selectedTile, selectedStack, allPlayers, playerIndex, playerNumber, phase]);
-
-  const player = allPlayers?.[playerIndex] || null;
 
   // Same logic as in TribeList
   const getTraitImagePath = (trait?: string) => {

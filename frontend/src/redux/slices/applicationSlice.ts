@@ -452,6 +452,7 @@ const applicationSlice = createSlice({
             }
             if (!found) {
               state.selectedStack = null;
+              state.isStackFromBank = false
             }
           } else if (state.selectedStack != null && !state.isStackFromBank && state.selectedTile != null) {
             let found = false
