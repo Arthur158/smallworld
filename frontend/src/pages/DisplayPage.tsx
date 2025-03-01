@@ -84,7 +84,7 @@ export default function DisplayPage() {
 >
   <div className="flex-1">
     <div className="font-bold">Game ID: {gameSave.saveId}</div>
-    <div className="text-sm text-gray-600">Summary: {gameSave.summary}</div>
+    <div className="text-sm text-gray-600">{gameSave.summary}</div>
   </div>
   <button
     onClick={(e) => {

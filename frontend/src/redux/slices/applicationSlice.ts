@@ -260,6 +260,30 @@ const applicationSlice = createSlice({
             players.push(player);
           }
           state.players = players;
+          if (state.selectedStack != null && state.isStackFromBank) {
+            let found = false
+            for (const stack of state.players[state.playerIndex].pieceStacks) {
+              if (stack.type === state.selectedStack) {
+                found = true; 
+                break
+              }
+            }
+            if (!found) {
+              state.selectedStack = null;
+            }
+          } else if (state.selectedStack != null && !state.isStackFromBank && state.selectedTile != null) {
+            let found = false
+            for (const stack of state.tiles[state.selectedTile].pieceStack) {
+              if (stack.type === state.selectedStack) {
+                found = true
+                break; 
+              }
+            }
+            if (!found) {
+              state.selectedStack = null
+              state.selectedTile = null
+            }
+          }
           break;
         }
         case 'tribeentries':
@@ -416,6 +440,32 @@ const applicationSlice = createSlice({
                 });
               }
               tileObj.pieceStack = stacks;
+            }
+          }
+          if (state.selectedStack != null && state.isStackFromBank) {
+            let found = false
+            for (const stack of state.players[state.playerIndex].pieceStacks) {
+              if (stack.type === state.selectedStack) {
+                found = true; 
+                break
+              }
+            }
+            if (!found) {
+              state.selectedStack = null;
+            }
+          } else if (state.selectedStack != null && !state.isStackFromBank && state.selectedTile != null) {
+            let found = false
+            console.log(state.tiles[state.selectedTile].pieceStack)
+            for (const stack of state.tiles[state.selectedTile].pieceStack) {
+              console.log(stack)
+              if (stack.type === state.selectedStack) {
+                found = true
+                break; 
+              }
+            }
+            if (!found) {
+              state.selectedStack = null
+              state.selectedTile = null
             }
           }
 

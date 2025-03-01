@@ -318,7 +318,7 @@ func (room *Room) removePlayer(username string) {
 	defer roomsMu.Unlock()
 	var client Client
 
-	if room.Players == nil {
+	if room == nil || room.Players == nil {
 		log.Println("room uninitialized or something")
 		return
 	}

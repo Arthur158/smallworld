@@ -123,7 +123,7 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string, stackType
 		return fmt.Errorf("No tile with this id!")
 	}
 
-	if tile.Presence != None && !tile.OwningTribe.checkPresence(tile, tribe.Race) {
+	if tile.Presence == None || !tile.OwningTribe.checkPresence(tile, tribe.Race) {
 		return fmt.Errorf("This tile does not belong to the player!")
 	}
 

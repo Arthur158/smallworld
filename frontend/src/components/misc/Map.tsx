@@ -150,7 +150,7 @@ export default function Map() {
   }
 
   const handleTileStackClick = (tileID: string, stackType: string | null) => {
-    if ((phase === 'TileAbandonment' || phase === 'DeclineChoice') && stackType != null) {
+    if ((phase === 'TileAbandonment' || phase === 'DeclineChoice') && stackType != null && stackType != selectedStack) {
       dispatch(setSelectedStack(stackType));
       dispatch(setSelectedTile(tileID));
       dispatch(setIsStackFromBank(false));
@@ -161,7 +161,7 @@ export default function Map() {
     ) {
       sendMessageToBackend('Conquest', { tileId: tileID.toString(), attackingStackType: selectedStack.toString() });
     } else if (
-      (phase === 'Redeployment' || phase === 'TileAbandonment') &&
+      (phase === 'Redeployment' || phase === 'TileAbandonment' || phase === 'DeclineChoice') &&
       selectedStack === stackType &&
       selectedTile === tileID
     ) {

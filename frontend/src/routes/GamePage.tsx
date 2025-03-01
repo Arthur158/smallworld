@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../redux/store';
-import { sendMessageToBackend } from '../services/backendService';
-import { reset, clearError } from '../redux/slices/applicationSlice';
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "../redux/store";
+import { sendMessageToBackend } from "../services/backendService";
+import { reset, clearError } from "../redux/slices/applicationSlice";
 
-import TribeList from '../components/layouts/TribeList';
-import Map from '../components/misc/Map';
-import PlayerInfo from '../components/layouts/PlayerInfo';
-import OpponentsList from '../components/layouts/OpponentsList';
-import TurnInfoBlock from '../components/layouts/TurnInfoBlock';
-import Chat from '../components/inputs/Chat';
-import GameFinishedPopup from '../components/layouts/GameFinishedPopup';
+import TribeList from "../components/layouts/TribeList";
+import Map from "../components/misc/Map";
+import PlayerInfo from "../components/layouts/PlayerInfo";
+import OpponentsList from "../components/layouts/OpponentsList";
+import TurnInfoBlock from "../components/layouts/TurnInfoBlock";
+import Chat from "../components/inputs/Chat";
+import GameFinishedPopup from "../components/layouts/GameFinishedPopup";
+import CustomCursor from "../components/misc/CustomCursor"; // Import Custom Cursor Component
 
 export default function GamePage() {
   const dispatch: AppDispatch = useDispatch();
@@ -20,14 +21,12 @@ export default function GamePage() {
   const playerIndex = useSelector((state: RootState) => state.application.playerIndex);
   const players = useSelector((state: RootState) => state.application.players);
 
-  const currentPlayer = players[playerNumber]?.name || 'Unknown Player';
+  const currentPlayer = players[playerNumber]?.name || "Unknown Player";
   const [showTurnInfo, setShowTurnInfo] = useState(false);
 
   // Auto-toggle the middle section based on phase
   useEffect(() => {
-    // if (phase === 'Conquest') {
-    //   setShowTurnInfo(true);
-    if (phase === 'TribeChoice') {
+    if (phase === "TribeChoice") {
       setShowTurnInfo(false);
     }
   }, [phase, playerNumber, playerIndex]);
@@ -36,17 +35,17 @@ export default function GamePage() {
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       switch (event.key) {
-        case 's':
+        case "s":
           setShowTurnInfo((prev) => !prev);
           break;
-        case 'c':
+        case "c":
           dispatch(clearError());
           break;
       }
     };
-    window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener("keydown", handleKeyPress);
     return () => {
-      window.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener("keydown", handleKeyPress);
     };
   }, [dispatch]);
 
@@ -54,16 +53,19 @@ export default function GamePage() {
   useEffect(() => {
     const handlePageRefresh = () => {
       dispatch(reset());
-      sendMessageToBackend('requestrefresh', {});
+      sendMessageToBackend("requestrefresh", {});
     };
-    window.addEventListener('beforeunload', handlePageRefresh);
+    window.addEventListener("beforeunload", handlePageRefresh);
     return () => {
-      window.removeEventListener('beforeunload', handlePageRefresh);
+      window.removeEventListener("beforeunload", handlePageRefresh);
     };
   }, [dispatch]);
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
+      {/* Custom Cursor Component */}
+      <CustomCursor />
+
       <div className="flex w-full h-full">
         {/* LEFT SECTION (1/3 width) */}
         <div className="w-1/3 h-full flex p-2 min-h-0">
@@ -79,7 +81,7 @@ export default function GamePage() {
                 onClick={() => setShowTurnInfo(!showTurnInfo)}
                 className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white font-bold py-1 px-2 rounded mt-2 mb-2"
               >
-                {showTurnInfo ? 'Show Tribe List' : 'Show Turn Info'}
+                {showTurnInfo ? "Show Tribe List" : "Show Turn Info"}
               </button>
               <div className="flex-1 overflow-auto min-h-0">
                 {showTurnInfo ? <OpponentsList /> : <TribeList />}
