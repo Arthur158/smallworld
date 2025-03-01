@@ -46,7 +46,7 @@ export default function PlayerInfo() {
     if (!player) return;
 
     // Run only once when the phase changes to "DeclineChoice"
-    if (phase === "DeclineChoice" && !hasExecutedRef.current) {
+    if ((phase === "DeclineChoice" || phase === "TileAbandonment") && !hasExecutedRef.current) {
       hasExecutedRef.current = true; // Mark as executed
 
       if (playerIndex === playerNumber && player.pieceStacks.length !== 0) {
