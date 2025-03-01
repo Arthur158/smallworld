@@ -31,6 +31,8 @@ export default function PlayerInfo() {
           tileId: selectedTile.toString(),
           stackType: selectedStack.toString(),
         });
+        dispatch(setSelectedStack(null));
+        dispatch(setSelectedTile(null));
       }
     };
 
@@ -81,6 +83,8 @@ export default function PlayerInfo() {
         tileId: selectedTile.toString(),
         stackType: selectedStack.toString(),
       });
+      dispatch(setSelectedStack(null));
+      dispatch(setSelectedTile(null));
     } else if (isStackFromBank) {
       dispatch(setSelectedStack(null));
       dispatch(setIsStackFromBank(false));
@@ -173,7 +177,10 @@ export default function PlayerInfo() {
   };
 
 return (
-  <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative h-full" onClick={handlePlayerClick}>
+<div 
+  className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative h-full overflow-auto max-w-full" 
+  onClick={handlePlayerClick}
+>
     <h3 className="text-lg font-bold">{player?.name || "Unknown Player"}</h3>
 
     {/* Active Tribe Display (Only if exists) */}

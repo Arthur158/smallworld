@@ -176,6 +176,8 @@ export default function Map() {
         tileToId: tileID.toString(),
         stackType: selectedStack,
       });
+      dispatch(setSelectedStack(null));
+      dispatch(setSelectedTile(null));
     } else if (phase === 'Redeployment' && selectedStack == null && stackType != null) {
       dispatch(setSelectedStack(stackType));
       dispatch(setSelectedTile(tileID));

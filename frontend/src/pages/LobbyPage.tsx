@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import { sendMessageToBackend } from '../services/backendService';
-import { reset } from '../redux/slices/applicationSlice';
+import { reset, clearError } from '../redux/slices/applicationSlice';
 import { Room, SaveGameInfo } from '../types/Board';
 
 export default function LobbyPage() {
@@ -69,6 +69,9 @@ export default function LobbyPage() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === 'p' && currentRoom?.creator === username) {
         handleStartGame();
+      }
+      if (event.key.toLowerCase() === 'c' && currentRoom?.creator === username) {
+          dispatch(clearError());
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -148,13 +151,26 @@ export default function LobbyPage() {
     <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
       <div className="flex w-full h-full">
         {/* Left column */}
-        <div className="w-2/3 h-full flex flex-col border-r border-[#5F4B32] bg-[#FDF5E6]">
-          <div className="flex-1 overflow-y-auto p-6">
+<div 
+          className="w-2/3 h-full flex flex-col border-r border-[#5F4B32] relative"
+          style={{
+            backgroundImage: "url('/background.png')", // ✅ Background Image
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        >
+          {/* Dark overlay to improve text readability */}
+          <div className="absolute inset-0 z-0"></div> {/* ✅ Dark Transparent Layer */}
+
+          {/* Content Wrapper */}
+          <div className="relative z-10 flex-1 overflow-y-auto p-6 bg-white/0">
+            
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-              <span className="text-lg font-semibold">Logged in as: {username}</span>
+              <span className="text-lg font-semibold text-white">Logged in as: {username}</span>
               <button
-                onClick={handleLogout}
+                onClick={() => sendMessageToBackend('logout', {})}
                 className="bg-red-600 hover:bg-red-700 text-white py-1 px-4 rounded shadow-md transition-colors"
               >
                 Log Out
