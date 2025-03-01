@@ -6,22 +6,25 @@ import { RootState } from '../redux/store';
 
 import LoginRegisterPage from '../pages/RegisterPage';
 import LobbyPage from '../pages/LobbyPage';
+import DisplayPage from '../pages/DisplayPage';
 import GamePage from '../routes/GamePage';
 
 export default function AppRouter(): JSX.Element {
-  const { isAuthenticated, gameStarted } = useSelector((state: RootState) => state.application);
+  const { isAuthenticated, gameStarted, inDisplayRoom } = useSelector((state: RootState) => state.application);
   const navigate = useNavigate()
 
   // Detect changes in isAuthenticated and redirect if false
   useEffect(() => {
-    if (gameStarted) {
+    if (inDisplayRoom) {
+      navigate("/display", { replace: true });
+    } else if (gameStarted) {
       navigate("/game", { replace: true})
     } else if (isAuthenticated) {
       navigate("/lobby", { replace: true });
     } else {
       navigate("/", { replace: true });
     }
-  }, [isAuthenticated, gameStarted, navigate]);
+  }, [isAuthenticated, gameStarted, inDisplayRoom, navigate]);
 
   return (
     <Routes>
@@ -38,6 +41,10 @@ export default function AppRouter(): JSX.Element {
       <Route
         path="/game"
         element={isAuthenticated ? <GamePage /> : <Navigate to="/" />}
+      />
+      <Route
+        path="/display"
+        element={isAuthenticated ? <DisplayPage /> : <Navigate to="/" />}
       />
 
       {/* Catch-all route could redirect to / if path not found */}

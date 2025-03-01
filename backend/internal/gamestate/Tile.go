@@ -5,7 +5,7 @@ type Tile struct {
 	Id string;
 	AdjacentTiles []*Tile;
 	PieceStacks []PieceStack;
-	OwningPlayer *Player;
+	// OwningPlayer *Player;
 	OwningTribe *Tribe;
 	Biome Biome;
 	Attributes []Attribute;

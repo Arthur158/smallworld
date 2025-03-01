@@ -1,11 +1,14 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
+import { sendMessageToBackend } from '../../services/backendService';
+import { setIsStackFromBank, setSelectedStack, setSelectedTile } from '../../redux/slices/applicationSlice';
 
 export default function GameFinishedPopup() {
   const phase = useSelector((state: RootState) => state.application.phase);
   const players = useSelector((state: RootState) => state.application.players);
   const scores = useSelector((state: RootState) => state.application.scores);
+  const dispatch = useDispatch();
 
   if (phase !== 'GameFinished') {
     return null;
@@ -16,6 +19,18 @@ export default function GameFinishedPopup() {
     player: player.name, // Ensure player is a string
     score: scores[index],
   }));
+
+  const resetSelections = () => {
+    dispatch(setIsStackFromBank(false));
+    dispatch(setSelectedTile(null));
+    dispatch(setSelectedStack(null));
+  };
+
+  const handleLeaveGame = () => {
+    sendMessageToBackend("leaveroom", {});
+    resetSelections();
+  };
+
 
   // Sort descending by score
   combined.sort((a, b) => b.score - a.score);
@@ -38,10 +53,10 @@ export default function GameFinishedPopup() {
             <strong>{rankLabel(index)}:</strong> {item.player} - {item.score}
           </div>
         ))}
+        <button onClick={handleLeaveGame} className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 px-3 rounded transition-colors">
+          Leave Game <span className="text-sm text-gray-300"></span>
+        </button>
       </div>
-      <button>
-        leave game
-      </button>
     </div>
   );
 }

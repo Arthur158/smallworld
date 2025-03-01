@@ -29,16 +29,7 @@ func CreateTribe(race Race, trait Trait) (*Tribe, error) {
     return tribe, nil
 }
 
-func createTribeList() ([]*TribeEntry, error) {
-    raceKeys := make([]Race, 0, len(RaceMap))
-    for race := range RaceMap {
-        raceKeys = append(raceKeys, race)
-    }
-
-    traitKeys := make([]Trait, 0, len(TraitMap))
-    for trait := range TraitMap {
-        traitKeys = append(traitKeys, trait)
-    }
+func createTribeList(raceKeys []string, traitKeys []string) ([]*TribeEntry, error) {
 
     r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -50,10 +41,10 @@ func createTribeList() ([]*TribeEntry, error) {
 
     for i := 0; i < pairCount; i++ {
         tribeEntries = append(tribeEntries, &TribeEntry{
-            Race: raceKeys[i],
-            Trait: traitKeys[i],
+            Race: Race(raceKeys[i]),
+            Trait: Trait(traitKeys[i]),
             CoinPile: 0,
-            PiecePile: RaceMap[raceKeys[i]].Count + TraitMap[traitKeys[i]].Count,
+            PiecePile: RaceMap[Race(raceKeys[i])].Count + TraitMap[Trait(traitKeys[i])].Count,
         })
     }
 
@@ -102,16 +93,25 @@ func CreateBaseTribe() *Tribe {
         return price, 0, 0, nil
     }
 
+    tribe.handleAbandonment = func(tile *Tile, gs *GameState) {
+        tribe.clearTile(tile, gs, 0)
+    }
+
+    tribe.handleReturn = func(tile *Tile, gs *GameState, cost int) {
+        tribe.clearTile(tile, gs , cost)
+    }
+
     tribe.clearTile = func(tile *Tile, gs *GameState, pawnKill int) {
         for i, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                 stack.Amount = max(0, stack.Amount - pawnKill)
-                tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, []PieceStack{stack})
+                if tile.Presence != None {
+                    tribe.Owner.PieceStacks = AddPieceStacks(tribe.Owner.PieceStacks, []PieceStack{stack})
+                }
                 if tile.OwningTribe == &tribe {
                     tile.Presence = None
                     tile.OwningTribe = nil
-                    tile.OwningPlayer = nil
                 }
                 return // Exit after removal to avoid index shifting issues
             }
@@ -124,18 +124,6 @@ func CreateBaseTribe() *Tribe {
 
     tribe.canTileBeAbandoned = func(tile *Tile) bool {
         return tribe.IsActive && tile.OwningTribe.checkPresence(tile, tribe.Race)
-    }
-
-    tribe.handleAbandonment = func(tile *Tile, gs *GameState) {
-        tribe.clearTile(tile, gs, 0)
-        // tile.OwningPlayer.PieceStacks = AddPieceStacks(tile.OwningPlayer.PieceStacks, []PieceStack{{Type: string(tribe.Race), Amount: tribe.Minimum}})
-        // for i, stack := range(tile.PieceStacks) {
-        //     if stack.Type == string(tribe.Race) {
-        //         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-        //         break
-        //     }
-        // }
-        // tile.Presence = None
     }
 
     tribe.startRedeployment = func(gs *GameState) []PieceStack {
@@ -219,7 +207,6 @@ func CreateBaseTribe() *Tribe {
         }
     }
 
-    // the dilemma here is that we could make it return the piecestack, but then the action would not be atomic anymore since the piecestack would be removed from the tile and then returned and the stack would be given to the player later.
     tribe.getStacksForConquest = func(tile *Tile, player *Player) {
         if tribe.IsActive {
             for _, stack := range tile.PieceStacks {

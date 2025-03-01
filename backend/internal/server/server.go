@@ -5,7 +5,8 @@ import (
 	"log"
 	"net/http"
 	"sync"
-
+	"encoding/json"
+	"backend/internal/messages"
 	"github.com/gorilla/websocket"
 	_ "modernc.org/sqlite" // SQLite driver
 )
@@ -70,9 +71,8 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	client := &Client{
 		Conn:     conn,
-		Username: "placeholder",  // Will be set when user sends 'createRoom' or 'joinRoom'
+		Username: "",  // Will be set when user sends 'createRoom' or 'joinRoom'
 		IsAuthenticated: false,
-		Room: nil,
 	}
 
 	connectedClientsMu.Lock()
@@ -85,10 +85,59 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// Start goroutine to read messages from this connection
 	go func(c *Client) {
-		readMessages(c) // This will block until readMessages completes
+		readMessages(c) 
 
 		// After readMessages exits, close the connection
 		c.Conn.Close()
 		log.Println("Connection closed for client:", c)
 	}(client)
+}
+
+func sendRoomsUpdateToAll() {
+	// Build a list of rooms that are not in progress or in progress (up to you)
+	secondRoomsMu.Lock()
+	defer secondRoomsMu.Unlock()
+
+	var roomList []map[string]interface{}
+	for _, r := range rooms {
+		if !r.InProgress {
+			playerNames := []string{}
+			for _, player := range r.Players {
+				if player != nil {
+					playerNames = append(playerNames, player.Username)
+				} else {
+					playerNames = append(playerNames, "")
+				}
+			}
+			roomList = append(roomList, map[string]interface{}{
+				"id":         r.ID,
+				"name":       r.Name,
+				"players":    playerNames,
+				"maxPlayers": r.Map.Capacity,
+				"mapName":    r.Map.Name,
+				"creator":    r.HostUsername,
+			})
+		}
+	}
+
+	data, err := json.Marshal(roomList)
+	if err != nil {
+		log.Println("Error marshaling room list:", err)
+		return
+	}
+
+	// Send to all clients that are NOT currently in a game or even all, depending on your logic
+	for _, cli := range connectedClients {
+		// Optionally skip if client is in a game
+		if cli.Room == nil || (cli.Room != nil && !cli.Room.InProgress) {
+			if cli.Conn == nil {
+				log.Println("Client is not connected!")
+				break
+	}
+			cli.Conn.WriteJSON(messages.Message{
+				Type: "roomEntriesUpdate",
+				Data: data,
+			})
+		}
+	}
 }

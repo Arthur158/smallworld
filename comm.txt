@@ -1,7 +1,0 @@
-the needed communications are:
-request all piece stack info (done)
-request polygons info (done, will have to replace the parser eventually, and we have to figure out how to how to also communicate the image of the map)
-request other players info
-request info about available tribes
-
-ok big thought, maybe we don't like the whole promise crap, maybe we want the user to send requests to the server, and handle all responses through the redux environment, since it will not change anyway. Take the example of the conquest of a region. The player tries their move, then nothing happens until the server processes and then it sends the same update to all players, which is the tile information of that particular tile. In case it was an invalid move, then the server sensds an invalid move message, which will display as an error on the player's side. we could even have valid move message, and have a processing message until that valid move message arrives.

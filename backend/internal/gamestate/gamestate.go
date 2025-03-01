@@ -13,7 +13,7 @@ type GameState struct {
 	ModifierPoints map[string]func(int, *Player) int;
 }
 
-func New(playerNames []string, mapName string) (*GameState, error) {
+func New(playerNames []string, mapName string, raceKeys []string, traitKeys []string) (*GameState, error) {
 	// Create a list of initialized players
 	gs := &GameState{}
 	gs.Players = make([]*Player, len(playerNames))
@@ -37,10 +37,14 @@ func New(playerNames []string, mapName string) (*GameState, error) {
 	}
 
 	var err error;
-	gs.TribeList, err = createTribeList()
+	gs.TribeList, err = createTribeList(raceKeys, traitKeys)
 
 	gs.ModifierPoints = make(map[string]func(int, *Player) int)
-	gs.TileList = MapRegistry[mapName](gs)
+	function, ok := MapRegistry[mapName]
+	if !ok {
+		return nil, fmt.Errorf("map not found")
+	}
+	gs.TileList = function(gs)
 
         if err != nil {
             return nil, fmt.Errorf("failed to create list of tribe entries", err)
@@ -62,6 +66,10 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	if entryIndex > 5 || entryIndex < 0 {
 		return fmt.Errorf("Invalid entry index")
+	}
+
+	if entryIndex > len(gs.TribeList) - 1 {
+		return fmt.Errorf("not enough tribe entries")
 	}
 
 	if chooser.CoinPile < entryIndex {
@@ -88,12 +96,12 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
 	gs.GetPieceStackForConquest(gs.Players[gs.TurnInfo.PlayerIndex])
 
-	gs.TurnInfo.Phase = Conquest
+	gs.TurnInfo.Phase = TileAbandonment
 
 	return nil;
 }
 
-func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
+func (gs *GameState) HandleAbandonment(playerIndex int, tileId string, stackType string) error {
 	if gs.TurnInfo.PlayerIndex != playerIndex {
 		return fmt.Errorf("It is not this player's turn!")
 	}
@@ -104,16 +112,21 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string) error {
 
 	player := gs.Players[playerIndex]
 
+	tribe, err := player.getTribe(stackType)
+	if err != nil {
+		return err
+	}
+
+
 	tile, ok := gs.TileList[tileId]
 	if !ok {
 		return fmt.Errorf("No tile with this id!")
 	}
 
-	if player != tile.OwningPlayer {
-		return fmt.Errorf("Player can only abandon their own region!")
+	if tile.Presence == None || !tile.OwningTribe.checkPresence(tile, tribe.Race) {
+		return fmt.Errorf("This tile does not belong to the player!")
 	}
 
-	// maybe do the necessary in cantilebeabandoned for now, meaning checking if the zone only contains the piecestack with 1, this function is necessary to keep the functionality for zombies anyways, so we might as well use it for checking if there is only 1 stack on there.
 	if !tile.OwningTribe.canTileBeAbandoned(tile) {
 		return fmt.Errorf("Stack cannot be removed!")
 	}
@@ -147,7 +160,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 
-	attackingTribe, err := GetPlayerTribe(attackingStackType, attacker)
+	attackingTribe, err := attacker.getTribe(attackingStackType)
 	if err != nil {
 		return err
 	}
@@ -156,9 +169,6 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	if ok {
 		return err
 	}
-
-	defendingTribe := tile.OwningTribe
-
 
 	if tile.Presence != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
 		return err
@@ -172,41 +182,39 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
-	if tile.Presence == Passive || tile.Presence == Active {
-		tileCost, moneyGainDefender, moneyLossAttacker, err = defendingTribe.countDefense(tile)
-		if err != nil {
-			return err
-		}
+	if tile.Presence != None {
+		tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile)
 	} else {
 		tileCost, err = tile.countDefense()
-		if err != nil {
-			return err
-		}
+	}
+	
+	if err != nil {
+		return err
 	}
 
 	// counts the cost for the attacker
 	attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := attackingTribe.countAttack(tile, tileCost, attackingStackType)
 	newStacks, hasDiceBeenUsed, ok, err := attackingTribe.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
-	newTileStacks := attackingTribe.countNewTileStacks(newStacks, tile)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return nil
+		return gs.HandleStartRedeployment(attackerIndex)
 	}
 
 	// Enact changes
 	if tile.Presence != None {
-		tile.OwningPlayer.CoinPile += moneyGainDefender - moneyLossDefender
-		defendingTribe.clearTile(tile, gs, pawnKill)
-		// tile.OwningPlayer.PointsEachTurn[len(tile.OwningPlayer.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
+		tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
+		tile.OwningTribe.handleReturn(tile, gs, pawnKill)
 	}
+
+	newTileStacks := attackingTribe.countNewTileStacks(newStacks, tile)
 	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
-	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, attackCostStacks)
+
+	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
 	attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	tile.OwningTribe = attackingTribe
-	tile.OwningPlayer = attacker
 
 	if tile.OwningTribe.IsActive {
 		tile.Presence = Active
@@ -251,7 +259,7 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 	}
 
 	player := gs.Players[playerIndex]
-	tribe, err := GetPlayerTribe(stackType, player)
+	tribe, err := player.getTribe(stackType)
 	if err != nil {
 		return err
 	}
@@ -278,7 +286,7 @@ func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackT
 	}
 
 	player := gs.Players[playerIndex]
-	tribe, err := GetPlayerTribe(stackType, player)
+	tribe, err := player.getTribe(stackType)
 	if err != nil {
 		return err
 	}
@@ -317,8 +325,7 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 			"%s made %d points this turn",
 			player.Name,
 			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
-		    ),
-)
+		    ),)
 
 	gs.handleNextPlayerTurn()
 

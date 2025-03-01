@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"log"
 	"strconv"
-	"time"
 	"sync"
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -21,13 +22,18 @@ type Room struct {
 	mu	     sync.Mutex
 	Map	     Map
 	saveId	     int64
+	autoSaveId   int64
+	playerStatuses []string
+	IsDisplayRoom  bool
+	ExtensionChoices []Extension
+	GlobalToggle	bool
 }
 
 func createRoom(client *Client, roomName, username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
-	gameMap, ok := mapMap["2 Players"]
+	gameMap, ok := mapMap["map2players"]
 	if !ok {
 		log.Println("Problem logging map")
 	}
@@ -41,11 +47,26 @@ func createRoom(client *Client, roomName, username string) {
 		Gamestate:    gamestate.GameState{},
 		Map:          gameMap,
 		saveId:	      -1,
+		playerStatuses: []string{},
+		GlobalToggle: true,
 	}
 	rooms[room.ID] = room
 
 	for i := range(gameMap.Capacity) {
 		room.Players[i] = nil
+	}
+
+	room.ExtensionChoices = make([]Extension, len(extensions))
+	for i, extension := range(extensions) {
+		room.ExtensionChoices[i] = Extension{ExtensionName: extension.Name, IsChecked: true}
+		room.ExtensionChoices[i].RaceChoices = make([]ChoiceEntry, len(extension.Races))
+		for j, race := range(extension.Races) {
+			room.ExtensionChoices[i].RaceChoices[j] = ChoiceEntry{Choice: race, IsChecked: true}
+		}
+		room.ExtensionChoices[i].TraitChoices = make([]ChoiceEntry, len(extension.Traits))
+		for j, trait := range(extension.Traits) {
+			room.ExtensionChoices[i].TraitChoices[j] = ChoiceEntry{Choice: trait, IsChecked: true}
+		}
 	}
 
 	client.Room = room
@@ -55,6 +76,17 @@ func createRoom(client *Client, roomName, username string) {
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 
 	room.sendMapChoices()
+	room.sendChoices()
+}
+
+func (room *Room) sendPlayerStatuses() {
+		playerStatusesJSON, err := json.Marshal(room.playerStatuses)
+		if err != nil {
+			log.Println("Error marshalling playerStatuses:", err)
+			return
+		}
+
+		room.sendToRoomPlayers(messages.Message{Type: "playerStatuses", Data: json.RawMessage(playerStatusesJSON)})
 }
 
 func (room *Room) sendMapChoices() {
@@ -84,8 +116,86 @@ func (room *Room) sendMapChoices() {
 	host.sendMessage("mapChoices", json.RawMessage(messageJSON))
 }
 
-// ChangeSize modifies the room size while preserving existing players
-func (room *Room) ChangeMap(newMap string) {
+func (room *Room) sendChoices() {
+	var host *Client
+	for i, client := range(room.Players) {
+		if client != nil && client.Username == room.HostUsername {
+			host = room.Players[i]
+			break
+		}
+	}
+	log.Println(host.Username)
+
+	message := map[string]interface{}{
+		"extensionChoices": room.ExtensionChoices,
+		"globalToggle": room.GlobalToggle,
+	}
+
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		host.sendMessage("error", json.RawMessage(`{"error": "Failed to marshal message"}`))
+		return
+	}
+
+	host.sendMessage("choices", json.RawMessage(messageJSON))
+}
+
+
+
+func (room *Room) toggleRace(extension string, race string, check bool) {
+	for i, entry := range(room.ExtensionChoices) {
+		if entry.ExtensionName == extension {
+			for j, entry2 := range(entry.RaceChoices) {
+				if entry2.Choice == race {
+					room.ExtensionChoices[i].RaceChoices[j].IsChecked = check
+				}
+			}
+		}
+	}
+	room.sendChoices()
+}
+func (room *Room) toggleTrait(extension string, trait string, check bool) {
+	for i, entry := range(room.ExtensionChoices) {
+		if entry.ExtensionName == extension {
+			for j, entry2 := range(entry.TraitChoices) {
+				if entry2.Choice == trait {
+					room.ExtensionChoices[i].TraitChoices[j].IsChecked = check
+				}
+			}
+		}
+	}
+	room.sendChoices()
+}
+
+func (room *Room) toggleExtension(name string, check bool) {
+	for i := range(room.ExtensionChoices) {
+		if room.ExtensionChoices[i].ExtensionName == name {
+			room.ExtensionChoices[i].IsChecked = check
+			for j := range(room.ExtensionChoices[i].RaceChoices) {
+				room.ExtensionChoices[i].RaceChoices[j].IsChecked = check
+			}
+			for j := range(room.ExtensionChoices[i].TraitChoices) {
+				room.ExtensionChoices[i].TraitChoices[j].IsChecked = check
+			}
+		}
+	}
+	room.sendChoices()
+}
+func (room *Room) toggleAll(check bool) {
+	room.GlobalToggle = check
+	for i := range(room.ExtensionChoices) {
+		room.ExtensionChoices[i].IsChecked = check
+		for j := range(room.ExtensionChoices[i].RaceChoices) {
+			room.ExtensionChoices[i].RaceChoices[j].IsChecked = check
+		}
+		for j := range(room.ExtensionChoices[i].TraitChoices) {
+			room.ExtensionChoices[i].TraitChoices[j].IsChecked = check
+		}
+	}
+	room.sendChoices()
+}
+
+func (room *Room) ChangeMap(newMap string) bool {
 
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
@@ -93,6 +203,7 @@ func (room *Room) ChangeMap(newMap string) {
 	gameMap, ok := mapMap[newMap]
 	if !ok {
 		log.Println("Problem logging map")
+		return false
 	}
 
 	room.Map = gameMap
@@ -134,6 +245,7 @@ func (room *Room) ChangeMap(newMap string) {
 	log.Printf("Room %s resized to %d players.\n", room.ID, newSize)
 
 	sendRoomsUpdateToAll()
+	return true
 }
 
 func joinRoom(client *Client, roomID, username string) {
@@ -195,6 +307,7 @@ func joinRoom(client *Client, roomID, username string) {
 
 	// Notify client about successful join
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + newRoom.ID + `"}`)))
+	client.Room.sendPlayerStatuses()
 
 	// Broadcast the updated rooms list to everyone
 	sendRoomsUpdateToAll()
@@ -204,6 +317,11 @@ func (room *Room) removePlayer(username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 	var client Client
+
+	if room == nil || room.Players == nil {
+		log.Println("room uninitialized or something")
+		return
+	}
 
 	for i, player := range room.Players {
 		if player != nil && player.Username == username {
@@ -235,6 +353,7 @@ func (room *Room) removePlayer(username string) {
 		delete(rooms, room.ID)
 	}
 
+	client.Room = nil
 	client.sendMessage("lobby", nil)
 
 }
@@ -248,15 +367,28 @@ func (r *Room) MovePlayer(username string, direction string) bool {
 				// Swap with the slot above, even if it's nil
 				if i > 0 {
 					r.Players[i], r.Players[i-1] = r.Players[i-1], r.Players[i]
+					sendRoomsUpdateToAll()
 					return true
 				}
 			case "down":
 				// Swap with the slot below, even if it's nil
 				if i < len(r.Players)-1 {
 					r.Players[i], r.Players[i+1] = r.Players[i+1], r.Players[i]
+					sendRoomsUpdateToAll()
 					return true
 				}
 			}
+		}
+	}
+	return false
+}
+
+func (r *Room) MovePlayerWithIndex(username string, index int) bool {
+	for i := range r.Players {
+		if r.Players[i] != nil && r.Players[i].Username == username {
+			r.Players[i], r.Players[index] = r.Players[index], r.Players[i]
+			sendRoomsUpdateToAll()
+			return true
 		}
 	}
 	return false
@@ -270,6 +402,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		if player == nil {
 			log.Println("The room is not full")
 			client.sendError("The room is not full")
+			return
 		}
 	}
 
@@ -290,17 +423,38 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	playerNames := make([]string, len(room.Players))
 	for i, client := range(room.Players) {
 		playerNames[i] = client.Username
+		if client.DisplayRoom != nil {
+			client.DisplayRoom.EndDisplayRoom()
+		}
 	}
 
 	if room.saveId == -1 {
-		newstate, err := gamestate.New(playerNames, client.Room.Map.Name)
+		raceKeys := []string{}
+		traitKeys := []string{}
+
+		for _, entry := range(room.ExtensionChoices) {
+			for _, entry2 := range(entry.RaceChoices) {
+				if entry2.IsChecked {
+					raceKeys = append(raceKeys, entry2.Choice)
+				}
+			}
+			for _, entry2 := range(entry.TraitChoices) {
+				if entry2.IsChecked {
+					traitKeys = append(traitKeys, entry2.Choice)
+				}
+			}
+		}
+
+		newstate, err := gamestate.New(playerNames, client.Room.Map.Name, raceKeys, traitKeys)
 		if err != nil {
 			log.Println("error creating state")
 		}
 		client.Room.Gamestate = *newstate
 	} else {
-		// here dont forget you need to set the size and change the players names.
 		newstate, _, err := LoadGameState(room.saveId)
+		for i := range(playerNames) {
+			newstate.Players[i].Name = playerNames[i]
+		}
 		if err != nil {
 			log.Println("Error loading game", err)
 			client.sendError("error loading game")
@@ -313,6 +467,18 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	// Mark the room as in-progress
 	room.InProgress = true
 	
+	id, err := SaveGameState(&room.Gamestate, 0, room.Map.Name)
+	if err != nil {
+		log.Println("Problem saving the game")
+	}
+	room.autoSaveId = id
+
+	for _, client := range(room.Players) {
+		err = AddGameIDToUser(client.Username, id)
+		if err != nil {
+			log.Println("Problem adding new save for player")
+		}
+	}
 
 	go func() {
 		for {
@@ -688,7 +854,7 @@ func (room *Room) sendMegaUpdate() {
 	mega.TurnInfo.Phase = room.Gamestate.TurnInfo.Phase.String()
 
 	// -- Players --
-	for i, p := range room.Gamestate.Players {
+	for _, p := range room.Gamestate.Players {
 		if p == nil {
 			continue
 		}
@@ -720,7 +886,7 @@ func (room *Room) sendMegaUpdate() {
 			IsActive bool   `json:"isActive"`
 		}, 0)
 
-		playerData.Name = room.Players[i].Username
+		playerData.Name = p.Name
 		if p.HasActiveTribe {
 			playerData.ActiveTribe.Race = string(p.ActiveTribe.Race)
 			playerData.ActiveTribe.Trait = string(p.ActiveTribe.Trait)
@@ -758,8 +924,12 @@ func (room *Room) sendMegaUpdate() {
 		mega.Players = append(mega.Players, playerData)
 	}
 
+	maxEntries := 5
+	if len(room.Gamestate.TribeList) < maxEntries {
+	    maxEntries = len(room.Gamestate.TribeList)
+	}
 	// -- Tribe Entries --
-	for _, entry := range room.Gamestate.TribeList[:5] {
+	for _, entry := range room.Gamestate.TribeList[:maxEntries] {
 		mega.TribeEntries = append(mega.TribeEntries, struct {
 			Race      string `json:"race"`
 			Trait     string `json:"trait"`
@@ -814,4 +984,54 @@ func (room *Room) sendMegaUpdate() {
 		Type: "megaUpdate",
 		Data: jsonData,
 	})
+}
+
+func (room *Room) AutoSave() {
+	if !room.InProgress {
+		log.Println("game not started")
+		return
+	}
+	id, err := SaveGameState(&room.Gamestate, 0, room.Map.Name)
+	if err != nil {
+		log.Println("Problem saving the game")
+	}
+	for _, client := range(room.Players) {
+		err := RemoveGameIDFromUser(client.Username, room.autoSaveId)
+		if err != nil {
+			log.Println("Problem removing old save")
+		}
+	}
+
+	DeleteGameState(room.autoSaveId)
+	room.autoSaveId = id
+
+	for _, client := range(room.Players) {
+		err = AddGameIDToUser(client.Username, id)
+		if err != nil {
+			log.Println("Problem adding new save for player")
+		}
+	}
+}
+
+func (room *Room) RollBack(client *Client) {
+	if room.Gamestate.TurnInfo.PlayerIndex != client.Index {
+		client.sendError("Not able to roll back on someone else's turn!")
+		return
+	}
+	state, _, err := LoadGameState(room.autoSaveId)
+	if err != nil {
+		client.sendError("Error rolling back")
+	}
+	playerNames := make([]string, len(room.Players))
+	for i, client := range(room.Players) {
+		playerNames[i] = client.Username
+		if client.DisplayRoom != nil {
+			client.DisplayRoom.EndDisplayRoom()
+		}
+	}
+	for i := range(playerNames) {
+		state.Players[i].Name = playerNames[i]
+	}
+	room.Gamestate = *state
+	room.sendMegaUpdate()
 }

@@ -27,18 +27,18 @@ func getMapImageAsBase64(path string) (string, error) {
     return base64.StdEncoding.EncodeToString(imgBytes), nil
 }
 
+var Map2 = Map{
+	Name: "map2players",
+	Offset: 0.728,
+	FontSize: 60,
+	Capacity: 2,
+}
+
 var Map3 = Map{
 	Name: "map3players",
 	Offset: 1,
 	FontSize: 18,
 	Capacity: 3,
-}
-
-var Map5 = Map{
-	Name: "map5players",
-	Offset: 1.185,
-	FontSize: 50,
-	Capacity: 5,
 }
 
 var Map4 = Map{
@@ -48,41 +48,78 @@ var Map4 = Map{
 	Capacity: 4,
 }
 
-var Map2 = Map{
-	Name: "map2players",
-	Offset: 0.728,
-	FontSize: 60,
-	Capacity: 2,
-}
-
-var Map4Isles2 = Map{
-	Name: "map4players2islands",
-	Offset: 1.185,
+var Map5 = Map{
+	Name: "map5players",
+	Offset: 0.39,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 5,
 }
 
 var Map3Isles2 = Map{
 	Name: "map3players2islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 3,
 }
+var Map3Isles3 = Map{
+	Name: "map3players3islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 3,
+}
+
+var Map4Isles2 = Map{
+	Name: "map4players2islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 4,
+}
+var Map4Isles3 = Map{
+	Name: "map4players3islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 4,
+}
+
 
 var Map5Isles2 = Map{
 	Name: "map5players2islands",
 	Offset: 1.185,
 	FontSize: 50,
-	Capacity: 2,
+	Capacity: 5,
+}
+var Map5Isles3 = Map{
+	Name: "map5players3islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 5,
 }
 
+var Map6Isles2 = Map{
+	Name: "map6players2islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 6,
+}
+var Map6Isles3 = Map{
+	Name: "map6players3islands",
+	Offset: 1.185,
+	FontSize: 50,
+	Capacity: 6,
+}
 
 var mapMap = map[string]Map {
-	"2 Players": Map2,
-	"3 Players": Map3,
-	"4 Players": Map4,
-	"4 Players with 2 islands": Map4Isles2,
-	"3 Players with 2 islands": Map3Isles2,
-	"5 Players with 2 islands": Map5Isles2,
+	"map2players": Map2,
+	"map3players": Map3,
+	"map4players": Map4,
+	"map5players": Map5,
+	"map3players2islands": Map3Isles2,
+	"map4players2islands": Map4Isles2,
+	"map5players2islands": Map5Isles2,
+	"map6players2islands": Map6Isles2,
+	"map3players3islands": Map3Isles3,
+	"map4players3islands": Map4Isles3,
+	"map5players3islands": Map5Isles3,
+	"map6players3islands": Map6Isles3,
 }
 

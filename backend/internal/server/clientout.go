@@ -10,14 +10,13 @@ import (
 )
 
 type Client struct {
-	Conn     *websocket.Conn
-	Username string
+	Conn		*websocket.Conn
+	Username	string
 	IsAuthenticated bool
-	Index	int
-	Room   *Room
+	Index		int
+	Room		*Room
+	DisplayRoom	*Room
 }
-
-
 
 func readMessages(client *Client) {
 	conn := client.Conn
@@ -82,7 +81,11 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		createRoom(client, data.RoomName, client.Username)
 		client.sendUserSaves()
-
+	case "enterdisplayroom":
+		client.sendUserSaves()
+		createDisplayRoom(client)
+		client.DisplayRoom.sendMapChoices()
+		client.sendMessage("displayroom", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "leaveroom":
 		client.Room.removePlayer(client.Username)
 		sendRoomsUpdateToAll()
@@ -139,6 +142,9 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		}
 		client.handleLogin(data.UserName, data.Password)
 		sendRoomsUpdateToAll()
+	case "logout":
+		client.handleLogout()
+		sendRoomsUpdateToAll()
 	case "moveUp":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -149,7 +155,6 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.Room.MovePlayer(data.Username, "up")
-		sendRoomsUpdateToAll()
 	case "moveDown":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -160,7 +165,6 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.Room.MovePlayer(data.Username, "down")
-		sendRoomsUpdateToAll()
 	case "changeRoomMap":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -171,6 +175,10 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.Room.ChangeMap(data.NewMap)
+		client.Room.playerStatuses = []string{}
+		client.Room.saveId = -1
+		client.Room.sendPlayerStatuses()
+		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "kickPlayer":
 		var data struct {
 			RoomId string `json:"roomId"`
@@ -184,7 +192,7 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		sendRoomsUpdateToAll()
 		
 	case "savegame":
-		id, err := SaveGameState(&client.Room.Gamestate, client.Index)
+		id, err := SaveGameState(&client.Room.Gamestate, client.Index, client.Room.Map.Name)
 		if err != nil {
 			log.Println("Error saving game", err)
 			client.sendError("error saving game")
@@ -197,23 +205,184 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		client.sendMessage("message", json.RawMessage([]byte(`{"message": "Game successfully saved"}`)))
+	case "rollback":
+		client.Room.RollBack(client)
 	case "loadgame":
 		var data struct {
 			SaveId int64 `json:"saveId"`
 		}
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
 			log.Println("Raw Data:", string(msg.Data)) // Debug log
 			return
 		}
 		log.Println("Successfully parsed:", data)
 
-		// here also need to pull map name and game size to change the room so that it corresponds to the saved game
+		if data.SaveId == -1 {
+			client.Room.playerStatuses = []string{}
+			client.Room.saveId = data.SaveId
+			client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
+			client.Room.sendPlayerStatuses()
+			return
+		} 
+		index, mapName, playerStatuses, err := LoadGameInfo(data.SaveId)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		ok := client.Room.ChangeMap(mapName)
+		if !ok {
+			client.sendError("Error changing map")
+		}
+		ok = client.Room.MovePlayerWithIndex(client.Username, index)
+		if !ok {
+			client.sendError("Error moving player")
+		}
+		client.Room.playerStatuses = playerStatuses
 		client.Room.saveId = data.SaveId
 		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
+		client.Room.sendPlayerStatuses()
+	case "deletesave":
+		var data struct {
+			SaveId int64 `json:"saveId"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+		RemoveGameIDFromUser(client.Username, data.SaveId)
+		client.sendUserSaves()
+	case "loadgamedisplay":
+		var data struct {
+			SaveId int64 `json:"saveId"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+		if client.DisplayRoom == nil {
+			client.sendError("client not in a display room!")
+		}
+		client.DisplayRoom.LoadSave(client, data.SaveId)
+		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(data.SaveId, 10) + `}`)))
+	case "loadmapdisplay":
+		var data struct {
+			Name string `json:"mapName"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+		if client.DisplayRoom == nil {
+			client.sendError("client not in a display room!")
+		}
+		log.Println(data.Name)
+		client.DisplayRoom.LoadMap(client, data.Name)
+		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
+	case "leavedisplayroom":
+		client.DisplayRoom.EndDisplayRoom()
+		sendRoomsUpdateToAll()
+	case "toggleRace":
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
+		var data struct {
+			ExtensionName string `json:"extensionName"`
+			RaceChoice string `json:"raceChoice"`
+			Checked bool `json:"checked"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+
+		client.Room.toggleRace(data.ExtensionName, data.RaceChoice, data.Checked)
+	case "toggleTrait":
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
+		var data struct {
+			ExtensionName string `json:"extensionName"`
+			TraitChoice string `json:"traitChoice"`
+			Checked bool `json:"checked"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+
+		client.Room.toggleTrait(data.ExtensionName, data.TraitChoice, data.Checked)
+	case "toggleExtension":
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
+		var data struct {
+			ExtensionName string `json:"extensionName"`
+			Checked bool `json:"checked"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+
+		client.Room.toggleExtension(data.ExtensionName, data.Checked)
+	case "toggleAll":
+		if client.Room == nil {
+			return
+		}
+		if client.Username != client.Room.HostUsername {
+			return
+		}
+		var data struct {
+			Checked bool `json:"checked"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling loadGame data:", err)
+			client.sendError("Error unmarshalling game")
+			log.Println("Raw Data:", string(msg.Data)) // Debug log
+			return
+		}
+		log.Println("Successfully parsed:", data)
+
+		client.Room.toggleAll(data.Checked)
 	default:
 		log.Println("Received unknown or in-game message type:", msg.Type)
 	}
+}
+
+func (client *Client) handleLogout() {
+	delete(nameSet, client.Username)
+	client.Username = ""
+	client.IsAuthenticated = false
+	client.sendMessage("unauth", json.RawMessage([]byte(`{"name": "` + client.Username + `"}`)))
 }
 
 func (client *Client) handleLogin(userName string, password string) {
@@ -246,9 +415,13 @@ func (client *Client) handleLogin(userName string, password string) {
 		}
 		if room.InProgress {
 			room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
+			room.sendSmallMapUpdate()
+			room.sendBigUpdate()
 		}
-		room.sendSmallMapUpdate()
-		room.sendBigUpdate()
+		client.Room.sendMapChoices()
+		client.sendUserSaves()
+		client.Room.sendChoices()
+		client.Room.sendPlayerStatuses()
 		client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 	}
 }
@@ -269,9 +442,8 @@ func (client *Client) sendUserSaves() {
 
 	for _, id := range saveIds {
 		// For each save ID, retrieve the summary from the database
-		var summary string
-		row := db.QueryRow("SELECT summary FROM game_states WHERE id = ?", id)
-		if err := row.Scan(&summary); err != nil {
+		summary, err := LoadSummary(id)
+		if err != nil {
 			log.Printf("Could not retrieve summary for save ID %d: %v\n", id, err)
 			continue
 		}
@@ -314,59 +486,27 @@ func (client *Client) sendError (errorMsg string) {
 		Type: "error",
 		Data: json.RawMessage([]byte(fmt.Sprintf(`{"message": "%s"}`, errorMsg))),
 	}
-	client.Conn.WriteJSON(errMsg)
+	if client.Conn == nil {
+		log.Println("Client is not connected!")
+		return
+	}
+	err := client.Conn.WriteJSON(errMsg)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func (client *Client) sendMessage (msgType string, msgData json.RawMessage) {
 	errMsg := messages.Message{
 		Type: msgType,
 		Data: msgData	}
-	client.Conn.WriteJSON(errMsg)
-}
-
-func sendRoomsUpdateToAll() {
-	// Build a list of rooms that are not in progress or in progress (up to you)
-	secondRoomsMu.Lock()
-	defer secondRoomsMu.Unlock()
-
-	var roomList []map[string]interface{}
-	for _, r := range rooms {
-		if !r.InProgress {
-			playerNames := []string{}
-			for _, player := range r.Players {
-				if player != nil {
-					playerNames = append(playerNames, player.Username)
-				} else {
-					playerNames = append(playerNames, "")
-				}
-			}
-			roomList = append(roomList, map[string]interface{}{
-				"id":         r.ID,
-				"name":       r.Name,
-				"players":    playerNames,
-				"maxPlayers": r.Map.Capacity,
-				"mapName":    r.Map.Name,
-				"creator":  r.HostUsername,
-			})
-		}
-	}
-
-	data, err := json.Marshal(roomList)
-	if err != nil {
-		log.Println("Error marshaling room list:", err)
+	if client == nil || client.Conn == nil {
+		log.Println("Client is not connected!")
 		return
 	}
-
-	// Send to all clients that are NOT currently in a game or even all, depending on your logic
-	for _, cli := range connectedClients {
-		// Optionally skip if client is in a game
-		if cli.Room == nil || (cli.Room != nil && !cli.Room.InProgress) {
-			cli.Conn.WriteJSON(messages.Message{
-				Type: "roomEntriesUpdate",
-				Data: data,
-			})
-		}
+	err := client.Conn.WriteJSON(errMsg)
+	if err != nil {
+		log.Println(err)
 	}
 }
-
 

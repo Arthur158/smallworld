@@ -24,7 +24,6 @@ const initialState: ApplicationState = {
   selectedTile: null,
   messages: [],
   scores: [],
-
   rooms: [],
   roomid: "",
   name: "",
@@ -34,9 +33,14 @@ const initialState: ApplicationState = {
   saveGames: [],
   saveSelectionId: -1,
   mapName: null,
-  offsetStacksX: 10,
-  offsetStacksY: 10,
+  offsetStacks: 10,
   mapChoices: [],
+  playerStatuses: [],
+  Xmult: 1,
+  Ymult: 1,
+  inDisplayRoom: false,
+  extensionChoices: [],
+  globalToggle: true,
 };
 
 const applicationSlice = createSlice({
@@ -114,12 +118,16 @@ const applicationSlice = createSlice({
         case 'unauth': {
           state.gameStarted = false
           state.isAuthenticated = false
+          state.roomid = ""
 
           state.name = ""
           break;
         }
         case 'loadSaves' : 
           state.saveGames = parsedData.saves
+          break;
+        case 'playerStatuses' :
+          state.playerStatuses = parsedData
           break;
         case 'saveSelection' : 
           state.saveSelectionId = parsedData.index
@@ -130,10 +138,8 @@ const applicationSlice = createSlice({
           }
           break;
         }
-
         case 'index':
           state.playerIndex = Number(parsedData.index);
-          state.gameStarted = true
           break;
         case 'roomid':
           state.roomid = parsedData.roomid;
@@ -141,6 +147,16 @@ const applicationSlice = createSlice({
         case 'lobby':
           state.roomid = ""
           state.gameStarted = false
+          break;
+        case 'displayroom':
+          state.inDisplayRoom = true
+          state.gameStarted = false
+          state.saveSelectionId = -1
+          break;
+        case 'leavedisplayroom':
+          state.gameStarted = false
+          state.inDisplayRoom = false
+          state.saveSelectionId = -1
           break;
         case 'error':
           state.error = parsedData.message;
@@ -165,7 +181,6 @@ const applicationSlice = createSlice({
             state.mapImageUrl = imgUrl;
           }
           state.offsetMapTiles = parsedData.offset
-
           const newTiles: Record<string, Tile> = {};
           data.zones.forEach((tileData: any, index: number) => {
             const tileId = String(tileData.id);
@@ -184,19 +199,25 @@ const applicationSlice = createSlice({
         }
         case 'mapChoices': {
           state.mapChoices = parsedData.mapChoices
-          state.mapName = parsedData.MapName
+          break;
+        }
+        case 'choices': {
+          state.extensionChoices = parsedData.extensionChoices
+          state.globalToggle = parsedData.globalToggle
           break;
         }
         case 'smallmapupdate': {
           state.offsetMapTiles = parsedData.offset;
           state.mapName = parsedData.MapName;
 
+
           // Load tile definitions from your local map data
           const mapKey = state.mapName || '';
           const tileDataArray = mapDatabase[mapKey] || [];
 
-          state.offsetStacksX = tileDataArray.OffsetStacksX
-          state.offsetStacksY = tileDataArray.OffsetStacksY
+          state.offsetStacks = tileDataArray.OffsetStacks
+          state.Xmult = tileDataArray.Xmult
+          state.Ymult = tileDataArray.Ymult
 
           const newTiles: Record<string, Tile> = {};
           tileDataArray.Tiles.forEach((tileDef) => {
@@ -239,6 +260,30 @@ const applicationSlice = createSlice({
             players.push(player);
           }
           state.players = players;
+          if (state.selectedStack != null && state.isStackFromBank) {
+            let found = false
+            for (const stack of state.players[state.playerIndex].pieceStacks) {
+              if (stack.type === state.selectedStack) {
+                found = true; 
+                break
+              }
+            }
+            if (!found) {
+              state.selectedStack = null;
+            }
+          } else if (state.selectedStack != null && !state.isStackFromBank && state.selectedTile != null) {
+            let found = false
+            for (const stack of state.tiles[state.selectedTile].pieceStack) {
+              if (stack.type === state.selectedStack) {
+                found = true
+                break; 
+              }
+            }
+            if (!found) {
+              state.selectedStack = null
+              state.selectedTile = null
+            }
+          }
           break;
         }
         case 'tribeentries':
@@ -324,40 +369,42 @@ const applicationSlice = createSlice({
 
           // 2) Players
           const players: Player[] = [];
-          for (let i = 0; i < parsedData.players.length; i++) {
-            const pData = parsedData.players[i];
-            const tempPlayer: Player = {
-              name: pData.name,
-              activeTribe: {
-                race: pData.activeTribe.race,
-                trait: pData.activeTribe.trait,
-              },
-              passiveTribes: [],
-              pieceStacks: [],
-            };
+          if (parsedData.players != null) {
+            for (let i = 0; i < parsedData.players.length; i++) {
+              const pData = parsedData.players[i];
+              const tempPlayer: Player = {
+                name: pData.name,
+                activeTribe: {
+                  race: pData.activeTribe.race,
+                  trait: pData.activeTribe.trait,
+                },
+                passiveTribes: [],
+                pieceStacks: [],
+              };
 
-            // Passive tribes
-            if (pData.passiveTribes && Array.isArray(pData.passiveTribes)) {
-              for (const t of pData.passiveTribes) {
-                tempPlayer.passiveTribes.push({
-                  race: t.race,
-                  trait: t.trait,
-                });
+              // Passive tribes
+              if (pData.passiveTribes && Array.isArray(pData.passiveTribes)) {
+                for (const t of pData.passiveTribes) {
+                  tempPlayer.passiveTribes.push({
+                    race: t.race,
+                    trait: t.trait,
+                  });
+                }
               }
-            }
 
-            // Piece stacks
-            if (pData.pieceStacks && Array.isArray(pData.pieceStacks)) {
-              for (const stack of pData.pieceStacks) {
-                tempPlayer.pieceStacks.push({
-                  type: stack.type,
-                  amount: stack.amount,
-                  isActive: stack.isActive,
-                });
+              // Piece stacks
+              if (pData.pieceStacks && Array.isArray(pData.pieceStacks)) {
+                for (const stack of pData.pieceStacks) {
+                  tempPlayer.pieceStacks.push({
+                    type: stack.type,
+                    amount: stack.amount,
+                    isActive: stack.isActive,
+                  });
+                }
               }
-            }
 
-            players.push(tempPlayer);
+              players.push(tempPlayer);
+            }
           }
           state.players = players;
 
@@ -393,6 +440,32 @@ const applicationSlice = createSlice({
                 });
               }
               tileObj.pieceStack = stacks;
+            }
+          }
+          if (state.selectedStack != null && state.isStackFromBank) {
+            let found = false
+            for (const stack of state.players[state.playerIndex].pieceStacks) {
+              if (stack.type === state.selectedStack) {
+                found = true; 
+                break
+              }
+            }
+            if (!found) {
+              state.selectedStack = null;
+            }
+          } else if (state.selectedStack != null && !state.isStackFromBank && state.selectedTile != null) {
+            let found = false
+            console.log(state.tiles[state.selectedTile].pieceStack)
+            for (const stack of state.tiles[state.selectedTile].pieceStack) {
+              console.log(stack)
+              if (stack.type === state.selectedStack) {
+                found = true
+                break; 
+              }
+            }
+            if (!found) {
+              state.selectedStack = null
+              state.selectedTile = null
             }
           }
 

@@ -1,5 +1,5 @@
 import { Language } from './misc';
-import { TribeEntry, Tile, Player, Room, SaveGameInfo } from './Board'
+import { TribeEntry, Tile, Player, Room, SaveGameInfo, ChoiceEntry } from './Board'
 
 
 export interface ApplicationState {
@@ -27,9 +27,19 @@ export interface ApplicationState {
   saveGames: SaveGameInfo[]
   saveSelectionId: number
   mapName: string | null;
-  offsetStacksX: number
-  offsetStacksY: number
+  offsetStacks: number
   mapChoices: string[]
+  playerStatuses: string[]
+  Xmult: number
+  Ymult: number
+  inDisplayRoom: boolean
+  extensionChoices: {
+    extensionName: string;
+    isChecked: boolean;
+    raceChoices: { choice: string; isChecked: boolean }[];
+    traitChoices: { choice: string; isChecked: boolean }[];
+  }[];
+  globalToggle: boolean
 }
 
 export type RootState = {
