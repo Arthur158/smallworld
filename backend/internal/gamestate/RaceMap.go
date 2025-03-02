@@ -731,6 +731,17 @@ var RaceMap = map[Race]RaceValue {
 				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
 				gs.Players[gs.TurnInfo.PlayerIndex].PieceStacks, _ = SubtractPieceStacks(gs.Players[gs.TurnInfo.PlayerIndex].PieceStacks, movingStack)
 			}
+			gs.ModifierTurnsBefore = append(gs.ModifierTurnsBefore, TurninfoEntry{
+				TurnInfo: TurnInfo{
+					TurnIndex: gs.TurnInfo.TurnIndex + 1,
+					PlayerIndex: t.Owner.Index,
+					Phase: TileAbandonment,
+				},
+				player: t.Owner.Index,
+				actionBefore: func(gs *GameState) {
+					gs.GetPieceStackForConquest(t)
+				},
+			})
 			return oldgoIntoDecline(gs)
 
 		}
@@ -868,79 +879,49 @@ var RaceMap = map[Race]RaceValue {
 		}
 		}, Count: 6},
 	"Priestesses": {Transform: func(t *Tribe) {
-		t.State["access"] = false
-		oldgiveInitialStacks := t.giveInitialStacks
-		t.giveInitialStacks = func() []PieceStack {
-			stacks := oldgiveInitialStacks()
-			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Decline", Amount: 1}})
-			return stacks
-		}
 		oldIsStackValid := t.IsStackValid
 		t.IsStackValid = func(stackType string) bool {
 			return stackType == "Decline" || oldIsStackValid(stackType)
 		}
-		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
-		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
-			oldStacks := oldcountRemovableAttackingStacks(p)
-			for _, stack := range(p.PieceStacks) {
-				if stack.Type == "Decline" {
-					oldStacks = append(oldStacks, stack)
-				}
-			}
-			return oldStacks
+		oldgoIntoDecline := t.goIntoDecline
+		t.goIntoDecline = func(gs *GameState) int {
+			points := oldgoIntoDecline(gs)
+			t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Decline", Amount: 1}})
+			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
+				player: t.Owner.Index,
+				TurnInfo: TurnInfo{
+					TurnIndex: gs.TurnInfo.TurnIndex,
+					PlayerIndex: gs.TurnInfo.PlayerIndex,
+					Phase: Redeployment,
+				},
+				actionBefore: func(gs *GameState) {},
+			})
+			return points
 		}
-		oldSpecialConquest := t.specialConquest
-		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
-			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
-			if ok {
-				return ok, err
+		oldhandleDeploymentIn := t.handleDeploymentIn
+		t.handleDeploymentIn = func (tile *Tile, stackType string, i int, gs *GameState) error {
+			if t.IsActive || stackType != "Decline" {
+				return oldhandleDeploymentIn(tile, stackType, i, gs)
 			}
-			if stackType != "Decline" {
-				return false, nil
-			}
-
-			t.State["access"] = true
-			if !t.canGoIntoDecline(gs) {
-				return true, fmt.Errorf("Must be in the decline choice phase")
-			}
-
-			if !tile.OwningTribe.checkPresence(tile, t.Race) {
-				return true, fmt.Errorf("This tile does not belong to the priestesses")
-			}
-
 			count := 0
 			for _, otherTile := range(gs.TileList) {
 				if tile.Id != otherTile.Id && otherTile.Presence != None && otherTile.OwningTribe.checkPresence(otherTile, t.Race) {
-					t.clearTile(otherTile, gs, 0)
+					t.clearTile(otherTile, gs, 10000)
 					count += 1
 				}
 			}
-			removablestacks := t.countRemovablePieces(tile)
-			tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, removablestacks)
 			for i := range(tile.PieceStacks) {
 				if tile.PieceStacks[i].Type == string(t.Race) {
 					tile.PieceStacks[i].Amount += count
 				}
 			}
-			tile.Presence = Passive
-			player := t.Owner
-			points := t.goIntoDecline(gs)
-			player.CoinPile += points
-
-			player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
-			gs.Messages = append(gs.Messages, fmt.Sprintf(
-				"%s went into decline and made %d points this turn",
-				player.Name,
-				player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
-			    ))
-
+			for i := range(t.Owner.PieceStacks) {
+				if t.Owner.PieceStacks[i].Type == "Decline" {
+					t.Owner.PieceStacks = append(t.Owner.PieceStacks[:i], t.Owner.PieceStacks[i+1:]...)
+				}
+			}
 			gs.handleNextPlayerTurn()
-			return true, nil
-		}
-		oldcanGoIntoDecline := t.canGoIntoDecline
-		t.canGoIntoDecline = func(gs *GameState) bool {
-			access, _ := t.State["access"].(bool)
-			return access && oldcanGoIntoDecline(gs)
+			return nil
 		}
 		oldCountPoints := t.countPoints
 		t.countPoints = func(tile *Tile) int {

@@ -111,6 +111,7 @@ const applicationSlice = createSlice({
         case 'auth': {
           state.gameStarted = false
           state.isAuthenticated = true
+          state.error = null
 
           state.name = parsedData.name
           break;
@@ -119,6 +120,7 @@ const applicationSlice = createSlice({
           state.gameStarted = false
           state.isAuthenticated = false
           state.roomid = ""
+          state.error = null
 
           state.name = ""
           break;
@@ -147,16 +149,19 @@ const applicationSlice = createSlice({
         case 'lobby':
           state.roomid = ""
           state.gameStarted = false
+          state.error = null
           break;
         case 'displayroom':
           state.inDisplayRoom = true
           state.gameStarted = false
           state.saveSelectionId = -1
+          state.error = null
           break;
         case 'leavedisplayroom':
           state.gameStarted = false
           state.inDisplayRoom = false
           state.saveSelectionId = -1
+          state.error = null
           break;
         case 'error':
           state.error = parsedData.message;
@@ -353,6 +358,7 @@ const applicationSlice = createSlice({
         case 'gamefinished':
           state.scores = parsedData;
           state.phase = 'GameFinished';
+          state.error = null
           break;
 
         case 'message':

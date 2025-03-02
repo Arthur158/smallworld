@@ -2,6 +2,7 @@ package gamestate
 
 import (
 	"fmt"
+	"log"
 )
 
 type GameState struct {
@@ -9,8 +10,12 @@ type GameState struct {
 	TribeList []*TribeEntry
 	TileList map[string]*Tile
 	TurnInfo *TurnInfo
+	RealTurninfo *TurnInfo
 	Messages []string
 	ModifierPoints map[string]func(int, *Player) int;
+	ModifierTurnsBefore []TurninfoEntry
+	ModifierTurnsAfter []TurninfoEntry
+	IsBefore bool
 }
 
 func New(playerNames []string, mapName string, raceKeys []string, traitKeys []string) (*GameState, error) {
@@ -36,6 +41,8 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 		Phase: TribeChoice,
 	}
 
+	gs.RealTurninfo = nil
+
 	var err error;
 	gs.TribeList, err = createTribeList(raceKeys, traitKeys)
 
@@ -49,6 +56,10 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
         if err != nil {
             return nil, fmt.Errorf("failed to create list of tribe entries", err)
         }
+
+	gs.ModifierTurnsAfter = []TurninfoEntry{}
+	gs.ModifierTurnsBefore = []TurninfoEntry{}
+	gs.IsBefore = false
 
 	return gs, nil
 }
@@ -94,7 +105,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, []PieceStack{{Type: string(entry.Race), Amount: entry.PiecePile}})
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
-	gs.GetPieceStackForConquest(gs.Players[gs.TurnInfo.PlayerIndex])
+	gs.GetPieceStackForConquest(chooser.ActiveTribe)
 
 	gs.TurnInfo.Phase = TileAbandonment
 
@@ -322,15 +333,6 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 		return err
 	}
 
-	player.CoinPile += gs.countPoints(player)
-	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
-
-	gs.Messages = append(gs.Messages, fmt.Sprintf(
-			"%s made %d points this turn",
-			player.Name,
-			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
-		    ),)
-
 	gs.handleNextPlayerTurn()
 
 	return nil
@@ -355,16 +357,7 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
             return fmt.Errorf("The tribe cannot go in decline at this moment")
         }
 
-
-	points := player.ActiveTribe.goIntoDecline(gs)
-	player.CoinPile += points
-	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
-
-	gs.Messages = append(gs.Messages, fmt.Sprintf(
-			"%s went into decline and made %d points this turn",
-			player.Name,
-			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
-		    ))
+	player.ActiveTribe.goIntoDecline(gs)
 
 	gs.handleNextPlayerTurn()
 
@@ -372,7 +365,43 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 }
 
 func (gs *GameState) handleNextPlayerTurn() {
-	if gs.TurnInfo.PlayerIndex == len(gs.Players) - 1 {
+	log.Println(gs.RealTurninfo)
+	if gs.RealTurninfo != nil {
+		gs.TurnInfo = gs.RealTurninfo
+		gs.RealTurninfo = nil
+	}
+
+	for i := range(gs.ModifierTurnsAfter) {
+		if (gs.ModifierTurnsAfter[i].player == gs.TurnInfo.PlayerIndex) {
+			gs.RealTurninfo = gs.TurnInfo
+			gs.TurnInfo = &gs.ModifierTurnsAfter[i].TurnInfo
+			gs.ModifierTurnsBefore[i].actionBefore(gs)
+			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter[:i], gs.ModifierTurnsAfter[i+1:]...)
+			return
+		}
+	}
+
+	player := gs.Players[gs.TurnInfo.PlayerIndex]
+	player.CoinPile += gs.countPoints(player)
+	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
+
+	if player.HasActiveTribe && !gs.IsBefore {
+		gs.Messages = append(gs.Messages, fmt.Sprintf(
+			"%s made %d points this turn",
+			player.Name,
+			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
+		))
+	} else if !gs.IsBefore {
+		gs.Messages = append(gs.Messages, fmt.Sprintf(
+			"%s went into decline and made %d points this turn",
+			player.Name,
+			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
+		))
+	}
+
+	if gs.IsBefore {
+		gs.ChoosePlayerStart()
+	} else if gs.TurnInfo.PlayerIndex == len(gs.Players) - 1 {
 		if gs.TurnInfo.TurnIndex == 10 {
 			gs.TurnInfo.Phase = GameFinished
 		} else {
@@ -387,9 +416,20 @@ func (gs *GameState) handleNextPlayerTurn() {
 }
 
 func (gs *GameState) ChoosePlayerStart() {
+	gs.IsBefore = false
+	for i := range(gs.ModifierTurnsBefore) {
+		if (gs.ModifierTurnsBefore[i].player == gs.TurnInfo.PlayerIndex) {
+			gs.RealTurninfo = gs.TurnInfo
+			gs.TurnInfo = &gs.ModifierTurnsBefore[i].TurnInfo
+			gs.ModifierTurnsBefore[i].actionBefore(gs)
+			gs.ModifierTurnsBefore = append(gs.ModifierTurnsBefore[:i], gs.ModifierTurnsBefore[i+1:]...)
+			gs.IsBefore = true
+			return
+		}
+	}
 	if gs.Players[gs.TurnInfo.PlayerIndex].HasActiveTribe {
 		gs.TurnInfo.Phase = DeclineChoice
-		gs.GetPieceStackForConquest(gs.Players[gs.TurnInfo.PlayerIndex])
+		gs.GetPieceStackForConquest(gs.Players[gs.TurnInfo.PlayerIndex].ActiveTribe)
 	} else {
 		gs.TurnInfo.Phase = TribeChoice
 	}
