@@ -780,7 +780,7 @@ export const mapDatabase: Record<string, MapData> = {
   ],
   },
   map4players: {
-    OffsetStacks: 1/25,
+    OffsetStacks: 1/45,
     Xmult: 1,
     Ymult: 1,
   Tiles: [

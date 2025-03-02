@@ -347,6 +347,10 @@ func CreateBaseTribe() *Tribe {
         return []PieceStack{{Type: s, Amount: 1, Tribe: &tribe}}
     }
 
+    tribe.canEndTurn = func(gs *GameState) error {
+        return nil
+    }
+
     return &tribe
 }
 

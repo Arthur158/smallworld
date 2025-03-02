@@ -10,6 +10,21 @@ type RaceValue struct {
 }
 
 var RaceMap = map[Race]RaceValue {
+	"Amazons": {Transform: func(t *Tribe) {
+		oldCanEndTurn := t.canEndTurn
+		t.canEndTurn = func(gs *GameState) error {
+			err := oldCanEndTurn(gs)
+			if err != nil {
+				return err
+			}
+			for _, stack := range(t.Owner.PieceStacks) {
+				if stack.Type == string(t.Race) && stack.Amount >= 4 {
+					return nil
+				}
+			}
+			return fmt.Errorf("You cannot end your turn with less than 4 amazons in your hand!")
+		}
+		}, Count: 10},
 	"Trolls": {Transform: func(t *Tribe) {
 		// Make a newly conquered region contain a lair
 		oldCountNewTileStacks := t.countNewTileStacks
@@ -286,17 +301,15 @@ var RaceMap = map[Race]RaceValue {
 		}
 		}, Count: 9},
 	"Sorcerers": {Transform: func(t *Tribe) {
-		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
-		t.getStacksForConquestTurn = func(player *Player, gs *GameState) {
-			oldgetStacksForConquestTurn(player, gs)
-			newstacks := []PieceStack{}
-			for _, stack := range(player.PieceStacks) {
-				if stack.Type != "Staff" {
-					newstacks = append(newstacks, stack)
+		oldcountRemovablePieces := t.countRemovablePieces
+		t.countRemovablePieces = func(tile *Tile) []PieceStack {
+			oldStacks := oldcountRemovablePieces(tile)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Staff" {
+					oldStacks = append(oldStacks, stack)
 				}
 			}
-			newstacks = append(newstacks, PieceStack{Type: "Staff", Amount: 1})
-			player.PieceStacks = newstacks
+			return oldStacks
 		}
 		oldIsStackValid := t.IsStackValid
 		t.IsStackValid = func(s string) bool {
@@ -312,23 +325,26 @@ var RaceMap = map[Race]RaceValue {
 				return false, nil
 			}
 
+			if tile.Presence != Active {
+				return true, fmt.Errorf("tribe needs to be active")
+			}
+
 			if err := t.checkZoneAccess(tile); err != nil {
-				return true, fmt.Errorf("cannot access zone", err)
+				return true, err
 			}
 			if err := t.checkAdjacency(tile, gs); err != nil {
-				return true, fmt.Errorf("cannot reach zone", err)
+				return true, err
 			}
 
 			if !gs.IsTribePresentOnTheBoard(t.Race) {
 				return true, fmt.Errorf("you need to be already present on the board")
 			}
 
-
 			if tile.Presence == Active {
 				// Maybe do something with those, in case this is actually considered a conquest
 				_, _, _, err := tile.OwningTribe.countDefense(tile)
 				if err != nil {
-					return true, fmt.Errorf("Impossible to attack", err)
+					return true, err
 				}
 			} else {
 				return true, fmt.Errorf("This tile does not contain an active tribe")
@@ -1022,6 +1038,16 @@ var RaceMap = map[Race]RaceValue {
 				}
 			}
 			return points
+		}
+		oldcountRemovablePieces := t.countRemovablePieces
+		t.countRemovablePieces = func(tile *Tile) []PieceStack {
+			oldStacks := oldcountRemovablePieces(tile)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Winter" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
 		}
 		}, Count: 5},
 }

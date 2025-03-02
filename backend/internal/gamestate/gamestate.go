@@ -318,6 +318,10 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 
 	player := gs.Players[playerIndex]
 
+	if err := player.ActiveTribe.canEndTurn(gs); err != nil {
+		return err
+	}
+
 	player.CoinPile += gs.countPoints(player)
 	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
 
@@ -341,6 +345,10 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 
 	if !player.HasActiveTribe {
 		return fmt.Errorf("The player does not have an active tribe!")
+	}
+
+	if err := player.ActiveTribe.canEndTurn(gs); err != nil {
+		return err
 	}
 
         if !player.ActiveTribe.canGoIntoDecline(gs) {

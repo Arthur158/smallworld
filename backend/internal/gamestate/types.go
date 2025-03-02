@@ -49,6 +49,7 @@ type Tribe struct {
 	handleDeploymentIn func(*Tile, string, int, *GameState) error;
 
 	// end of turn
+	canEndTurn func(*GameState) error;
 	countPoints func(*Tile) int;
 	countExtrapoints func(*GameState) int;
 
