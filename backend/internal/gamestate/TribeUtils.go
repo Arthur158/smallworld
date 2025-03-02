@@ -267,7 +267,7 @@ func CreateBaseTribe() *Tribe {
     }
 
     // This function should be used to undo tribe advantages in certain tribe, although in an ideal world this would also deactivate any illegal actions, but should not be possible in the first place.
-    tribe.goIntoDecline = func(gs *GameState) int {
+    tribe.goIntoDecline = func(gs *GameState) {
         player := tribe.Owner
 
 	for i, tribe := range player.PassiveTribes {
@@ -291,7 +291,7 @@ func CreateBaseTribe() *Tribe {
 	player.ActiveTribe = nil
 	player.HasActiveTribe = false
 
-	return gs.countPoints(player)
+	return
     }
 
     tribe.giveInitialStacks = func() []PieceStack {

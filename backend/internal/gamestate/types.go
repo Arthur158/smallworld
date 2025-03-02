@@ -57,7 +57,7 @@ type Tribe struct {
 	countRemovablePieces func(*Tile) []PieceStack;
 	countRemovableAttackingStacks func(*Player) []PieceStack;
 	canGoIntoDecline func(*GameState) bool;
-	goIntoDecline func(*GameState) int;
+	goIntoDecline func(*GameState);
 	prepareRemoval func(*GameState) bool;
 }
 

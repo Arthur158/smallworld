@@ -849,14 +849,24 @@ var TraitMap = map[Trait]TraitValue {
 		}
 		}, Count: 4},
 	"Stout": {Transform: func(t *Tribe) {
+		t.State["extrapoints"] = 0
 		t.canGoIntoDecline = func(gs *GameState) bool {
 			return true
 		}
 		oldgoIntoDecline := t.goIntoDecline
-		t.goIntoDecline = func(gs *GameState) int {
-			points := gs.countPoints(t.Owner)
-			_ = oldgoIntoDecline(gs)
-			return points
+		t.goIntoDecline = func(gs *GameState) {
+			pluspoints := gs.countPoints(t.Owner)
+			oldgoIntoDecline(gs)
+			minuspoints := gs.countPoints(t.Owner)
+			t.State["extrapoints"] = pluspoints - minuspoints
+			return
+		}
+		oldCountExtraPoints := t.countExtrapoints
+		t.countExtrapoints = func(gs *GameState) int {
+			count := oldCountExtraPoints(gs)
+			extraPoints := t.State["extrapoints"].(int)
+			t.State["extrapoints"] = 0
+			return count + extraPoints
 		}
 		}, Count: 4},
 	"Fireball": {Transform: func(t *Tribe) {

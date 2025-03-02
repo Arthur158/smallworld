@@ -723,7 +723,7 @@ var RaceMap = map[Race]RaceValue {
 
 		}
 		oldgoIntoDecline := t.goIntoDecline
-		t.goIntoDecline = func(gs *GameState) int {
+		t.goIntoDecline = func(gs *GameState) {
 			pawns, _ := t.State["deploy"].(map[string]int)
 			for id, amount := range(pawns) {
 				movingStack := []PieceStack{{Type: string(t.Race), Amount: amount}}
@@ -731,18 +731,18 @@ var RaceMap = map[Race]RaceValue {
 				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
 				gs.Players[gs.TurnInfo.PlayerIndex].PieceStacks, _ = SubtractPieceStacks(gs.Players[gs.TurnInfo.PlayerIndex].PieceStacks, movingStack)
 			}
-			gs.ModifierTurnsBefore = append(gs.ModifierTurnsBefore, TurninfoEntry{
-				TurnInfo: TurnInfo{
-					TurnIndex: gs.TurnInfo.TurnIndex + 1,
-					PlayerIndex: t.Owner.Index,
-					Phase: TileAbandonment,
-				},
-				player: t.Owner.Index,
-				actionBefore: func(gs *GameState) {
-					gs.GetPieceStackForConquest(t)
-				},
-			})
-			return oldgoIntoDecline(gs)
+			// gs.ModifierTurnsBefore = append(gs.ModifierTurnsBefore, TurninfoEntry{
+			// 	TurnInfo: TurnInfo{
+			// 		TurnIndex: gs.TurnInfo.TurnIndex + 1,
+			// 		PlayerIndex: t.Owner.Index,
+			// 		Phase: TileAbandonment,
+			// 	},
+			// 	player: t.Owner.Index,
+			// 	actionBefore: func(gs *GameState) {
+			// 		gs.GetPieceStackForConquest(t)
+			// 	},
+			// })
+			oldgoIntoDecline(gs)
 
 		}
 		}, Count: 5},
@@ -884,8 +884,8 @@ var RaceMap = map[Race]RaceValue {
 			return stackType == "Decline" || oldIsStackValid(stackType)
 		}
 		oldgoIntoDecline := t.goIntoDecline
-		t.goIntoDecline = func(gs *GameState) int {
-			points := oldgoIntoDecline(gs)
+		t.goIntoDecline = func(gs *GameState) {
+			oldgoIntoDecline(gs)
 			t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Decline", Amount: 1}})
 			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
 				player: t.Owner.Index,
@@ -896,7 +896,7 @@ var RaceMap = map[Race]RaceValue {
 				},
 				actionBefore: func(gs *GameState) {},
 			})
-			return points
+			return
 		}
 		oldhandleDeploymentIn := t.handleDeploymentIn
 		t.handleDeploymentIn = func (tile *Tile, stackType string, i int, gs *GameState) error {
@@ -1008,8 +1008,8 @@ var RaceMap = map[Race]RaceValue {
 			return count
 		}
 		oldgoIntoDecline := t.goIntoDecline
-		t.goIntoDecline = func(gs *GameState) int {
-			points := oldgoIntoDecline(gs)
+		t.goIntoDecline = func(gs *GameState) {
+			oldgoIntoDecline(gs)
 			for _, tile := range(gs.TileList) {
 				delete(tile.ModifierPoints, "Winter")
 				for i, stack := range(tile.PieceStacks) {
@@ -1018,7 +1018,6 @@ var RaceMap = map[Race]RaceValue {
 					}
 				}
 			}
-			return points
 		}
 		oldcountRemovablePieces := t.countRemovablePieces
 		t.countRemovablePieces = func(tile *Tile) []PieceStack {
