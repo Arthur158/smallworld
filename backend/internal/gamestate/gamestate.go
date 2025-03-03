@@ -189,7 +189,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 
 	tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
 	if tile.Presence != None {
-		tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile)
+		tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker)
 	} else {
 		tileCost, err = tile.countDefense()
 	}
@@ -332,6 +332,26 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 
 	return nil
 }
+
+func (gs *GameState) HandleOpponentAction(playerIndex int, opponentIndex int, stackType string) error {
+	if gs.TurnInfo.PlayerIndex != playerIndex {
+		return fmt.Errorf("It is not this player's turn!")
+	}
+
+	player := gs.Players[playerIndex]
+	opponent := gs.Players[opponentIndex]
+
+	if !DoesPlayerHaveStack(stackType, player) {
+		return fmt.Errorf("The stack is invalid for this player!")
+	}
+
+	playerTribe, err := player.getTribe(stackType)
+	if err != nil {
+		return err
+	}
+	return playerTribe.handleOpponentAction(stackType, opponent, gs)
+}
+
 
 func (gs *GameState) HandleDecline(playerIndex int) error {
 	if gs.TurnInfo.PlayerIndex != playerIndex {

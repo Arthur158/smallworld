@@ -35,8 +35,8 @@ var RaceMap = map[Race]RaceValue {
 
 		// Make the defense of the tile + 1
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -114,8 +114,8 @@ var RaceMap = map[Race]RaceValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			count, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			count, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return count, g, l, err
 			}
@@ -149,8 +149,8 @@ var RaceMap = map[Race]RaceValue {
 		}, Count: 6},
 	"White Ladies": {Transform: func(t *Tribe) {
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			count, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			count, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return count, g, l, err
 			}
@@ -173,8 +173,8 @@ var RaceMap = map[Race]RaceValue {
 		}, Count: 6},
 	"Shrubmen": {Transform: func(t *Tribe) {
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			count, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			count, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return count, g, l, err
 			}
@@ -342,7 +342,7 @@ var RaceMap = map[Race]RaceValue {
 
 			if tile.Presence == Active {
 				// Maybe do something with those, in case this is actually considered a conquest
-				_, _, _, err := tile.OwningTribe.countDefense(tile)
+				_, _, _, err := tile.OwningTribe.countDefense(tile, attacker)
 				if err != nil {
 					return true, err
 				}
@@ -416,7 +416,7 @@ var RaceMap = map[Race]RaceValue {
 
 			if tile.Presence != None {
 				// Maybe do something with those, in case this is actually considered a conquest
-				_, _, _, err := tile.OwningTribe.countDefense(tile)
+				_, _, _, err := tile.OwningTribe.countDefense(tile, attacker)
 				if err != nil {
 					return true, fmt.Errorf("Impossible to attack", err)
 				}
@@ -477,8 +477,8 @@ var RaceMap = map[Race]RaceValue {
 		}, Count: 6},
 	"Scarecrows": {Transform: func(t *Tribe) {
 		oldCountDefense:= t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			a, b, c, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			a, b, c, err := oldCountDefense(tile, p)
 			return a, b, c-1, err
 		}
 		}, Count: 11},
@@ -532,8 +532,8 @@ var RaceMap = map[Race]RaceValue {
 			}
 		}
 		oldCountDefense:= t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			a, b, c, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			a, b, c, err := oldCountDefense(tile, p)
 			for _, stack := range(tile.PieceStacks) {
 				if stack.Type == "Cauldron" {
 					c = c - 1
@@ -587,8 +587,8 @@ var RaceMap = map[Race]RaceValue {
 			}
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -771,7 +771,7 @@ var RaceMap = map[Race]RaceValue {
 				return true, fmt.Errorf("cannot reach zone", err)
 			}
 
-			tileCost, moneyGainDefender, moneyLossAttacker, err := defendingTribe.countDefense(tile)
+			tileCost, moneyGainDefender, moneyLossAttacker, err := defendingTribe.countDefense(tile, attacker)
 			if err != nil {
 				return true, fmt.Errorf("Impossible to attack", err)
 			}
@@ -959,8 +959,8 @@ var RaceMap = map[Race]RaceValue {
 			return oldIsStackValid(s) || s == "Winter"
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}

@@ -234,3 +234,35 @@ func (client *Client) handleDecline () {
 	}
 }
 
+func (client *Client) handleOppponentAction (msg messages.Message) {
+	var data struct {
+		OpponentName          string `json:"opponentName"`
+		StackType	string `json:"stackType"`
+	}
+
+	if err := json.Unmarshal([]byte(msg.Data), &data); err != nil {
+		client.sendError("Invalid deploy data")
+		return
+	}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+		return
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+		return
+	}
+	opponentIndex := 0
+	for _, client := range(client.Room.Players) {
+		if client.Username == data.OpponentName {
+			opponentIndex = client.Index
+		}
+	}
+
+	if err := client.Room.Gamestate.HandleOpponentAction(client.Index, opponentIndex, data.StackType); err != nil {
+		client.sendError(err.Error())
+	} else {
+		client.Room.sendBigUpdate()
+	}
+}

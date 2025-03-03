@@ -22,7 +22,7 @@ var extensions = []ExtensionList {
 	{
 		Name: "Base Game",
 		Races : []string{"Amazons", "Elves", "Ghouls", "Giants", "Halflings", "Humans", "Orcs", "Ratmen", "Skeletons", "Sorcerers", "Tritons", "Trolls", "Wizards"},
-		Traits: []string{"Alchemist", "Berserk", "Bivouacking", "Commando", "Dragon Master", "Flying", "Forest", "Fortified", "Heroic", "Hill", "Merchant", "Pillaging", "Seafaring", "Spirit", "Stout", "Swamp", "Underworld", "Wealthy"},
+		Traits: []string{"Alchemist", "Berserk", "Bivouacking", "Commando", "Diplomat", "Dragon Master", "Flying", "Forest", "Fortified", "Heroic", "Hill", "Merchant", "Pillaging", "Seafaring", "Spirit", "Stout", "Swamp", "Underworld", "Wealthy"},
 	},
 	{
 		Name: "Cursed!",

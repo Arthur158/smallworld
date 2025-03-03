@@ -31,17 +31,6 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* Only hide the default cursor when an image exists */}
-      {imageExists && (
-        <style>
-          {`
-            * {
-              cursor: none;
-            }
-          `}
-        </style>
-      )}
-
       {imageExists && (
         <img
           src={`/stacks/${selectedStack}.png`}

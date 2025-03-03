@@ -2,6 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { Player, Tribe, PieceStack } from '../../types/Board';
+import { sendMessageToBackend } from '../../services/backendService';
 
 const getTraitImagePath = (trait?: string) => {
   return trait && trait.trim() !== '' ? `/traits/${trait}.png` : '';
@@ -78,51 +79,60 @@ const renderPieceStacks = (pieceStacks: PieceStack[]) => {
   );
 };
 
-const renderOneOpponent = (opponent: Player, isActive: boolean) => {
-  return (
-    <div
-      key={opponent.name}
-      className={`p-3 mb-4 border rounded ${
-        isActive
-          ? 'border-[#8B4513] bg-[#FAEBD7]' 
-          : 'border-[#5F4B32] bg-[#FAF0E6]'
-      }`}
-    >
-      <p className="text-lg font-bold">{opponent.name}</p>
-
-      {opponent.activeTribe && (
-        <div className="mt-3 flex items-center justify-center">
-          {renderTribeImages(opponent.activeTribe)}
-        </div>
-      )}
-
-      {opponent.passiveTribes.length > 0 && (
-        <div className="flex flex-wrap items-center justify-center mt-2 gap-3">
-          {opponent.passiveTribes.map((tribe, i) => (
-            <div
-              key={i}
-              className="opacity-60"
-              style={{ filter: 'grayscale(50%)' }}
-            >
-              {renderPassiveTribeImages(tribe)}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {opponent.pieceStacks.length > 0 && (
-        <div className="my-4 border-t-4 border-[#8B4513] w-full"></div>
-      )}
-      {renderPieceStacks(opponent.pieceStacks)}
-    </div>
-  );
-};
 
 export default function OpponentsList() {
   const allPlayers = useSelector((state: RootState) => state.application.players);
   const playerIndex = useSelector((state: RootState) => state.application.playerIndex);
   const activeIndex = useSelector((state: RootState) => state.application.playerNumber);
+  const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
+  const isStackFromBank = useSelector((state: RootState) => state.application.isStackFromBank);
 
+  const handleOpponentClick = (opponentName: string) => {
+    if (isStackFromBank && selectedStack) {
+        sendMessageToBackend('opponentaction', { opponentName: opponentName, stackType: selectedStack.toString() });
+    }
+  }
+
+  const renderOneOpponent = (opponent: Player, isActive: boolean) => {
+    return (
+      <div
+        onClick={() => {handleOpponentClick(opponent.name)}}
+        key={opponent.name}
+        className={`p-3 mb-4 border rounded ${
+          isActive
+            ? 'border-[#8B4513] bg-[#FAEBD7]' 
+            : 'border-[#5F4B32] bg-[#FAF0E6]'
+        }`}
+      >
+        <p className="text-lg font-bold">{opponent.name}</p>
+
+        {opponent.activeTribe && (
+          <div className="mt-3 flex items-center justify-center">
+            {renderTribeImages(opponent.activeTribe)}
+          </div>
+        )}
+
+        {opponent.passiveTribes.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center mt-2 gap-3">
+            {opponent.passiveTribes.map((tribe, i) => (
+              <div
+                key={i}
+                className="opacity-60"
+                style={{ filter: 'grayscale(50%)' }}
+              >
+                {renderPassiveTribeImages(tribe)}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {opponent.pieceStacks.length > 0 && (
+          <div className="my-4 border-t-4 border-[#8B4513] w-full"></div>
+        )}
+        {renderPieceStacks(opponent.pieceStacks)}
+      </div>
+    );
+  };
   if (!allPlayers || allPlayers.length === 0) {
     return (
       <div className="flex flex-col w-full h-full overflow-hidden border border-[#5F4B32] rounded bg-[#FDF5E6] p-4">
@@ -131,7 +141,6 @@ export default function OpponentsList() {
     );
   }
 
-  const currentUser = allPlayers[playerIndex];
   const activePlayer = allPlayers[activeIndex];
   const opponents = allPlayers.filter((_, i) => i !== playerIndex);
 

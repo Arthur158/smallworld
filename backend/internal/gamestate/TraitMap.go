@@ -1,6 +1,7 @@
 package gamestate
 
 import "fmt"
+import "log"
 
 
 
@@ -135,7 +136,7 @@ var TraitMap = map[Trait]TraitValue {
 	"Mounted": {Transform: func(t *Tribe) {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
-			if (tile.Biome == Field || tile.Biome == Hill) && t.IsActive == true {
+			if (tile.Biome == Field || tile.Biome == Hill) && t.IsActive {
 				return oldcomputeDiscount(stackType, tile) + 1
 			}
 			return oldcomputeDiscount(stackType, tile)
@@ -221,8 +222,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldIsStackValid(s) || s == "Fortress"
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -279,8 +280,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -369,8 +370,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -458,8 +459,8 @@ var TraitMap = map[Trait]TraitValue {
 			}
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -508,8 +509,8 @@ var TraitMap = map[Trait]TraitValue {
 		}, Count: 5},
 	"Corrupt": {Transform: func(t *Tribe) {
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -650,8 +651,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldgetRedeploymentStack(s, ps)
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -755,8 +756,8 @@ var TraitMap = map[Trait]TraitValue {
 			}
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -1080,6 +1081,86 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			t.State["mountains"] = []string{}
 			oldgetStacksForConquestTurn(p, gs)
+		}
+		}, Count: 5},
+	"Diplomat": {Transform: func(t *Tribe) {
+		t.State["playersAttacked"] = []int{}
+		oldHandleopponentAction := t.handleOpponentAction
+		t.handleOpponentAction = func(stackType string, opponent *Player, gs *GameState) error {
+			err := oldHandleopponentAction(stackType, opponent, gs)
+			if err == nil {
+				return nil
+			}
+			if stackType == "Diplomat" {
+				if gs.TurnInfo.Phase != Redeployment {
+					return fmt.Errorf("You must be in Redeployment to establish a peace treaty!")
+				}
+
+				playersAttacked, _ := t.State["playersAttacked"].([]int)
+				log.Println(playersAttacked)
+				for _, index := range(playersAttacked) {
+					if index == opponent.Index {
+						return fmt.Errorf("You have attacked this player during your turn!")
+					}
+				}
+
+				opponent.PieceStacks = AddPieceStacks(opponent.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+				return nil
+			}
+			return err
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Diplomat"
+		}
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+			return stacks
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range p.PieceStacks {
+				if stack.Type == "Diplomat" {
+					return old, g, l, fmt.Errorf("You have a Peace pact with this player!")
+				}
+			}
+			return old, g, l, nil
+		}
+		oldcalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
+		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
+			stacks, b1, b2, err := oldcalculateRemainingAttackingStacks(ps, tile, gs)
+			if err != nil {
+				return stacks, b1, b2, err
+			}
+			if tile.Presence == Active && tile.OwningTribe != nil {
+				playersAttacked, _ := t.State["playersAttacked"].([]int)
+				playersAttacked = append(playersAttacked, tile.OwningTribe.Owner.Index)
+				log.Println(playersAttacked)
+				t.State["playersAttacked"] = playersAttacked
+			}
+			return stacks, b1, b2, err
+		}
+		oldGetStacksForConquestTurn := t.getStacksForConquestTurn
+		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+			oldGetStacksForConquestTurn(p, gs)
+			t.State["playersAttacked"] = []int{}
+			for _, player := range(gs.Players) {
+				for i := range(player.PieceStacks) {
+					if player.PieceStacks[i].Type == "Diplomat" {
+						t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+						player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+						return
+
+					}
+				}
+			}
 		}
 		}, Count: 5},
 }

@@ -66,6 +66,8 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.handleRedeploymentOut(msg)
 	case "deploymentthrough":
 		client.handleRedeploymentThrough(msg)
+	case "opponentaction":
+		client.handleOppponentAction(msg)
 	case "finishturn":
 		client.handleFinishTurn()
 	case "decline":

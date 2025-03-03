@@ -80,7 +80,7 @@ func CreateBaseTribe() *Tribe {
         return 0
     }
 
-    tribe.countDefense = func(tile *Tile) (int, int, int, error) {
+    tribe.countDefense = func(tile *Tile, player *Player) (int, int, int, error) {
         price, error := tile.countDefense()
         if error != nil {
             return price, 0, 0, error
@@ -349,6 +349,10 @@ func CreateBaseTribe() *Tribe {
 
     tribe.canEndTurn = func(gs *GameState) error {
         return nil
+    }
+
+    tribe.handleOpponentAction = func(s string, p *Player, gs *GameState) error {
+        return fmt.Errorf("Invalid opponent action!")
     }
 
     return &tribe

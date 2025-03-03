@@ -36,7 +36,7 @@ type Tribe struct {
 	specialConquest func(*GameState, *Tile, string, *Player, int) (bool, error);
 
 	//conquest for defender
-	countDefense func(*Tile) (int, int, int, error);
+	countDefense func(*Tile, *Player) (int, int, int, error);
 	handleReturn func(*Tile, *GameState, int)
 	clearTile func(*Tile, *GameState, int);
 
@@ -47,6 +47,9 @@ type Tribe struct {
 	getRedeploymentStack func(string, []PieceStack) []PieceStack
 	handleDeploymentOut func(*Tile, string, int, *GameState) error;
 	handleDeploymentIn func(*Tile, string, int, *GameState) error;
+
+	// misc
+	handleOpponentAction func(string, *Player, *GameState) error;
 
 	// end of turn
 	canEndTurn func(*GameState) error;
