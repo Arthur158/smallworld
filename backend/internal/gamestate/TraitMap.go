@@ -1241,4 +1241,138 @@ var TraitMap = map[Trait]TraitValue {
 			return oldStacks
 		}
 		}, Count: 5},
+	"Zeppelined": {Transform: func(t *Tribe) {
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Zeppelin"
+		}
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Zeppelin", Amount: 5}})
+			return stacks
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Zeppelin" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		oldSpecialConquest := t.specialConquest
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
+			if ok {
+				return ok, err
+			}
+			if stackType != "Zeppelin" {
+				return false, nil
+			}
+
+			if err := t.checkZoneAccess(tile); err != nil {
+				return true, err
+			}
+
+			found := false
+			for _, stack := range(t.Owner.PieceStacks) {
+				if stack.Type == string(t.Race) {
+					found = true
+				}
+			}
+
+			if !found {
+				return true, fmt.Errorf("You need at least one Race token to launch a zeppelin attack!")
+			}
+
+			tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
+			if tile.Presence != None {
+				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker)
+			} else {
+				tileCost, err = tile.countDefense()
+			}
+			
+			if err != nil {
+				return true, err
+			}
+
+			diceThrow := RollDice()
+
+			if diceThrow == 0 {
+				gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: The throw of dice for zeppelined tribe was: %d", diceThrow))
+				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Zeppelin", Amount: 1}})
+				if tile.Presence != None {
+					tile.OwningTribe.handleReturn(tile, gs, 1)
+				}
+				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Burning Zeppelin", Amount: 1}})
+				tile.ModifierDefenses["Burning Zeppelin"] = TileModifierDefenses["Burning Zeppelin"]
+				return true, nil
+			}
+
+			gs.Messages = append(gs.Messages, fmt.Sprintf("Success: The throw of dice for zeppelined tribe was: %d", diceThrow))
+			// counts the cost for the attacker
+			attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := t.countAttack(tile, tileCost - diceThrow, string(t.Race))
+			attackCostStacks = append(attackCostStacks, PieceStack{Type: "Zeppelin", Amount: 1})
+			newStacks, hasDiceBeenUsed, ok, err := t.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
+			if err != nil {
+				return true, err
+			}
+
+			if hasDiceBeenUsed {
+				return true, fmt.Errorf("The dice cannot be used twice on a Zeppelin attack!")
+			}
+
+			// Enact changes
+			if tile.Presence != None {
+				tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
+				tile.OwningTribe.handleReturn(tile, gs, pawnKill)
+			}
+
+			newTileStacks := t.countNewTileStacks(newStacks, tile)
+			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
+
+			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
+			attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
+			tile.OwningTribe = t
+
+			if tile.OwningTribe.IsActive {
+				tile.Presence = Active
+			} else {
+				tile.Presence = Passive
+			} 	
+			if hasDiceBeenUsed {
+				return true, gs.HandleStartRedeployment(attackerIndex)
+			} else {
+				gs.TurnInfo.Phase = Conquest
+			}
+
+			return true, nil
+		}
+		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
+		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+			for _, tile := range(gs.TileList) {
+				for i := range(tile.PieceStacks) {
+					if tile.PieceStacks[i].Type == "Burning Zeppelin" || tile.PieceStacks[i].Type == "Zeppelin" {
+						tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+						delete(tile.ModifierDefenses, "Burning Zeppelin")
+						t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Zeppelin", Amount: 1}})
+					}
+				}
+			}
+			oldgetStacksForConquestTurn(p, gs)
+		}
+		oldClearTile := t.clearTile
+		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
+			oldClearTile(tile, gs, pk)
+			for i, stack := range tile.PieceStacks {
+			    if stack.Type == "Zeppelin" {
+				tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+				t.Owner.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{stack})
+				return // Exit after removal to avoid index shifting issues
+			    }
+			}
+		}
+		}, Count: 5},
 }

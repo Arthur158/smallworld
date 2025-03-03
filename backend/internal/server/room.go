@@ -963,7 +963,7 @@ func (room *Room) sendMegaUpdate() {
 		}, 0)
 
 		for _, stack := range tile.PieceStacks {
-			isActive := (tile.Presence == gamestate.Active)
+			isActive := (tile.Presence != gamestate.Passive)
 			if stack.Tribe != nil {
 				isActive = stack.Tribe.IsActive
 			}

@@ -32,7 +32,7 @@ var extensions = []ExtensionList {
 	{
 		Name: "Sky Islands",
 		Races : []string{"Drakons", "Khans", "Scarecrows", "Scavengers", "Wendigos"},
-		Traits: []string{"Goldsmith", "Haggling"},
+		Traits: []string{"Goldsmith", "Haggling", "Zeppelined"},
 	},
 	{
 		Name: "Grand Dames",

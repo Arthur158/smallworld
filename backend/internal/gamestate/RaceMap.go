@@ -481,7 +481,7 @@ var RaceMap = map[Race]RaceValue {
 			a, b, c, err := oldCountDefense(tile, p)
 			return a, b, c-1, err
 		}
-		}, Count: 11},
+		}, Count: 12},
 	"Kobolds": {Transform: func(t *Tribe) {
 		t.Minimum = 2
 		}, Count: 11},
