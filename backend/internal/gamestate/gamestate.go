@@ -179,7 +179,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	if tile.Presence != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
-		return err
+		return fmt.Errorf("This tile already belongs to the tribe!")
 	}
 
 	if err := attackingTribe.checkZoneAccess(tile); err != nil {
@@ -352,6 +352,31 @@ func (gs *GameState) HandleOpponentAction(playerIndex int, opponentIndex int, st
 		return err
 	}
 	return playerTribe.handleOpponentAction(stackType, opponent, gs)
+}
+
+func (gs *GameState) HandleMovement(playerIndex int, tileFromId string, tileToId string, stackType string) error {
+	if gs.TurnInfo.PlayerIndex != playerIndex {
+		return fmt.Errorf("It is not this player's turn!")
+	}
+
+	player := gs.Players[playerIndex]
+
+	playerTribe, err := player.getTribe(stackType)
+	if err != nil {
+		return err
+	}
+
+	tileTo, ok := gs.TileList[tileToId]
+	if !ok {
+		return fmt.Errorf("No tile with this id!")
+	}
+
+	tileFrom, ok := gs.TileList[tileFromId]
+	if !ok {
+		return fmt.Errorf("No tile with this id!")
+	}
+
+	return playerTribe.handleMovement(stackType, tileFrom, tileTo, gs)
 }
 
 

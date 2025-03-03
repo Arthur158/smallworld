@@ -355,6 +355,10 @@ func CreateBaseTribe() *Tribe {
         return fmt.Errorf("Invalid opponent action!")
     }
 
+    tribe.handleMovement = func(s string, t1, t2 *Tile, gs *GameState) error {
+        return fmt.Errorf("Invalid opponent action!")
+    }
+
     return &tribe
 }
 

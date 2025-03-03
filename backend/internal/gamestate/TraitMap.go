@@ -193,7 +193,6 @@ var TraitMap = map[Trait]TraitValue {
 			t.State["diceroll"] = val
 			gs.Messages = append(gs.Messages, fmt.Sprintf("New throw of dice for berserk tribe: %d", val))
 		}
-
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
 		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
 			stacks, diceUsed, ok, err := oldCalculateRemainingAttackingStacks(ps, tile, gs)
@@ -767,7 +766,6 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return old, g, l, nil
 		}
-
 		oldIsStackValid := t.IsStackValid
 		t.IsStackValid = func(stackType string) bool {
 			return (stackType == "Catapult" && t.IsActive) || oldIsStackValid(stackType)
@@ -860,7 +858,6 @@ var TraitMap = map[Trait]TraitValue {
 			oldgoIntoDecline(gs)
 			minuspoints := gs.countPoints(t.Owner)
 			t.State["extrapoints"] = pluspoints - minuspoints
-			return
 		}
 		oldCountExtraPoints := t.countExtrapoints
 		t.countExtrapoints = func(gs *GameState) int {
@@ -1273,6 +1270,10 @@ var TraitMap = map[Trait]TraitValue {
 				return false, nil
 			}
 
+			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				return true, fmt.Errorf("This tile already belongs to the tribe!")
+			}
+
 			if err := t.checkZoneAccess(tile); err != nil {
 				return true, err
 			}
@@ -1316,7 +1317,7 @@ var TraitMap = map[Trait]TraitValue {
 			// counts the cost for the attacker
 			attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := t.countAttack(tile, tileCost - diceThrow, string(t.Race))
 			attackCostStacks = append(attackCostStacks, PieceStack{Type: "Zeppelin", Amount: 1})
-			newStacks, hasDiceBeenUsed, ok, err := t.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
+			newStacks, hasDiceBeenUsed, _, err := t.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
 			if err != nil {
 				return true, err
 			}
@@ -1376,4 +1377,189 @@ var TraitMap = map[Trait]TraitValue {
 			}
 		}
 		}, Count: 5},
+	"Gunner": {Transform: func(t *Tribe) {
+		t.State["leftcannonplayed"] = false
+		t.State["rightcannonplayed"] = false
+		oldHandleMovement := t.handleMovement
+		t.handleMovement = func(stackType string, tileFrom, tileTo *Tile, gs *GameState) error {
+			err := oldHandleMovement(stackType, tileFrom, tileTo, gs)
+			if err == nil {
+				return nil
+			}
+			if stackType != "Left Cannon" && stackType != "Right Cannon" {
+				return err
+			}
+
+			if tileFrom == tileTo {
+				return fmt.Errorf("Cannot move cannon on its own tile!")
+			}
+
+			if tileFrom.Presence == None || !tileFrom.OwningTribe.checkPresence(tileTo, t.Race) {
+				return fmt.Errorf("Invalid starting tile")
+			}
+			if tileTo.Presence == None || !tileTo.OwningTribe.checkPresence(tileFrom, t.Race) {
+				return fmt.Errorf("Invalid arriving tile")
+			}
+
+			found := false
+			for _, stack := range(tileFrom.PieceStacks) {
+				if stack.Type == stackType {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("No cannon to move!")
+			}
+
+			hasPlayed := false
+			if stackType == "Left Cannon" {
+				hasPlayed = t.State["leftcannonplayed"].(bool)
+			} else {
+				hasPlayed = t.State["rightcannonplayed"].(bool)
+			}
+			if hasPlayed {
+				return fmt.Errorf("This cannon has already moved!")
+			}
+
+			tileFrom.PieceStacks, _ = SubtractPieceStacks(tileFrom.PieceStacks, []PieceStack{{Type: stackType, Amount: 1}})
+			tileTo.PieceStacks = AddPieceStacks(tileTo.PieceStacks, []PieceStack{{Type: stackType, Amount: 1}})
+
+			if stackType == "Left Cannon" {
+				t.State["leftcannonplayed"] = true
+			} else {
+				t.State["rightcannonplayed"] = true
+			}
+
+			return nil
+		}
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Cannon Trigger", Amount: 1}, {Type: "Left Cannon", Amount: 1}, {Type: "Right Cannon", Amount: 1}})
+			return stacks
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Cannon Trigger" || s == "Left Cannon" || s == "Right Cannon"
+		}
+		oldCanBeRedeployedIn := t.canBeRedeployedIn
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			return oldCanBeRedeployedIn(tile, stackType, gs) || stackType == "Left Cannon" || stackType == "Right Cannon"
+		}
+		oldcountRemovablePieces := t.countRemovablePieces
+		t.countRemovablePieces = func(tile *Tile) []PieceStack {
+			oldStacks := oldcountRemovablePieces(tile)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range tile.PieceStacks {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" || stack.Type == "Firing Left Cannon" || stack.Type == "Firing Right Cannon" {
+					return 1000, g, l, fmt.Errorf("A tile with a cannon cannot be conquered")
+				}
+			}
+			return old, g, l, nil
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		oldSpecialConquest := t.specialConquest
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
+			if ok {
+				return ok, err
+			}
+			if stackType != "Cannon Trigger" {
+				return false, nil
+			}
+
+			if !tile.OwningTribe.checkPresence(tile, t.Race)  {
+				return true, fmt.Errorf("Needs to be the tribe's own tile")
+			}
+
+			found := false
+			cannonType := ""
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" {
+					found = true
+					cannonType = stack.Type
+					break
+				}
+			}
+			if !found {
+				return true, fmt.Errorf("No cannon to trigger!")
+			}
+
+			hasPlayed := false
+			if stackType == "Left Cannon" {
+				hasPlayed = t.State["leftcannonplayed"].(bool)
+			} else {
+				hasPlayed = t.State["rightcannonplayed"].(bool)
+			}
+			if hasPlayed {
+				return true, fmt.Errorf("This cannon has already moved!")
+			}
+			
+			if cannonType == "Left Cannon" {
+				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Firing Left Cannon", Amount: 1}})
+				tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Left Cannon", Amount: 1}})
+			} else {
+				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Firing Right Cannon", Amount: 1}})
+				tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Right Cannon", Amount: 1}})
+			}
+
+			if stackType == "Left Cannon" {
+				t.State["leftcannonplayed"] = true
+			} else {
+				t.State["rightcannonplayed"] = true
+			}
+
+			gs.Messages = append(gs.Messages, "A cannon was just triggered!")
+
+			return true, nil
+		}
+		oldcomputeDiscount := t.computeDiscount
+		t.computeDiscount = func(stackType string, tile *Tile) int {
+			discount := oldcomputeDiscount(stackType, tile)
+			for _, neighbour := range tile.AdjacentTiles {
+				if neighbour.Presence != None && neighbour.OwningTribe.checkPresence(neighbour, t.Race) {
+					for _, stack := range(neighbour.PieceStacks) {
+						if stack.Type == "Firing Left Cannon" || stack.Type == "Firing Right Cannon" {
+							discount += 2
+						}
+					}
+				}
+			}
+			return discount
+		}
+		oldGetStacksForConquest := t.getStacksForConquest
+		t.getStacksForConquest = func(tile *Tile, p *Player) {
+			oldGetStacksForConquest(tile, p)
+			for i, stack := range tile.PieceStacks {
+				if stack.Type == "Firing Left Cannon" {
+					tile.PieceStacks[i].Type = "Left Cannon"
+				}
+				if stack.Type == "Firing Right Cannon" {
+					tile.PieceStacks[i].Type = "Right Cannon"
+				}
+			}
+		}
+		}, Count: 3},
 }

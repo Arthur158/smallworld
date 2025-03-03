@@ -199,7 +199,7 @@ var RaceMap = map[Race]RaceValue {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			for _, neighbour := range tile.AdjacentTiles {
-				if neighbour.Biome == Mountain && neighbour.Presence != None && neighbour.OwningTribe.Race == t.Race {
+				if neighbour.Biome == Mountain && neighbour.Presence != None && neighbour.OwningTribe.checkPresence(neighbour, t.Race) {
 					return oldcomputeDiscount(stackType, tile) + 1
 				}
 			}
@@ -1018,16 +1018,6 @@ var RaceMap = map[Race]RaceValue {
 					}
 				}
 			}
-		}
-		oldcountRemovablePieces := t.countRemovablePieces
-		t.countRemovablePieces = func(tile *Tile) []PieceStack {
-			oldStacks := oldcountRemovablePieces(tile)
-			for _, stack := range(tile.PieceStacks) {
-				if stack.Type == "Winter" {
-					oldStacks = append(oldStacks, stack)
-				}
-			}
-			return oldStacks
 		}
 		}, Count: 5},
 }

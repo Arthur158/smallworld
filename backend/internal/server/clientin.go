@@ -188,6 +188,33 @@ func (client *Client) handleRedeploymentThrough (msg messages.Message) {
 	}
 }
 
+func (client *Client) handleMovement (msg messages.Message) {
+	var deployData struct {
+		TileFromID          string `json:"tileFromId"`
+		TileToID          string `json:"tileToId"`
+		StackType	string `json:"stackType"`
+	}
+
+	if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
+		client.sendError("Invalid deploy data")
+		return
+	}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+		return
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+		return
+	}
+
+	if err := client.Room.Gamestate.HandleMovement(client.Index, deployData.TileFromID, deployData.TileToID, deployData.StackType); err != nil {
+		client.sendError(err.Error())
+	} else {
+		client.Room.sendBigUpdate()
+	}
+}
 
 func (client *Client) handleFinishTurn () {
 	if client.Room == nil {

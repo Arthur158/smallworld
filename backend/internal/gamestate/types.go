@@ -34,6 +34,7 @@ type Tribe struct {
 	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
 	calculateRemainingAttackingStacks func([]PieceStack, *Tile, *GameState) ([]PieceStack, bool, bool, error)
 	specialConquest func(*GameState, *Tile, string, *Player, int) (bool, error);
+	handleMovement func(string, *Tile, *Tile, *GameState) error
 
 	//conquest for defender
 	countDefense func(*Tile, *Player) (int, int, int, error);
