@@ -1,7 +1,6 @@
 package gamestate
 
 import "fmt"
-import "log"
 
 
 
@@ -1097,7 +1096,6 @@ var TraitMap = map[Trait]TraitValue {
 				}
 
 				playersAttacked, _ := t.State["playersAttacked"].([]int)
-				log.Println(playersAttacked)
 				for _, index := range(playersAttacked) {
 					if index == opponent.Index {
 						return fmt.Errorf("You have attacked this player during your turn!")
@@ -1142,7 +1140,6 @@ var TraitMap = map[Trait]TraitValue {
 			if tile.Presence == Active && tile.OwningTribe != nil {
 				playersAttacked, _ := t.State["playersAttacked"].([]int)
 				playersAttacked = append(playersAttacked, tile.OwningTribe.Owner.Index)
-				log.Println(playersAttacked)
 				t.State["playersAttacked"] = playersAttacked
 			}
 			return stacks, b1, b2, err
@@ -1153,7 +1150,7 @@ var TraitMap = map[Trait]TraitValue {
 			t.State["playersAttacked"] = []int{}
 			for _, player := range(gs.Players) {
 				for i := range(player.PieceStacks) {
-					if player.PieceStacks[i].Type == "Diplomat" {
+					if player.PieceStacks[i].Type == "Diplomat" && player != p {
 						t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
 						player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
 						return
@@ -1161,6 +1158,87 @@ var TraitMap = map[Trait]TraitValue {
 					}
 				}
 			}
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Diplomat" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		}, Count: 5},
+	"Haggling": {Transform: func(t *Tribe) {
+		oldHandleopponentAction := t.handleOpponentAction
+		t.handleOpponentAction = func(stackType string, opponent *Player, gs *GameState) error {
+			err := oldHandleopponentAction(stackType, opponent, gs)
+			if err == nil {
+				return nil
+			}
+			if stackType == "Treaty" {
+				if gs.TurnInfo.Phase != Redeployment {
+					return fmt.Errorf("You must be in Redeployment to establish a peace treaty!")
+				}
+
+				opponent.PieceStacks = AddPieceStacks(opponent.PieceStacks, []PieceStack{{Type: "Treaty", Amount: 1}})
+				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Treaty", Amount: 1}})
+				return nil
+			}
+			return err
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Treaty"
+		}
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Treaty", Amount: 5}})
+			return stacks
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range p.PieceStacks {
+				if stack.Type == "Treaty" {
+					l += stack.Amount
+					g += stack.Amount
+					p.PieceStacks, _ = SubtractPieceStacks(p.PieceStacks, []PieceStack{stack})
+					t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{stack})
+				}
+			}
+			return old, g, l, nil
+		}
+		oldGetStacksForConquestTurn := t.getStacksForConquestTurn
+		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+			oldGetStacksForConquestTurn(p, gs)
+			for _, player := range(gs.Players) {
+				for i := range(player.PieceStacks) {
+					if player.PieceStacks[i].Type == "Treaty" && player != p {
+						t.Owner.CoinPile -= player.PieceStacks[i].Amount
+						player.CoinPile += player.PieceStacks[i].Amount
+						t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Treaty", Amount: player.PieceStacks[i].Amount}})
+						player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, []PieceStack{{Type: "Treaty", Amount: player.PieceStacks[i].Amount}})
+						break
+
+					}
+				}
+			}
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Treaty" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
 		}
 		}, Count: 5},
 }

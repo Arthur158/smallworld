@@ -9,6 +9,7 @@ export default function TurnInfoBlock() {
   const phase = useSelector((state: RootState) => state.application.phase);
   const turnNumber = useSelector((state: RootState) => state.application.turnNumber);
   const players = useSelector((state: RootState) => state.application.players);
+  const coins = useSelector((state: RootState) => state.application.coins);
   const dispatch = useDispatch();
 
   const currentPlayer = players[playerNumber]?.name || 'Unknown Player';
@@ -74,6 +75,7 @@ export default function TurnInfoBlock() {
       <p><span className="font-semibold">Current Player:</span> {currentPlayer}</p>
       <p><span className="font-semibold">Turn Number:</span> {turnNumber}</p>
       <p><span className="font-semibold">Phase:</span> {phase}</p>
+      <p><span className="font-semibold">Coin Pile:</span> {coins}</p>
 
       {/* Buttons Layout */}
       <div className="grid grid-cols-2 gap-2 mt-4">

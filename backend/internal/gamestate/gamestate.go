@@ -2,6 +2,7 @@ package gamestate
 
 import (
 	"fmt"
+	"log"
 )
 
 type GameState struct {
@@ -100,6 +101,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, []PieceStack{{Type: string(entry.Race), Amount: entry.PiecePile}})
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
+	log.Println(chooser.PieceStacks)
 	gs.GetPieceStackForConquest(chooser)
 
 	gs.TurnInfo.Phase = TileAbandonment

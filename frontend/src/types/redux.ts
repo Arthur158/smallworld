@@ -13,6 +13,7 @@ export interface ApplicationState {
   turnNumber: number;
   playerNumber: number;
   phase: string;
+  coins: number;
   selectedStack: string | null;
   isStackFromBank: boolean
   selectedTile: string | null;

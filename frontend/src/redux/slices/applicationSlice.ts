@@ -19,6 +19,7 @@ const initialState: ApplicationState = {
   turnNumber: 1,
   playerNumber: 1,
   phase: 'tribechoice',
+  coins: 5,
   selectedStack: null,
   isStackFromBank: false,
   selectedTile: null,
@@ -364,7 +365,10 @@ const applicationSlice = createSlice({
         case 'message':
           state.messages.push(JSON.stringify(parsedData.message));
           break;
-         case 'megaUpdate': {
+        case 'coins':
+          state.coins = parsedData.coins
+          break;
+       case 'megaUpdate': {
           // This is your combined big update.
           // Pull out the relevant fields one by one.
 

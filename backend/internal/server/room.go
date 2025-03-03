@@ -560,6 +560,7 @@ func (room *Room) sendStateMessage (message string) {
 func (room *Room) sendBigUpdate() {
 	if room.InProgress {
 		room.sendMegaUpdate()
+		room.SendCoinUpdate()
 		room.sendNextPlayerReady()
 	}
 	// if (room.InProgress) {
@@ -984,6 +985,12 @@ func (room *Room) sendMegaUpdate() {
 		Type: "megaUpdate",
 		Data: jsonData,
 	})
+}
+
+func (room *Room) SendCoinUpdate() {
+	for i, client := range(room.Players) {
+		client.sendMessage("coins", json.RawMessage([]byte(`{"coins": ` + strconv.FormatInt(int64(room.Gamestate.Players[i].CoinPile), 10) + `}`)))
+	}
 }
 
 func (room *Room) AutoSave() {
