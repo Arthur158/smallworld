@@ -856,6 +856,7 @@ var TraitMap = map[Trait]TraitValue {
 		oldgoIntoDecline := t.goIntoDecline
 		t.goIntoDecline = func(gs *GameState) {
 			pluspoints := gs.countPoints(t.Owner)
+			gs.GetPieceStackForConquest(t.Owner)
 			oldgoIntoDecline(gs)
 			minuspoints := gs.countPoints(t.Owner)
 			t.State["extrapoints"] = pluspoints - minuspoints
