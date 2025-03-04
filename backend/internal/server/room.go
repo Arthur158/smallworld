@@ -482,23 +482,24 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 	go func() {
 		for {
-			// Lock to safely access Messages
-			// room.mu.Lock()
-
 			if len(room.Gamestate.Messages) > 0 {
 				log.Println("Sending messages to players...")
 				
 				// Send messages to all players
 				for _, msg := range room.Gamestate.Messages {
-					log.Println("Message:", msg)
-					room.sendStateMessage(msg)
+					if msg.Receivers == nil {
+						log.Println("Message:", msg)
+						room.sendStateMessage(msg.Content)
+					} else {
+						for _, index := range(msg.Receivers) {
+							room.Players[index].sendMessage("message", json.RawMessage([]byte(`{"message": "` + msg.Content + `"}`)))
+						}
+					}
 				}
 
 				// Clear messages after sending (without setting it to nil)
 				room.Gamestate.Messages = room.Gamestate.Messages[:0]
 			}
-
-			// room.mu.Unlock()
 
 			// Sleep to avoid busy-waiting
 			time.Sleep(100 * time.Millisecond)

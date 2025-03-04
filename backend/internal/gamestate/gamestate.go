@@ -11,7 +11,7 @@ type GameState struct {
 	TileList map[string]*Tile
 	TurnInfo *TurnInfo
 	RealTurninfo *TurnInfo
-	Messages []string
+	Messages []Message
 	ModifierPoints map[string]func(int, *Player) int;
 	ModifierTurnsAfter []TurninfoEntry
 }
@@ -173,6 +173,10 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return err
 	}
 
+	if ok, err := tile.specialDefense(gs, attackingTribe, attackingStackType); ok {
+		return err
+	}
+
 	if tile.Presence != None {
 	    ok, err := tile.OwningTribe.specialDefense(gs, tile, attackingTribe, attackingStackType)
 	    if ok {
@@ -198,9 +202,9 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 
 	tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
 	if tile.Presence != None {
-		tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker)
+		tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker, gs)
 	} else {
-		tileCost, err = tile.countDefense()
+		tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
 	}
 	
 	if err != nil {
@@ -224,7 +228,8 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
-	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, attackingTribe.countNewTileStacks(newStacks, tile))
+	tile.handleAfterConquest(gs)
+	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, attackingTribe.countNewTileStacks(newStacks, tile, gs))
 
 	attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
@@ -420,14 +425,19 @@ func (gs *GameState) handleNextPlayerTurn() {
 		gs.RealTurninfo = nil
 	}
 
-	for i := range(gs.ModifierTurnsAfter) {
-		if (gs.ModifierTurnsAfter[i].player == gs.TurnInfo.PlayerIndex) {
-			gs.RealTurninfo = gs.TurnInfo
-			gs.TurnInfo = &gs.ModifierTurnsAfter[i].TurnInfo
-			gs.ModifierTurnsAfter[i].actionBefore(gs)
-			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter[:i], gs.ModifierTurnsAfter[i+1:]...)
-			return
+	for i := len(gs.ModifierTurnsAfter) - 1; i >= 0; i-- {
+	    if gs.ModifierTurnsAfter[i].player == gs.TurnInfo.PlayerIndex {
+		if gs.ModifierTurnsAfter[i].actionBefore != nil {
+		    gs.ModifierTurnsAfter[i].actionBefore(gs)
 		}
+		if gs.ModifierTurnsAfter[i].TurnInfo != nil {
+		    gs.RealTurninfo = gs.TurnInfo
+		    gs.TurnInfo = gs.ModifierTurnsAfter[i].TurnInfo
+		    gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter[:i], gs.ModifierTurnsAfter[i+1:]...)
+		    return
+		}
+		gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter[:i], gs.ModifierTurnsAfter[i+1:]...)
+	    }
 	}
 
 	player := gs.Players[gs.TurnInfo.PlayerIndex]
@@ -435,21 +445,27 @@ func (gs *GameState) handleNextPlayerTurn() {
 	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
 
 	if player.HasActiveTribe {
-		gs.Messages = append(gs.Messages, fmt.Sprintf(
+		gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf(
 			"%s made %d points this turn",
 			player.Name,
 			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
-		))
+		)})
 	} else {
-		gs.Messages = append(gs.Messages, fmt.Sprintf(
+		gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf(
 			"%s went into decline and made %d points this turn",
 			player.Name,
 			player.PointsEachTurn[len(player.PointsEachTurn) - 1]-player.PointsEachTurn[len(player.PointsEachTurn) - 2],
-		))
+		)})
 	}
 
 	if gs.TurnInfo.PlayerIndex == len(gs.Players) - 1 {
 		if gs.TurnInfo.TurnIndex == 10 {
+			for _, player := range(gs.Players) {
+				player.ActiveTribe.handleEndOfGame(gs)
+				for _, tribe := range(player.PassiveTribes) {
+					tribe.handleEndOfGame(gs)
+				}
+			}
 			gs.TurnInfo.Phase = GameFinished
 		} else {
 			gs.TurnInfo.TurnIndex++

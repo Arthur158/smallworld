@@ -31,13 +31,13 @@ type Tribe struct {
 	// conquest for attacker
 	countAttack func(*Tile, int, string) ([]PieceStack, int, int, int);
 	computeDiscount func(string, *Tile) int;
-	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
+	countNewTileStacks func([]PieceStack, *Tile, *GameState) []PieceStack;
 	calculateRemainingAttackingStacks func([]PieceStack, *Tile, *GameState) ([]PieceStack, bool, bool, error)
 	specialConquest func(*GameState, *Tile, string) (bool, error);
 	handleMovement func(string, *Tile, *Tile, *GameState) error
 
 	//conquest for defender
-	countDefense func(*Tile, *Player) (int, int, int, error);
+	countDefense func(*Tile, *Player, *GameState) (int, int, int, error);
 	handleReturn func(*Tile, *GameState, int)
 	clearTile func(*Tile, *GameState, int);
 	specialDefense func(*GameState, *Tile, *Tribe, string) (bool, error);
@@ -64,6 +64,8 @@ type Tribe struct {
 	canGoIntoDecline func(*GameState) bool;
 	goIntoDecline func(*GameState);
 	prepareRemoval func(*GameState) bool;
+
+	handleEndOfGame func(*GameState);
 }
 
 type TribeEntry struct {
@@ -89,4 +91,9 @@ type Player struct {
 	PieceStacks []PieceStack
 	HasActiveTribe bool
 	PointsEachTurn []int;
+}
+
+type Message struct {
+	Receivers []int;
+	Content string;
 }

@@ -193,7 +193,7 @@ var TraitMap = map[Trait]TraitValue {
 			oldGetStacksForConquestTurn(p, gs)
 			val := RollDice()
 			t.State["diceroll"] = val
-			gs.Messages = append(gs.Messages, fmt.Sprintf("New throw of dice for berserk tribe: %d", val))
+			gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("New throw of dice for berserk tribe: %d", val)})
 		}
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
 		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
@@ -206,7 +206,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			val := RollDice()
 			t.State["diceroll"] = val
-			gs.Messages = append(gs.Messages, fmt.Sprintf("New throw of dice for berserk tribe: %d", val))
+			gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("New throw of dice for berserk tribe: %d", val)})
 			return stacks, false, true, nil
 		}
 		}, Count: 4},
@@ -222,8 +222,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldIsStackValid(s) || s == "Fortress"
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -280,8 +280,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -370,8 +370,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -469,8 +469,8 @@ var TraitMap = map[Trait]TraitValue {
 			}
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -519,8 +519,8 @@ var TraitMap = map[Trait]TraitValue {
 		}, Count: 5},
 	"Corrupt": {Transform: func(t *Tribe) {
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -661,8 +661,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldgetRedeploymentStack(s, ps)
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -766,8 +766,8 @@ var TraitMap = map[Trait]TraitValue {
 			}
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -820,7 +820,7 @@ var TraitMap = map[Trait]TraitValue {
 			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Catapult", Amount: 1}})
 
 			t.State["justPlaced"] = true
-			gs.Messages = append(gs.Messages, "The catapult was just placed!")
+			gs.Messages = append(gs.Messages,Message{Content:  "The catapult was just placed!"})
 
 			return true, nil
 		}
@@ -909,8 +909,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks, a, b, c
 		}
 		oldcountNewTileStacks := t.countNewTileStacks
-		t.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
-			stacks := oldcountNewTileStacks(ps, tile)
+		t.countNewTileStacks = func(ps []PieceStack, tile *Tile, gs *GameState) []PieceStack {
+			stacks := oldcountNewTileStacks(ps, tile, gs)
 			for i := range(stacks) {
 				if stacks[i].Type == "Fireball" {
 					return append(stacks[:i], stacks[i+1:]...)
@@ -1129,8 +1129,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -1209,8 +1209,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -1303,9 +1303,9 @@ var TraitMap = map[Trait]TraitValue {
 
 			tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
 			if tile.Presence != None {
-				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, t.Owner)
+				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, t.Owner, gs)
 			} else {
-				tileCost, err = tile.countDefense()
+				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
 			}
 			
 			if err != nil {
@@ -1315,7 +1315,7 @@ var TraitMap = map[Trait]TraitValue {
 			diceThrow := RollDice()
 
 			if diceThrow == 0 {
-				gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: The throw of dice for zeppelined tribe was: %d", diceThrow))
+				gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Failure: The throw of dice for zeppelined tribe was: %d", diceThrow)})
 				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Zeppelin", Amount: 1}})
 				if tile.Presence != None {
 					tile.OwningTribe.handleReturn(tile, gs, 1)
@@ -1325,7 +1325,7 @@ var TraitMap = map[Trait]TraitValue {
 				return true, nil
 			}
 
-			gs.Messages = append(gs.Messages, fmt.Sprintf("Success: The throw of dice for zeppelined tribe was: %d", diceThrow))
+			gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Success: The throw of dice for zeppelined tribe was: %d", diceThrow)})
 			// counts the cost for the attacker
 			attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := t.countAttack(tile, tileCost - diceThrow, string(t.Race))
 			attackCostStacks = append(attackCostStacks, PieceStack{Type: "Zeppelin", Amount: 1})
@@ -1344,8 +1344,9 @@ var TraitMap = map[Trait]TraitValue {
 				tile.OwningTribe.handleReturn(tile, gs, pawnKill)
 			}
 
-			newTileStacks := t.countNewTileStacks(newStacks, tile)
+			newTileStacks := t.countNewTileStacks(newStacks, tile, gs)
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
+			tile.handleAfterConquest(gs)
 
 			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, newStacks)
 			t.Owner.CoinPile += moneyGainAttacker - moneyLossAttacker
@@ -1470,8 +1471,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldStacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -1543,7 +1544,7 @@ var TraitMap = map[Trait]TraitValue {
 				t.State["rightcannonplayed"] = true
 			}
 
-			gs.Messages = append(gs.Messages, "A cannon was just triggered!")
+			gs.Messages = append(gs.Messages, Message{Content: "A cannon was just triggered!"})
 
 			return true, nil
 		}
@@ -1598,7 +1599,7 @@ var TraitMap = map[Trait]TraitValue {
 			oldgoIntoDecline(gs)
 			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
 				player: t.Owner.Index,
-				TurnInfo: TurnInfo{
+				TurnInfo: &TurnInfo{
 					TurnIndex: gs.TurnInfo.TurnIndex,
 					PlayerIndex: gs.TurnInfo.PlayerIndex,
 					Phase: Redeployment,
@@ -1633,7 +1634,7 @@ var TraitMap = map[Trait]TraitValue {
 						if !found {
 							gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
 								player: gs.TurnInfo.PlayerIndex,
-								TurnInfo: TurnInfo{
+								TurnInfo: &TurnInfo{
 									TurnIndex: gs.TurnInfo.TurnIndex,
 									PlayerIndex: t.Owner.Index,
 									Phase: Redeployment,
@@ -1655,8 +1656,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile, p *Player) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile, p)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -1723,7 +1724,7 @@ var TraitMap = map[Trait]TraitValue {
 			oldgoIntoDecline(gs)
 			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
 				player: t.Owner.Index,
-				TurnInfo: TurnInfo{
+				TurnInfo: &TurnInfo{
 					TurnIndex: gs.TurnInfo.TurnIndex,
 					PlayerIndex: gs.TurnInfo.PlayerIndex,
 					Phase: Redeployment,

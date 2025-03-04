@@ -1,5 +1,6 @@
 package gamestate
 
+
 type Tile struct {
 	Id string;
 	AdjacentTiles []*Tile;
@@ -11,36 +12,38 @@ type Tile struct {
 	IsEdge bool;
 
 	State map[string]interface{};
-	ModifierPoints map[string]func() int;
-	ModifierDefenses map[string]func() (int, error);
+	ModifierPoints map[string]func(*Tile) int;
+	ModifierDefenses map[string]func(*Tile, *GameState) (int, int, int, error);
+	ModifierAfterConquest map[string]func(*Tile, *GameState);
 	ModifierSpecialDefenses map[string]func(*Tile, *GameState, *Tribe, string) (bool, error);
 }
 
 func (tile *Tile) countPoints() int {
     value := 1
     for _, modifier := range(tile.ModifierPoints) {
-	value += modifier()
+	value += modifier(tile)
     }
     return value
 }
 
-func (tile *Tile) countDefense() (int, error) {
-    price := 2
+func (tile *Tile) countDefense(gs *GameState) (int, int, int, error) {
+    a := 2
+    b := 0
+    c := 0
     err := error(nil)
     if tile.Biome == Mountain {
-        price += 1
-    }
-    if err != nil {
-	return price, err
+        a += 1
     }
     for _, modifier := range(tile.ModifierDefenses) {
-	extra, err := modifier()
+	x, y, z, err := modifier(tile, gs)
 	if err != nil {
-	    return price, err
+	    return a, b, c, err
 	}
-	price += extra
+	a += x
+	b += y
+	c += z
     }
-    return price, err
+    return a, b, c, err
 }
 
 func (tile *Tile) specialDefense(gs *GameState, attackingTribe *Tribe, attackingStackType string) (bool, error) {
@@ -51,6 +54,12 @@ func (tile *Tile) specialDefense(gs *GameState, attackingTribe *Tribe, attacking
 		}
 	}
 	return false, nil
+}
+
+func (tile *Tile) handleAfterConquest(gs *GameState) {
+	for _, modifier := range(tile.ModifierAfterConquest) {
+		modifier(tile, gs)
+	}
 }
 
 type Biome int

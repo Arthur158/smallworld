@@ -66,6 +66,9 @@ type TileCopy struct {
 	IsEdge              bool
 	TileModifierPoints  []string
 	TileModifierDefenses []string
+	ModifierAfterConquest []string
+	ModifierSpecialDefenses []string
+	State    map[string]interface{} `json:"state"`
 }
 
 type TribeCopy struct {
@@ -185,6 +188,17 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 			modifierDefenses = append(modifierDefenses, key)
 		}
 
+		ModifierAfterConquest := []string{}
+		for key := range t.ModifierAfterConquest {
+			ModifierAfterConquest = append(ModifierAfterConquest, key)
+		}
+
+		ModifierSpecialDefenses := []string{}
+		for key := range t.ModifierSpecialDefenses {
+			ModifierSpecialDefenses = append(ModifierSpecialDefenses, key)
+		}
+
+
 		tiles = append(tiles, TileCopy{
 			Id:                   t.Id,
 			AdjacentTiles:        adjacentIDs,
@@ -196,6 +210,9 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 			IsEdge:               t.IsEdge,
 			TileModifierPoints:   modifierPoints,
 			TileModifierDefenses: modifierDefenses,
+			ModifierAfterConquest: ModifierAfterConquest,
+			ModifierSpecialDefenses: ModifierSpecialDefenses,
+			State:		      t.State,
 		})
 	}
 
@@ -280,19 +297,24 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			}
 		}
 
-		modifierPoints := make(map[string]func() int)
+		modifierPoints := make(map[string]func(*gamestate.Tile) int)
 		for _, key := range tc.TileModifierPoints {
 			modifierPoints[key] = gamestate.TileModifierPoints[key]
 		}
 
-		modifierDefenses := make(map[string]func() (int, error))
+		modifierDefenses := make(map[string]func(*gamestate.Tile, *gamestate.GameState) (int, int, int, error))
 		for _, key := range tc.TileModifierDefenses {
 			modifierDefenses[key] = gamestate.TileModifierDefenses[key]
 		}
 
-		modifierSpecialDefenses := make(map[string]func(*gamestate.Tile, *gamestate.GameState, *gamestate.Tribe, string) (bool, error))
-		for _, key := range tc.TileModifierDefenses {
-			modifierSpecialDefenses[key] = gamestate.TileModifierSpecialDefenses[key]
+		ModifierAfterConquest := make(map[string]func(*gamestate.Tile, *gamestate.GameState))
+		for _, key := range tc.ModifierAfterConquest {
+			ModifierAfterConquest[key] = gamestate.TileModifierAfterConquests[key]
+		}
+
+		ModifierSpecialDefenses := make(map[string]func(*gamestate.Tile, *gamestate.GameState, *gamestate.Tribe, string) (bool, error))
+		for _, key := range tc.ModifierSpecialDefenses {
+			ModifierSpecialDefenses[key] = gamestate.TileModifierSpecialDefenses[key]
 		}
 
 		tile := &gamestate.Tile{
@@ -305,6 +327,9 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			IsEdge:          tc.IsEdge,
 			ModifierDefenses: modifierDefenses,
 			ModifierPoints:   modifierPoints,
+			ModifierAfterConquest: ModifierAfterConquest,
+			ModifierSpecialDefenses: ModifierSpecialDefenses,
+			State:		 tc.State,
 		}
 		tileList[tc.Id] = tile
 	}

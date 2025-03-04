@@ -80,17 +80,17 @@ func CreateBaseTribe() *Tribe {
         return 0
     }
 
-    tribe.countDefense = func(tile *Tile, player *Player) (int, int, int, error) {
-        price, error := tile.countDefense()
+    tribe.countDefense = func(tile *Tile, player *Player, gs *GameState) (int, int, int, error) {
+        price, b, c, error := tile.countDefense(gs)
         if error != nil {
-            return price, 0, 0, error
+            return price, b, c, error
         }
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 price += stack.Amount
             }
         }
-        return price, 0, 0, nil
+        return price, b, c, nil
     }
 
     tribe.handleAbandonment = func(tile *Tile, gs *GameState) {
@@ -118,7 +118,7 @@ func CreateBaseTribe() *Tribe {
         }
     }
 
-    tribe.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
+    tribe.countNewTileStacks = func(ps []PieceStack, tile *Tile, gs *GameState) []PieceStack {
         return ps
     }
 
@@ -323,11 +323,11 @@ func CreateBaseTribe() *Tribe {
 				} else if reserve.Amount < expanse.Amount {
                                         diceThrow := RollDice()
                                         if reserve.Amount + diceThrow >= expanse.Amount {
-                                            gs.Messages = append(gs.Messages, fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow))
+                            gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow)})
                                             hasDiceBeenUsed = true
                                             result = append(result, reserve)
                                         } else {
-                                            gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow))
+                            gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow)})
                                             return nil, true, false, nil
                                         }        
                                 } else {
@@ -362,6 +362,8 @@ func CreateBaseTribe() *Tribe {
     tribe.handleMovement = func(s string, t1, t2 *Tile, gs *GameState) error {
         return fmt.Errorf("Invalid opponent action!")
     }
+
+    tribe.handleEndOfGame = func(gs *GameState) {}
 
     return &tribe
 }
