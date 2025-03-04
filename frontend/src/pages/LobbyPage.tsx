@@ -41,6 +41,10 @@ export default function LobbyPage() {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA") {
+        return;
+      }
       if (event.key.toLowerCase() === "s") {
         setActiveTab((prev) => (prev === "saves" ? "dlc" : "saves"));
       }
