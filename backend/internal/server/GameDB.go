@@ -425,9 +425,8 @@ func SaveGameState(state *gamestate.GameState, saverIndex int, mapName string) (
 		tribeString = fmt.Sprintf("%s %s in decline", saverActiveTribe.Trait, saverActiveTribe.Race)
 	}
 	turnIndex := copyState.TurnInfo.TurnIndex
-	playerCount := len(copyState.Players)
-	summary := fmt.Sprintf("%s | Turn: %d | %s | %d players",
-		tribeString, turnIndex, mapName, playerCount)
+	summary := fmt.Sprintf("%s | Turn: %d | %s",
+		tribeString, turnIndex, mapName)
 
 	// Build the players_tribes list
 	playersTribes := make([]string, len(copyState.Players))
