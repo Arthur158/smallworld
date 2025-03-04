@@ -54,4 +54,9 @@ var extensions = []ExtensionList {
 		Races : []string{"Ice Witches"},
 		Traits: []string{"Lava"},
 	},
+	{
+		Name: "Underground",
+		Races : []string{"Gnomes"},
+		Traits: []string{},
+	},
 }

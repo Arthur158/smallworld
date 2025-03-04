@@ -2,17 +2,32 @@ package gamestate;
 
 import "fmt"
 
-var TileModifierPoints = map[string]func(int) int {
-    "Winter" : func(i int) int {
-            return i - 1
+var TileModifierPoints = map[string]func() int {
+    "Winter" : func() int {
+            return - 1
     },
 }
 
-var TileModifierDefenses = map[string]func(int, error) (int, error) {
-    "Lava" : func(i int, err error) (int, error) {
-        return i, fmt.Errorf("Cannot conquer zone with lava!")
+var TileModifierDefenses = map[string]func() (int, error) {
+    "Lava" : func() (int, error) {
+        return 0, fmt.Errorf("Cannot conquer zone with lava!")
     },
-    "Burning Zeppelin" : func(i int, err error) (int, error) {
-        return i, fmt.Errorf("Cannot conquer zone with burning zeppelin!")
+    "Burning Zeppelin" : func() (int, error) {
+        return 0, fmt.Errorf("Cannot conquer zone with burning zeppelin!")
+    },
+}
+
+var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, string) (bool, error) {
+    "Loot" : func(tile *Tile, gs *GameState, tribe *Tribe, stackType string) (bool, error) {
+        loot := tile.State["loot"].(int)
+        if loot == -1 {
+            gs.Messages = append(gs.Messages, "Skag attack!")
+            for i := range(tribe.Owner.PieceStacks) {
+                if tribe.Owner.PieceStacks[i].Type == string(tribe.Race) {
+                    tribe.Owner.PieceStacks[i].Amount -= 1
+                }
+            }
+        }
+        return false, nil
     },
 }

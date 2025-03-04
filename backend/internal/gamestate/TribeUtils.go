@@ -244,7 +244,11 @@ func CreateBaseTribe() *Tribe {
         return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: amount - 1}}
     }
 
-    tribe.specialConquest = func(gs *GameState, tile *Tile, s string, attacker *Player, attackerIndex int) (bool, error) {
+    tribe.specialConquest = func(gs *GameState, tile *Tile, s string) (bool, error) {
+        return false, nil
+    }
+    
+    tribe.specialDefense = func(gs *GameState, t1 *Tile, t2 *Tribe, s string) (bool, error) {
         return false, nil
     }
 

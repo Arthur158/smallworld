@@ -33,13 +33,14 @@ type Tribe struct {
 	computeDiscount func(string, *Tile) int;
 	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
 	calculateRemainingAttackingStacks func([]PieceStack, *Tile, *GameState) ([]PieceStack, bool, bool, error)
-	specialConquest func(*GameState, *Tile, string, *Player, int) (bool, error);
+	specialConquest func(*GameState, *Tile, string) (bool, error);
 	handleMovement func(string, *Tile, *Tile, *GameState) error
 
 	//conquest for defender
 	countDefense func(*Tile, *Player) (int, int, int, error);
 	handleReturn func(*Tile, *GameState, int)
 	clearTile func(*Tile, *GameState, int);
+	specialDefense func(*GameState, *Tile, *Tribe, string) (bool, error);
 
 	// redeployment
 	startRedeployment func(*GameState) []PieceStack;

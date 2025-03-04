@@ -23,7 +23,8 @@ export default function PlayerInfo() {
         dispatch(setSelectedTile(null));
         dispatch(setSelectedStack(null));
       }
-      if (event.key === 'a' && (phase == "DeclineChoice" || "HandleAbandonment") && selectedTile != null && selectedStack != null) {
+      if (event.key === 'a' && (phase == "DeclineChoice" || phase == "TileAbandonment") && selectedTile != null && selectedStack != null) {
+        console.log("enter here")
         sendMessageToBackend('abandonment', { tileId: selectedTile.toString(), stackType: selectedStack.toString() });
       }
       if (event.key === 'a' && phase == "Redeployment" && selectedTile != null && selectedStack != null) {

@@ -791,8 +791,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldStacks
 		}
 		oldSpecialConquest := t.specialConquest
-		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
-			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType)
 			if ok {
 				return ok, err
 			}
@@ -805,7 +805,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Catapult", Amount: 1}})
-			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Catapult", Amount: 1}})
+			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Catapult", Amount: 1}})
 
 			t.State["justPlaced"] = true
 			gs.Messages = append(gs.Messages, "The catapult was just placed!")
@@ -1261,8 +1261,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldStacks
 		}
 		oldSpecialConquest := t.specialConquest
-		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
-			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType)
 			if ok {
 				return ok, err
 			}
@@ -1291,7 +1291,7 @@ var TraitMap = map[Trait]TraitValue {
 
 			tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
 			if tile.Presence != None {
-				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker)
+				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, t.Owner)
 			} else {
 				tileCost, err = tile.countDefense()
 			}
@@ -1335,8 +1335,8 @@ var TraitMap = map[Trait]TraitValue {
 			newTileStacks := t.countNewTileStacks(newStacks, tile)
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
 
-			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
-			attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
+			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, newStacks)
+			t.Owner.CoinPile += moneyGainAttacker - moneyLossAttacker
 			tile.OwningTribe = t
 
 			if tile.OwningTribe.IsActive {
@@ -1345,7 +1345,7 @@ var TraitMap = map[Trait]TraitValue {
 				tile.Presence = Passive
 			} 	
 			if hasDiceBeenUsed {
-				return true, gs.HandleStartRedeployment(attackerIndex)
+				return true, gs.HandleStartRedeployment(t.Owner.Index)
 			} else {
 				gs.TurnInfo.Phase = Conquest
 			}
@@ -1481,8 +1481,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldStacks
 		}
 		oldSpecialConquest := t.specialConquest
-		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
-			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType)
 			if ok {
 				return ok, err
 			}

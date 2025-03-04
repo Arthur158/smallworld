@@ -9,14 +9,17 @@ type Tile struct {
 	Attributes []Attribute;
 	Presence Presence;
 	IsEdge bool;
-	ModifierPoints map[string]func(int) int;
-	ModifierDefenses map[string]func(int, error) (int, error);
+
+	State map[string]interface{};
+	ModifierPoints map[string]func() int;
+	ModifierDefenses map[string]func() (int, error);
+	ModifierSpecialDefenses map[string]func(*Tile, *GameState, *Tribe, string) (bool, error);
 }
 
 func (tile *Tile) countPoints() int {
     value := 1
     for _, modifier := range(tile.ModifierPoints) {
-	value = modifier(value)
+	value += modifier()
     }
     return value
 }
@@ -31,12 +34,23 @@ func (tile *Tile) countDefense() (int, error) {
 	return price, err
     }
     for _, modifier := range(tile.ModifierDefenses) {
-	price, err = modifier(price, err)
+	extra, err := modifier()
 	if err != nil {
 	    return price, err
 	}
+	price += extra
     }
     return price, err
+}
+
+func (tile *Tile) specialDefense(gs *GameState, attackingTribe *Tribe, attackingStackType string) (bool, error) {
+	for _, modifier := range(tile.ModifierSpecialDefenses) {
+		ok, err := modifier(tile, gs, attackingTribe, attackingStackType)
+		if ok {
+			return ok, err
+		}
+	}
+	return false, nil
 }
 
 type Biome int

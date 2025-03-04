@@ -173,7 +173,14 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return err
 	}
 
-	ok, err = attackingTribe.specialConquest(gs, tile, attackingStackType, attacker, attackerIndex)
+	if tile.Presence != None {
+	    ok, err := tile.OwningTribe.specialDefense(gs, tile, attackingTribe, attackingStackType)
+	    if ok {
+		return err
+	    }
+	}
+
+	ok, err = attackingTribe.specialConquest(gs, tile, attackingStackType)
 	if ok {
 		return err
 	}
