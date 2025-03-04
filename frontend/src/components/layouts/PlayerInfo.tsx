@@ -141,6 +141,7 @@ export default function PlayerInfo() {
         {pieceStacks.map((stack, index) => {
           const imageSrc = `/stacks/${stack.type}.png`;
           const isFlashy = isStackFromBank && selectedStack === stack.type;
+          const isGray = !stack.isActive;
 
           return (
             <div

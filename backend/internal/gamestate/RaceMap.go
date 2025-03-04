@@ -89,6 +89,18 @@ var RaceMap = map[Race]RaceValue {
 			return max(0, count)
 		}
 		}, Count: 5},
+	"Dwarves": {Transform: func(t *Tribe) {
+		oldCountPoints := t.countPoints
+		t.countPoints = func(tile *Tile) int {
+			count := oldCountPoints(tile)
+			for _, attr := range(tile.Attributes) {
+				if attr == Mine {
+					count += 1
+				} 
+			}
+			return max(0, count)
+		}
+		}, Count: 4},
 	"Halflings": {Transform: func(t *Tribe) {
 		t.State["holesleft"] = 2
 		t.State["startedalready"] = false
@@ -704,14 +716,13 @@ var RaceMap = map[Race]RaceValue {
 		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
 		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
 			oldStacks := oldcountRemovableAttackingStacks(p)
-			newstacks := []PieceStack{}
-			for _, stack := range(oldStacks) {
-				if stack.Type != string(t.Race) {
-					stack.Tribe = t
-					newstacks = append(newstacks, stack)
+			for i, stack := range(oldStacks) {
+				if stack.Type == string(t.Race) {
+					oldStacks = append(oldStacks[:i], oldStacks[i+1:]...)
+					break;
 				}
 			}
-			return newstacks
+			return oldStacks
 		}
 		oldIsStackValid := t.IsStackValid
 		t.IsStackValid = func(s string) bool {
@@ -912,7 +923,6 @@ var RaceMap = map[Race]RaceValue {
 				},
 				actionBefore: func(gs *GameState) {},
 			})
-			return
 		}
 		oldhandleDeploymentIn := t.handleDeploymentIn
 		t.handleDeploymentIn = func (tile *Tile, stackType string, i int, gs *GameState) error {
@@ -1109,5 +1119,5 @@ var RaceMap = map[Race]RaceValue {
 
 			return true, nil
 		}
-		}, Count: 10},
+		}, Count: 6},
 }

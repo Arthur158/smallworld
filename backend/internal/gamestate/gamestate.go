@@ -332,8 +332,10 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 
 	player := gs.Players[playerIndex]
 
-	if err := player.ActiveTribe.canEndTurn(gs); err != nil {
-		return err
+	if player.HasActiveTribe {
+		if err := player.ActiveTribe.canEndTurn(gs); err != nil {
+			return err
+		}
 	}
 
 	gs.handleNextPlayerTurn()
