@@ -426,11 +426,15 @@ func (gs *GameState) handleNextPlayerTurn() {
 	}
 
 	for i := len(gs.ModifierTurnsAfter) - 1; i >= 0; i-- {
+		log.Println(gs.ModifierTurnsAfter[i].player)
+		log.Println(gs.TurnInfo.PlayerIndex)
 	    if gs.ModifierTurnsAfter[i].player == gs.TurnInfo.PlayerIndex {
+		log.Println("we here 2")
 		if gs.ModifierTurnsAfter[i].actionBefore != nil {
 		    gs.ModifierTurnsAfter[i].actionBefore(gs)
 		}
 		if gs.ModifierTurnsAfter[i].TurnInfo != nil {
+		log.Println("we here 3")
 		    gs.RealTurninfo = gs.TurnInfo
 		    gs.TurnInfo = gs.ModifierTurnsAfter[i].TurnInfo
 		    gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter[:i], gs.ModifierTurnsAfter[i+1:]...)

@@ -2,6 +2,7 @@ package gamestate
 
 import (
 	"fmt"
+	"log"
 )
 
 
@@ -1521,7 +1522,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 
 			hasPlayed := false
-			if stackType == "Left Cannon" {
+			if cannonType == "Left Cannon" {
 				hasPlayed = t.State["leftcannonplayed"].(bool)
 			} else {
 				hasPlayed = t.State["rightcannonplayed"].(bool)
@@ -1597,14 +1598,14 @@ var TraitMap = map[Trait]TraitValue {
 		oldgoIntoDecline := t.goIntoDecline
 		t.goIntoDecline = func(gs *GameState) {
 			oldgoIntoDecline(gs)
+			log.Println("we here")
 			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
-				player: t.Owner.Index,
+				player: gs.TurnInfo.PlayerIndex,
 				TurnInfo: &TurnInfo{
 					TurnIndex: gs.TurnInfo.TurnIndex,
 					PlayerIndex: gs.TurnInfo.PlayerIndex,
 					Phase: Redeployment,
 				},
-				actionBefore: func(gs *GameState) {},
 			})
 
 		}

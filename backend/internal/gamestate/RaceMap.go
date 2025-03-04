@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
-	"log"
 )
 
 type RaceValue struct {
@@ -1169,8 +1168,26 @@ var RaceMap = map[Race]RaceValue {
 		oldCountNewTileStacks := t.countNewTileStacks
 		t.countNewTileStacks = func(stacks []PieceStack, tile *Tile, gs *GameState) []PieceStack {
 			oldstacks := oldCountNewTileStacks(stacks, tile, gs)
-			loots := t.State["loots"].([]int)
-			log.Println(loots)
+			raw := t.State["loots"]
+
+			var loots []int
+			ifaceSlice, ok := raw.([]interface{})
+			if !ok {
+			    if directSlice, ok2 := raw.([]int); ok2 {
+				loots = directSlice
+			    }
+			} else {
+			    loots = make([]int, len(ifaceSlice))
+			    for i, val := range ifaceSlice {
+				switch v := val.(type) {
+				case float64:
+				    loots[i] = int(v)
+				case int:
+				    loots[i] = v
+				}
+			    }
+			}
+			
 			if len(loots) > 0 {
 				tile.State["loot"] = loots[0]
 				tile.ModifierAfterConquest["Loot"] = TileModifierAfterConquests["Loot"]

@@ -241,6 +241,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			PieceStacks:    nil,
 			HasActiveTribe: pc.HasActiveTribe,
 			PointsEachTurn: pc.PointsEachTurn,
+			Index: i,
 		}
 		playerMap[i] = players[i]
 	}
