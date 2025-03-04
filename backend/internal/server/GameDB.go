@@ -280,14 +280,19 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			}
 		}
 
-		modifierPoints := make(map[string]func(int) int)
+		modifierPoints := make(map[string]func() int)
 		for _, key := range tc.TileModifierPoints {
 			modifierPoints[key] = gamestate.TileModifierPoints[key]
 		}
 
-		modifierDefenses := make(map[string]func(int, error) (int, error))
+		modifierDefenses := make(map[string]func() (int, error))
 		for _, key := range tc.TileModifierDefenses {
 			modifierDefenses[key] = gamestate.TileModifierDefenses[key]
+		}
+
+		modifierSpecialDefenses := make(map[string]func(*gamestate.Tile, *gamestate.GameState, *gamestate.Tribe, string) (bool, error))
+		for _, key := range tc.TileModifierDefenses {
+			modifierSpecialDefenses[key] = gamestate.TileModifierSpecialDefenses[key]
 		}
 
 		tile := &gamestate.Tile{

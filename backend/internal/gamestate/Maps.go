@@ -56,8 +56,8 @@ func Map3(gs *GameState) map[string]*Tile {
     }
 
     for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+        tileMap[key].ModifierDefenses = make(map[string]func() (int, error))
+        tileMap[key].ModifierPoints = make(map[string]func() (int))
     }
 
         // Step 2: Set adjacency by adding pointers to AdjacentTiles
@@ -236,8 +236,8 @@ func Map2(gs *GameState) map[string]*Tile {
     }
 
     for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+        tileMap[key].ModifierDefenses = make(map[string]func() (int, error))
+        tileMap[key].ModifierPoints = make(map[string]func() (int))
     }
         // Step 2: Set adjacency by adding pointers to AdjacentTiles
     tileMap["0"].AdjacentTiles = []*Tile{
@@ -403,8 +403,8 @@ func Map4(gs *GameState) map[string]*Tile {
     }
 
     for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+        tileMap[key].ModifierDefenses = make(map[string]func() (int, error))
+        tileMap[key].ModifierPoints = make(map[string]func() (int))
     }
 
         // Step 2: Set adjacency by adding pointers to AdjacentTiles
@@ -987,8 +987,8 @@ func Map5(gs *GameState) map[string]*Tile {
     }
 
     for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+        tileMap[key].ModifierDefenses = make(map[string]func() (int, error))
+        tileMap[key].ModifierPoints = make(map[string]func() (int))
     }
 
         // Step 2: Set adjacency by adding pointers to AdjacentTiles

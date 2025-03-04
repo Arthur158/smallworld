@@ -22,11 +22,21 @@ var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, str
         loot := tile.State["loot"].(int)
         if loot == -1 {
             gs.Messages = append(gs.Messages, "Skag attack!")
+
             for i := range(tribe.Owner.PieceStacks) {
                 if tribe.Owner.PieceStacks[i].Type == string(tribe.Race) {
                     tribe.Owner.PieceStacks[i].Amount -= 1
                 }
             }
+
+            for i := range(tile.PieceStacks) {
+                if tile.PieceStacks[i].Type == "Loot" {
+                    tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+                }
+            }
+            delete(tile.ModifierSpecialDefenses, "Loot")
+
+            return true, nil
         }
         return false, nil
     },
