@@ -1084,6 +1084,7 @@ var RaceMap = map[Race]RaceValue {
 			dummyTribe.IsActive = attackingTribe.IsActive
 			dummyTribe.Race = attackingTribe.Race
 			dummyTribe.Trait = attackingTribe.Trait
+
 			attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := dummyTribe.countAttack(tile, tileCost, attackingStackType)
 			newStacks, hasDiceBeenUsed, ok, err := attackingTribe.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
 			if err != nil {
@@ -1120,4 +1121,35 @@ var RaceMap = map[Race]RaceValue {
 			return true, nil
 		}
 		}, Count: 6},
+	"Escargots": {Transform: func(t *Tribe) {
+		oldCountPoints := t.countPoints
+		t.countPoints = func(tile *Tile) int {
+			count := oldCountPoints(tile)
+			if t.IsActive {
+				count -= 1
+			} 
+			return max(0, count)
+		}
+		oldGetStacksForConquestTurn := t.getStacksForConquestTurn
+		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+			oldGetStacksForConquestTurn(p, gs)
+			if t.IsActive {
+				moneyCount := 0
+
+				dummyTribe := CreateBaseTribe()
+				dummyTribe.IsActive = t.IsActive
+				dummyTribe.Race = t.Race
+				dummyTribe.Trait = t.Trait
+
+				for _, tile := range(gs.TileList) {
+					if tile.Presence != None  && tile.OwningTribe.checkPresence(tile, t.Race) {
+						moneyCount += dummyTribe.countPoints(tile)
+					}
+				}
+
+				gs.Messages = append(gs.Messages, fmt.Sprintf("The escargot just made %d Points for the start of their turn!", moneyCount))
+				p.CoinPile += moneyCount
+			}
+		}
+		}, Count: 10},
 }
