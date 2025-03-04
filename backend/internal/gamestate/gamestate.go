@@ -216,10 +216,9 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		tile.OwningTribe.handleReturn(tile, gs, pawnKill)
 	}
 
-	newTileStacks := attackingTribe.countNewTileStacks(newStacks, tile)
-	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
-
 	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
+	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, attackingTribe.countNewTileStacks(newStacks, tile))
+
 	attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	tile.OwningTribe = attackingTribe

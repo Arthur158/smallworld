@@ -610,9 +610,23 @@ var RaceMap = map[Race]RaceValue {
 		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
 			stacks, g, l, k := oldCountAttack(tile, cost, stackType)
 			if stackType == "Drakon's Dragon" {
-				return []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Drakon's Dragon", Amount: 1}}, g, l, k
+				return []PieceStack{{Type: string(t.Race), Amount: 2}, {Type: "Drakon's Dragon", Amount: 1}}, g, l, k
 			}
 			return stacks, g, l, k
+		}
+		oldcountNewTileStacks := t.countNewTileStacks
+		t.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
+			stacks := oldcountNewTileStacks(ps, tile)
+			for _, stack := range(stacks) {
+				if stack.Type == "Drakon's Dragon" {
+					for i := range(stacks) {
+						if stacks[i].Type == string(t.Race) {
+							stacks[i].Amount -= 1
+						}
+					}
+				}
+			}
+			return stacks
 		}
 		}, Count: 6},
 	"Fauns": {Transform: func(t *Tribe) {

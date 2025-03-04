@@ -1560,6 +1560,8 @@ var TraitMap = map[Trait]TraitValue {
 					tile.PieceStacks[i].Type = "Right Cannon"
 				}
 			}
+			t.State["leftcannonplayed"] = false
+			t.State["rightcannonplayed"] = false
 		}
 		}, Count: 3},
 }
