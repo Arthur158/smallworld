@@ -439,7 +439,7 @@ func (room *Room) removePlayer(username string) {
 
 	client.Room = nil
 	client.sendMessage("lobby", nil)
-
+	sendRoomsUpdateToAll()
 }
 
 func (r *Room) MovePlayer(username string, direction string) bool {

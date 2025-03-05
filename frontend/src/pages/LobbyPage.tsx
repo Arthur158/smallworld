@@ -201,99 +201,99 @@ export default function LobbyPage() {
             </div>
 
             {/* Not in room: Create Room and Room List */}
-            {!userInRoom && (
-              <div className="space-y-8">
-                <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
-                  <h2 className="text-xl font-bold mb-4 underline">Create a Room</h2>
-                  <div className="mb-4">
-                    <label className="block font-semibold mb-1">Room Name:</label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#8B4513]"
-                      value={roomName}
-                      onChange={(e) => setRoomName(e.target.value)}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCreateRoom}
-                    className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 rounded transition-colors shadow-md"
-                  >
-                    Create Room
-                  </button>
-                </div>
+{/* Not in room: Create Room and Room List */}
+{!userInRoom && (
+  <div className="space-y-8">
+    <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
+      <h2 className="text-xl font-bold mb-4 underline">Create a Room</h2>
+      <div className="mb-4">
+        <label className="block font-semibold mb-1">Room Name:</label>
+        <input
+          type="text"
+          className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#8B4513]"
+          value={roomName}
+          onChange={(e) => setRoomName(e.target.value)}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={handleCreateRoom}
+        className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 rounded transition-colors shadow-md"
+      >
+        Create Room
+      </button>
+    </div>
 
-                <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
-                  <h2 className="text-xl font-bold mb-4 underline">Available Rooms</h2>
-                  {rooms?.length === 0 ? (
-                    <p className="text-gray-600">No rooms available. Create one!</p>
-                  ) : (
-                    <ul className="space-y-3">
-                      {rooms.map((rm) => (
-                        <li
-                          key={rm.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded border border-transparent hover:border-[#8B4513] transition-colors"
-                        >
-                          <div className="text-md font-medium">
-                            <strong>{rm.name}</strong>{' '}
-                            <span className="text-sm text-gray-600">
-                              ({rm.players?.length || 0})
-                            </span>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => handleSpectateRoom(rm.id)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
-                            >
-                              Spectate
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleJoinRoom(rm.id)}
-                              className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
-                            >
-                              Join
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
-                  <h2 className="text-xl font-bold mb-4 underline">Ongoing Games</h2>
-                  {roomsInProgress?.length === 0 ? (
-                    <p className="text-gray-600"></p>
-                  ) : (
-                    <ul className="space-y-3">
-                      {roomsInProgress.map((rm) => (
-                        <li
-                          key={rm.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded border border-transparent hover:border-[#8B4513] transition-colors"
-                        >
-                          <div className="text-md font-medium">
-                            <strong>{rm.name}</strong>{' '}
-                            <span className="text-sm text-gray-600">
-                              ({rm.players?.length || 0})
-                            </span>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => handleSpectateRoom(rm.id)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
-                            >
-                              Spectate
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+    {/* Show Available Rooms ONLY if there are rooms */}
+    {rooms?.length > 0 && (
+      <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
+        <h2 className="text-xl font-bold mb-4 underline">Available Rooms</h2>
+        <ul className="space-y-3">
+          {rooms.map((rm) => (
+            <li
+              key={rm.id}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded border border-transparent hover:border-[#8B4513] transition-colors"
+            >
+              <div className="text-md font-medium">
+                <strong>{rm.name}</strong>{' '}
+                <span className="text-sm text-gray-600">
+                  ({rm.players?.length || 0})
+                </span>
               </div>
-            )}
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={() => handleSpectateRoom(rm.id)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
+                >
+                  Spectate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleJoinRoom(rm.id)}
+                  className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
+                >
+                  Join
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {/* Show Ongoing Games ONLY if there are rooms in progress */}
+    {roomsInProgress?.length > 0 && (
+      <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
+        <h2 className="text-xl font-bold mb-4 underline">Ongoing Games</h2>
+        <ul className="space-y-3">
+          {roomsInProgress.map((rm) => (
+            <li
+              key={rm.id}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded border border-transparent hover:border-[#8B4513] transition-colors"
+            >
+              <div className="text-md font-medium">
+                <strong>{rm.name}</strong>{' '}
+                <span className="text-sm text-gray-600">
+                  ({rm.players?.length || 0})
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={() => handleSpectateRoom(rm.id)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
+                >
+                  Spectate
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+)}
 
             {/* In room: Room Details */}
             {userInRoom && currentRoom && (
