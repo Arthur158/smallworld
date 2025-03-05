@@ -16,6 +16,7 @@ export default function LobbyPage() {
     name: username,
     isAuthenticated,
     rooms,
+    roomsInProgress,
     roomid,
     gameStarted,
     saveGames,
@@ -27,6 +28,7 @@ export default function LobbyPage() {
     name: state.application.name,
     isAuthenticated: state.application.isAuthenticated,
     rooms: state.application.rooms,
+    roomsInProgress: state.application.roomsInProgress,
     roomid: state.application.roomid,
     gameStarted: state.application.gameStarted,
     saveGames: state.application.saveGames as SaveGameInfo[],
@@ -252,6 +254,37 @@ export default function LobbyPage() {
                               className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
                             >
                               Join
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
+                  <h2 className="text-xl font-bold mb-4 underline">Ongoing Games</h2>
+                  {roomsInProgress?.length === 0 ? (
+                    <p className="text-gray-600"></p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {roomsInProgress.map((rm) => (
+                        <li
+                          key={rm.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded border border-transparent hover:border-[#8B4513] transition-colors"
+                        >
+                          <div className="text-md font-medium">
+                            <strong>{rm.name}</strong>{' '}
+                            <span className="text-sm text-gray-600">
+                              ({rm.players?.length || 0})
+                            </span>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSpectateRoom(rm.id)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
+                            >
+                              Spectate
                             </button>
                           </div>
                         </li>

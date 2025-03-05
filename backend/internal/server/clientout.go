@@ -81,6 +81,8 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			RoomName  string `json:"roomName"`
 			MaxPlayers int   `json:"maxPlayers"`
 		}
+		log.Println("in client out")
+		log.Println(client.Username)
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling createRoom data:", err)
 			return
@@ -94,9 +96,13 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.sendMessage("displayroom", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "leaveroom":
 		if client.IsSpectator {
+			log.Println("should not be a spectator")
 			client.Room.removeSpectator(client.Username)
 			return;
 		}
+		log.Println("about to leave room")
+		log.Println(client.Username)
+		log.Println(client.Room)
 		client.Room.removePlayer(client.Username)
 		sendRoomsUpdateToAll()
 	case "requestrefresh":

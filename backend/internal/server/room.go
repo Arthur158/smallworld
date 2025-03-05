@@ -77,6 +77,10 @@ func createRoom(client *Client, roomName, username string) {
 	sendRoomsUpdateToAll()
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 
+	log.Println("creating room ...")
+	log.Println(room.Players)
+	log.Println(client)
+
 	room.sendMapChoices()
 	room.sendChoices()
 }
@@ -311,6 +315,9 @@ func joinRoom(client *Client, roomID, username string) {
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + newRoom.ID + `"}`)))
 	client.Room.sendPlayerStatuses()
 
+	log.Println("adding player ...")
+	log.Println(client.Room.Players)
+
 	// Broadcast the updated rooms list to everyone
 	sendRoomsUpdateToAll()
 }
@@ -348,8 +355,16 @@ func spectateRoom(client *Client, roomID string) {
 		return
 	}
 
+
 	client.Room = newRoom
 	client.Room.Spectators = append(client.Room.Spectators, client)
+
+	if client.Room.InProgress {
+		client.sendMessage("spectate", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(1) + `"}`)))
+		client.Room.sendSmallMapUpdate()
+		client.Room.sendBigUpdate()
+	}
+	client.IsSpectator = true
 
 	// Notify client about successful join
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + newRoom.ID + `"}`)))
@@ -362,7 +377,7 @@ func spectateRoom(client *Client, roomID string) {
 func (room *Room) removeSpectator(username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
-	var client Client
+	var client *Client
 
 	if room == nil || room.Spectators == nil {
 		log.Println("room uninitialized or something")
@@ -371,7 +386,7 @@ func (room *Room) removeSpectator(username string) {
 
 	for i, player := range room.Spectators {
 		if player != nil && player.Username == username {
-			client = *player
+			client = player
 			room.Spectators = append(room.Spectators[:i], room.Spectators[i+1:]...)
 			break;
 		}
@@ -584,7 +599,6 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	}
 
 	for _, spectator := range room.Spectators {
-		spectator.IsSpectator = true
 		spectator.sendMessage("spectate", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(1) + `"}`)))
 	}
 	room.sendBigUpdate()

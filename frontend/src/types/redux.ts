@@ -20,6 +20,7 @@ export interface ApplicationState {
   messages: string[]
   scores: number[]
   rooms: Room[]
+  roomsInProgress: Room[]
   roomid: string
   name: string
   gameStarted: boolean

@@ -26,6 +26,7 @@ const initialState: ApplicationState = {
   messages: [],
   scores: [],
   rooms: [],
+  roomsInProgress: [],
   roomid: "",
   name: "",
   gameStarted: false,
@@ -139,6 +140,16 @@ const applicationSlice = createSlice({
         case 'roomEntriesUpdate': {
           if (parsedData != null) {
             state.rooms = parsedData;
+          } else {
+            state.rooms = []
+          }
+          break;
+        }
+        case 'roomsInProgress': {
+          if (parsedData != null) {
+            state.roomsInProgress = parsedData;
+          } else {
+            state.roomsInProgress = []
           }
           break;
         }
