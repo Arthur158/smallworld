@@ -1025,54 +1025,70 @@ var TraitMap = map[Trait]TraitValue {
 			stacks = append(stacks, PieceStack{Type:"Lava", Amount: count})
 			return stacks
 		}
-		oldCanBeRedeployedIn := t.canBeRedeployedIn
-		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
-			if oldCanBeRedeployedIn(tile, stackType, gs) {
-				return true
-			}
-			if stackType == "Lava" {
-				for _, stack := range tile.PieceStacks {
-					if stack.Type == "Lava" {
-						return false
-					}
-				}
-				return true
-			}
-			return false
-		}
+		// oldCanBeRedeployedIn := t.canBeRedeployedIn
+		// t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+		// 	if oldCanBeRedeployedIn(tile, stackType, gs) {
+		// 		return true
+		// 	}
+		// 	if stackType == "Lava" {
+		// 		for _, stack := range tile.PieceStacks {
+		// 			if stack.Type == "Lava" {
+		// 				return false
+		// 			}
+		// 		}
+		// 		return true
+		// 	}
+		// 	return false
+		// }
 		oldhandleDeploymentIn := t.handleDeploymentIn
 		t.handleDeploymentIn = func(tile *Tile, stackType string, i int, gs *GameState) error {
-			if stackType == "Lava" {
-				mountains, _ := t.State["mountains"].([]string)
-				for _, neighbor := range(tile.AdjacentTiles) {
-					if neighbor.Biome == Mountain {
-						for i, id := range(mountains) {
-							if neighbor.Id == id {
-								t.State["mountains"] = append(mountains[:i], mountains[i+1:]...)
-								player := t.Owner
+			err := oldhandleDeploymentIn(tile, stackType, i, gs)
+			if err == nil {
+				return nil
+			}
+			if stackType != "Lava" {
+				return err
+			}
 
-								movingStack := t.getRedeploymentStack(stackType, player.PieceStacks)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Lava" {
+					return fmt.Errorf("There is already lava here!")
+				}
+			}
 
-								newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
-								if !ok {
-									return fmt.Errorf("Cannot redeploy pieces you don't have")
-								}
-								player.PieceStacks = newStacks
-
-								if tile.Presence != None {
-									tile.OwningTribe.clearTile(tile, gs, 0)
-								}
-
-								tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
-								tile.ModifierDefenses["Lava"] = TileModifierDefenses["Lava"]
-							}
+			found := false
+			mountains, _ := t.State["mountains"].([]string)
+			for _, neighbor := range(tile.AdjacentTiles) {
+				if neighbor.Biome == Mountain {
+					for i, id := range(mountains) {
+						if neighbor.Id == id {
+							found = true
+							t.State["mountains"] = append(mountains[:i], mountains[i+1:]...)
 						}
 					}
 				}
-
-
 			}
-			return oldhandleDeploymentIn(tile, stackType, i, gs)
+			if !found {
+				return fmt.Errorf("No adjacent mountain!")
+			}
+
+			player := t.Owner
+
+			movingStack := t.getRedeploymentStack(stackType, player.PieceStacks)
+
+			newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
+			if !ok {
+				return fmt.Errorf("Cannot redeploy pieces you don't have")
+			}
+			player.PieceStacks = newStacks
+
+			if tile.Presence != None {
+				tile.OwningTribe.clearTile(tile, gs, 0)
+			}
+
+			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
+			tile.ModifierDefenses["Lava"] = TileModifierDefenses["Lava"]
+			return nil
 		}
 		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
 		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
@@ -1080,7 +1096,7 @@ var TraitMap = map[Trait]TraitValue {
 				for i := range(tile.PieceStacks) {
 					if tile.PieceStacks[i].Type == "Lava" {
 						tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-						delete(tile.ModifierPoints, "Lava")
+						delete(tile.ModifierDefenses, "Lava")
 					}
 				}
 			}
@@ -1465,7 +1481,7 @@ var TraitMap = map[Trait]TraitValue {
 		t.countRemovablePieces = func(tile *Tile) []PieceStack {
 			oldStacks := oldcountRemovablePieces(tile)
 			for _, stack := range(tile.PieceStacks) {
-				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" || stack.Type == "Firing Left Cannon" || stack.Type == "Firing Right Cannon"{
 					oldStacks = append(oldStacks, stack)
 				}
 			}
@@ -1488,7 +1504,7 @@ var TraitMap = map[Trait]TraitValue {
 		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
 			oldStacks := oldcountRemovableAttackingStacks(p)
 			for _, stack := range(p.PieceStacks) {
-				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" || stack.Type == "Cannon Trigger" {
 					oldStacks = append(oldStacks, stack)
 				}
 			}

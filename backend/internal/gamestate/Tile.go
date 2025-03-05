@@ -1,6 +1,5 @@
 package gamestate
 
-
 type Tile struct {
 	Id string;
 	AdjacentTiles []*Tile;

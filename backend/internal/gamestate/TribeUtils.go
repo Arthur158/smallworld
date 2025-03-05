@@ -146,6 +146,9 @@ func CreateBaseTribe() *Tribe {
     }
 
     tribe.handleDeploymentOut = func(tile *Tile, stackType string, i int, gs *GameState) error {
+        if tile.Presence == None {
+            return fmt.Errorf("This tile does not contain any tribe!")
+        }
 	stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
 	if err != nil {
 		return fmt.Errorf("Unable to redeploy", err)

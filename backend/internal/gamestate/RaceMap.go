@@ -306,10 +306,8 @@ var RaceMap = map[Race]RaceValue {
 		oldGetStacksOutRedeployment := t.getStacksOutRedeployment
 		t.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
 			stacks, err := oldGetStacksOutRedeployment(tile, stackType)
-			if err != nil {
-				if stackType == string(t.Race) {
-					return nil, fmt.Errorf("Barbarians cannot redeploy!")
-				}
+			if err == nil && stackType == string(t.Race) {
+				return nil, fmt.Errorf("Barbarians cannot redeploy!")
 			}
 			return stacks, err
 		}
@@ -1156,6 +1154,10 @@ var RaceMap = map[Race]RaceValue {
 		}
 		}, Count: 12},
 	"Skags": {Transform: func(t *Tribe) {
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Loot"
+		}
 		oldgiveInitialStacks := t.giveInitialStacks
 		t.giveInitialStacks = func() []PieceStack {
 			stacks := oldgiveInitialStacks()
@@ -1214,20 +1216,29 @@ var RaceMap = map[Race]RaceValue {
 		t.goIntoDecline = func(gs *GameState) {
 			oldgoIntoDecline(gs)
 			for _, tile := range(gs.TileList) {
-				delete(tile.ModifierPoints, "Loot")
+				delete(tile.ModifierAfterConquest, "Loot")
+				delete(tile.ModifierSpecialDefenses, "Loot")
 				for i, stack := range(tile.PieceStacks) {
 					if stack.Type == "Loot" {
 						tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
 					}
 				}
-				loot := tile.State["loot"].(int)
-				if loot != -1 {
+				val := tile.State["loot"]
+				var loot int
+				switch v := val.(type) {
+				case float64:
+				    loot = int(v)
+				case int:
+				    loot = v
+				}
+				if loot != -1 && loot != 0 {
 					t.Owner.CoinPile += loot
+					gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("The loot was: %d", loot)})
 				}
 			}
 		}
 		oldhandleEndOfGame := t.handleEndOfGame
-		t.goIntoDecline = func(gs *GameState) {
+		t.handleEndOfGame = func(gs *GameState) {
 			oldhandleEndOfGame(gs)
 			for _, tile := range(gs.TileList) {
 				delete(tile.ModifierPoints, "Loot")
@@ -1236,11 +1247,52 @@ var RaceMap = map[Race]RaceValue {
 						tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
 					}
 				}
-				loot := tile.State["loot"].(int)
+				val := tile.State["loot"]
+				var loot int
+				switch v := val.(type) {
+				case float64:
+				    loot = int(v)
+				case int:
+				    loot = v
+				}
 				if loot != -1 {
 					t.Owner.CoinPile += loot
 				}
 			}
+		}
+		oldhandleDeploymentOut := t.handleDeploymentOut
+		t.handleDeploymentOut = func (tile *Tile, stackType string, i int, gs *GameState) error {
+			err := oldhandleDeploymentOut(tile, stackType, i, gs) 
+			if err == nil {
+				return nil
+			}
+			if stackType != "Loot" {
+				return err
+			}
+			found := false
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Loot" {
+					found = true
+				}
+			}
+			if !found {
+				return err
+			}
+			val := tile.State["loot"]
+			var loot int
+			switch v := val.(type) {
+			case float64:
+			    loot = int(v)
+			case int:
+			    loot = v
+			}
+
+			if loot == -1 {
+				gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("The %s contains a Skag Attack!", tile.Biome), Receivers: []int{t.Owner.Index}})
+			} else {
+				gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("The %s has a loot of %d!", tile.Biome, loot), Receivers: []int{t.Owner.Index}})
+			}
+			return nil
 		}
 		}, Count: 6},
 }
