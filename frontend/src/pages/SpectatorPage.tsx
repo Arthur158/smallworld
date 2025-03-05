@@ -7,8 +7,8 @@ import { reset, clearError } from "../redux/slices/applicationSlice";
 import TribeList from "../components/layouts/TribeList";
 import Map from "../components/misc/Map";
 import PlayerInfo from "../components/layouts/PlayerInfo";
-import OpponentsList from "../components/layouts/OpponentsList";
-import TurnInfoBlock from "../components/layouts/TurnInfoBlock";
+import OpponentsListAll from "../components/layouts/OpponentsListAll";
+import TurnInfoBlockSpectate from "../components/layouts/TurnInfoBlockSpectate";
 import Chat from "../components/inputs/Chat";
 import GameFinishedPopup from "../components/layouts/GameFinishedPopup";
 import CustomCursor from "../components/misc/CustomCursor"; // Import Custom Cursor Component
@@ -80,7 +80,7 @@ export default function SpectatorPage() {
                 {showTurnInfo ? "Show Tribe List" : "Show Turn Info"}
               </button>
               <div className="h-full flex-1 overflow-auto min-h-0">
-                {showTurnInfo ? <OpponentsList /> : <TribeList />}
+                {showTurnInfo ? <OpponentsListAll /> : <TribeList />}
               </div>
             </div>
           </div>
@@ -89,7 +89,7 @@ export default function SpectatorPage() {
           <div className="w-2/5 h-full flex flex-col p-1 min-h-0">
             {/* TurnInfoBlock on top (auto height) */}
             <div className="flex-none mb-2">
-              <TurnInfoBlock />
+              <TurnInfoBlockSpectate />
             </div>
             {/* Chat below (scrollable if large) */}
             <div className="flex-1 overflow-auto min-h-0">

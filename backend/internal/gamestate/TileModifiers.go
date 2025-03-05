@@ -12,6 +12,10 @@ var TileModifierAfterConquests = map[string]func(*Tile, *GameState) {
     "Loot" : func(tile *Tile, gs *GameState) {
         val := tile.State["loot"]
 
+        if gs.Players[gs.TurnInfo.PlayerIndex].HasActiveTribe && gs.Players[gs.TurnInfo.PlayerIndex].ActiveTribe.Race == "Skags" {
+            return
+        }
+
         var loot int
         switch v := val.(type) {
         case float64:
@@ -46,6 +50,11 @@ var TileModifierDefenses = map[string]func(*Tile, *GameState) (int, int, int, er
 
 var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, string) (bool, error) {
     "Loot" : func(tile *Tile, gs *GameState, tribe *Tribe, stackType string) (bool, error) {
+
+        if tribe.Race == "Skags" {
+            return false, nil
+        }
+
         val := tile.State["loot"]
 
         var loot int

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+	"log"
 )
 
 type RaceValue struct {
@@ -1170,6 +1171,13 @@ var RaceMap = map[Race]RaceValue {
 		oldCountNewTileStacks := t.countNewTileStacks
 		t.countNewTileStacks = func(stacks []PieceStack, tile *Tile, gs *GameState) []PieceStack {
 			oldstacks := oldCountNewTileStacks(stacks, tile, gs)
+			log.Println("here")
+			log.Println(tile.PieceStacks)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Loot" {
+					return oldstacks
+				}
+			}
 			raw := t.State["loots"]
 
 			var loots []int
