@@ -13,12 +13,14 @@ export interface ApplicationState {
   turnNumber: number;
   playerNumber: number;
   phase: string;
+  coins: number;
   selectedStack: string | null;
   isStackFromBank: boolean
   selectedTile: string | null;
   messages: string[]
   scores: number[]
   rooms: Room[]
+  roomsInProgress: Room[]
   roomid: string
   name: string
   gameStarted: boolean
@@ -33,6 +35,7 @@ export interface ApplicationState {
   Xmult: number
   Ymult: number
   inDisplayRoom: boolean
+  isSpectating: boolean
   extensionChoices: {
     extensionName: string;
     isChecked: boolean;

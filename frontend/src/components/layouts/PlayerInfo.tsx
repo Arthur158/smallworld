@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { Player, PieceStack, Tribe } from '../../types/Board';
@@ -14,7 +14,7 @@ export default function PlayerInfo() {
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const selectedTile = useSelector((state: RootState) => state.application.selectedTile);
   const phase = useSelector((state: RootState) => state.application.phase);
-  const hasExecutedRef = useRef(false);
+  const player = allPlayers?.[playerIndex] || null;
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -23,7 +23,8 @@ export default function PlayerInfo() {
         dispatch(setSelectedTile(null));
         dispatch(setSelectedStack(null));
       }
-      if (event.key === 'a' && (phase == "DeclineChoice" || "HandleAbandonment") && selectedTile != null && selectedStack != null) {
+      if (event.key === 'a' && (phase == "DeclineChoice" || phase == "TileAbandonment") && selectedTile != null && selectedStack != null) {
+        console.log("enter here")
         sendMessageToBackend('abandonment', { tileId: selectedTile.toString(), stackType: selectedStack.toString() });
       }
       if (event.key === 'a' && phase == "Redeployment" && selectedTile != null && selectedStack != null) {
@@ -31,6 +32,25 @@ export default function PlayerInfo() {
           tileId: selectedTile.toString(),
           stackType: selectedStack.toString(),
         });
+        dispatch(setSelectedStack(null));
+        dispatch(setSelectedTile(null));
+      }
+      if (event.key === 'g' && isStackFromBank && player) {
+        for (let i = 0; i < player.pieceStacks.length; i++) {
+          if (selectedStack == player.pieceStacks[i].type && i == player.pieceStacks.length - 1) {
+            dispatch(setSelectedStack(null))
+            dispatch(setIsStackFromBank(false))
+          } else if (selectedStack == player.pieceStacks[i].type) {
+            dispatch(setSelectedStack(player.pieceStacks[i+1].type))
+          }
+        }
+      }
+      if (event.key === 'g' && !isStackFromBank && player) {
+        if (player.pieceStacks.length != 0) {
+          dispatch(setSelectedStack(player.pieceStacks[0].type))
+          dispatch(setIsStackFromBank(true))
+          dispatch(setSelectedTile(null))
+        }
       }
     };
 
@@ -38,28 +58,9 @@ export default function PlayerInfo() {
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [dispatch, selectedTile, selectedStack]);
+  }, [dispatch, selectedTile, selectedStack, player]);
 
-  useEffect(() => {
-    if (!allPlayers || allPlayers.length === 0) return;
-    const player = allPlayers[playerIndex];
-    if (!player) return;
 
-    // Run only once when the phase changes to "DeclineChoice"
-    if ((phase === "DeclineChoice" || phase === "TileAbandonment") && !hasExecutedRef.current) {
-      hasExecutedRef.current = true; // Mark as executed
-
-      if (playerIndex === playerNumber && player.pieceStacks.length !== 0) {
-        dispatch(setIsStackFromBank(true));
-        dispatch(setSelectedTile(null));
-        dispatch(setSelectedStack(player.pieceStacks[0].type));
-      }
-    } else if (phase !== "DeclineChoice") {
-      hasExecutedRef.current = false; // Reset when phase changes away
-    }
-  }, [dispatch, selectedTile, selectedStack, allPlayers, playerIndex, playerNumber, phase]);
-
-  const player = allPlayers?.[playerIndex] || null;
 
   // Same logic as in TribeList
   const getTraitImagePath = (trait?: string) => {
@@ -81,6 +82,8 @@ export default function PlayerInfo() {
         tileId: selectedTile.toString(),
         stackType: selectedStack.toString(),
       });
+      dispatch(setSelectedStack(null));
+      dispatch(setSelectedTile(null));
     } else if (isStackFromBank) {
       dispatch(setSelectedStack(null));
       dispatch(setIsStackFromBank(false));
@@ -138,6 +141,7 @@ export default function PlayerInfo() {
         {pieceStacks.map((stack, index) => {
           const imageSrc = `/stacks/${stack.type}.png`;
           const isFlashy = isStackFromBank && selectedStack === stack.type;
+          const isGray = !stack.isActive;
 
           return (
             <div
@@ -173,7 +177,10 @@ export default function PlayerInfo() {
   };
 
 return (
-  <div className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative h-full" onClick={handlePlayerClick}>
+<div 
+  className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative h-full overflow-auto max-w-full" 
+  onClick={handlePlayerClick}
+>
     <h3 className="text-lg font-bold">{player?.name || "Unknown Player"}</h3>
 
     {/* Active Tribe Display (Only if exists) */}

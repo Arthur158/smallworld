@@ -19,12 +19,14 @@ const initialState: ApplicationState = {
   turnNumber: 1,
   playerNumber: 1,
   phase: 'tribechoice',
+  coins: 5,
   selectedStack: null,
   isStackFromBank: false,
   selectedTile: null,
   messages: [],
   scores: [],
   rooms: [],
+  roomsInProgress: [],
   roomid: "",
   name: "",
   gameStarted: false,
@@ -39,6 +41,7 @@ const initialState: ApplicationState = {
   Xmult: 1,
   Ymult: 1,
   inDisplayRoom: false,
+  isSpectating: false,
   extensionChoices: [],
   globalToggle: true,
 };
@@ -111,6 +114,7 @@ const applicationSlice = createSlice({
         case 'auth': {
           state.gameStarted = false
           state.isAuthenticated = true
+          state.error = null
 
           state.name = parsedData.name
           break;
@@ -119,6 +123,7 @@ const applicationSlice = createSlice({
           state.gameStarted = false
           state.isAuthenticated = false
           state.roomid = ""
+          state.error = null
 
           state.name = ""
           break;
@@ -135,6 +140,16 @@ const applicationSlice = createSlice({
         case 'roomEntriesUpdate': {
           if (parsedData != null) {
             state.rooms = parsedData;
+          } else {
+            state.rooms = []
+          }
+          break;
+        }
+        case 'roomsInProgress': {
+          if (parsedData != null) {
+            state.roomsInProgress = parsedData;
+          } else {
+            state.roomsInProgress = []
           }
           break;
         }
@@ -147,16 +162,27 @@ const applicationSlice = createSlice({
         case 'lobby':
           state.roomid = ""
           state.gameStarted = false
+          state.isSpectating = false
+          state.error = null
           break;
         case 'displayroom':
           state.inDisplayRoom = true
           state.gameStarted = false
+          state.isSpectating = false
           state.saveSelectionId = -1
+          state.error = null
+          break;
+        case 'spectate':
+          state.inDisplayRoom = false
+          state.gameStarted = true
+          state.isSpectating = true
+          state.error = null
           break;
         case 'leavedisplayroom':
           state.gameStarted = false
           state.inDisplayRoom = false
           state.saveSelectionId = -1
+          state.error = null
           break;
         case 'error':
           state.error = parsedData.message;
@@ -353,12 +379,16 @@ const applicationSlice = createSlice({
         case 'gamefinished':
           state.scores = parsedData;
           state.phase = 'GameFinished';
+          state.error = null
           break;
 
         case 'message':
           state.messages.push(JSON.stringify(parsedData.message));
           break;
-         case 'megaUpdate': {
+        case 'coins':
+          state.coins = parsedData.coins
+          break;
+       case 'megaUpdate': {
           // This is your combined big update.
           // Pull out the relevant fields one by one.
 
@@ -452,6 +482,7 @@ const applicationSlice = createSlice({
             }
             if (!found) {
               state.selectedStack = null;
+              state.isStackFromBank = false
             }
           } else if (state.selectedStack != null && !state.isStackFromBank && state.selectedTile != null) {
             let found = false

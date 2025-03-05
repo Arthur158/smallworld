@@ -80,17 +80,17 @@ func CreateBaseTribe() *Tribe {
         return 0
     }
 
-    tribe.countDefense = func(tile *Tile) (int, int, int, error) {
-        price, error := tile.countDefense()
+    tribe.countDefense = func(tile *Tile, player *Player, gs *GameState) (int, int, int, error) {
+        price, b, c, error := tile.countDefense(gs)
         if error != nil {
-            return price, 0, 0, error
+            return price, b, c, error
         }
         for _, stack := range tile.PieceStacks {
             if stack.Type == string(tribe.Race) {
                 price += stack.Amount
             }
         }
-        return price, 0, 0, nil
+        return price, b, c, nil
     }
 
     tribe.handleAbandonment = func(tile *Tile, gs *GameState) {
@@ -118,7 +118,7 @@ func CreateBaseTribe() *Tribe {
         }
     }
 
-    tribe.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
+    tribe.countNewTileStacks = func(ps []PieceStack, tile *Tile, gs *GameState) []PieceStack {
         return ps
     }
 
@@ -244,7 +244,11 @@ func CreateBaseTribe() *Tribe {
         return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: amount - 1}}
     }
 
-    tribe.specialConquest = func(gs *GameState, tile *Tile, s string, attacker *Player, attackerIndex int) (bool, error) {
+    tribe.specialConquest = func(gs *GameState, tile *Tile, s string) (bool, error) {
+        return false, nil
+    }
+    
+    tribe.specialDefense = func(gs *GameState, t1 *Tile, t2 *Tribe, s string) (bool, error) {
         return false, nil
     }
 
@@ -267,7 +271,7 @@ func CreateBaseTribe() *Tribe {
     }
 
     // This function should be used to undo tribe advantages in certain tribe, although in an ideal world this would also deactivate any illegal actions, but should not be possible in the first place.
-    tribe.goIntoDecline = func(gs *GameState) int {
+    tribe.goIntoDecline = func(gs *GameState) {
         player := tribe.Owner
 
 	for i, tribe := range player.PassiveTribes {
@@ -291,7 +295,7 @@ func CreateBaseTribe() *Tribe {
 	player.ActiveTribe = nil
 	player.HasActiveTribe = false
 
-	return gs.countPoints(player)
+	return
     }
 
     tribe.giveInitialStacks = func() []PieceStack {
@@ -319,11 +323,11 @@ func CreateBaseTribe() *Tribe {
 				} else if reserve.Amount < expanse.Amount {
                                         diceThrow := RollDice()
                                         if reserve.Amount + diceThrow >= expanse.Amount {
-                                            gs.Messages = append(gs.Messages, fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow))
+                            gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow)})
                                             hasDiceBeenUsed = true
                                             result = append(result, reserve)
                                         } else {
-                                            gs.Messages = append(gs.Messages, fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow))
+                            gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow)})
                                             return nil, true, false, nil
                                         }        
                                 } else {
@@ -346,6 +350,20 @@ func CreateBaseTribe() *Tribe {
     tribe.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {
         return []PieceStack{{Type: s, Amount: 1, Tribe: &tribe}}
     }
+
+    tribe.canEndTurn = func(gs *GameState) error {
+        return nil
+    }
+
+    tribe.handleOpponentAction = func(s string, p *Player, gs *GameState) error {
+        return fmt.Errorf("Invalid opponent action!")
+    }
+
+    tribe.handleMovement = func(s string, t1, t2 *Tile, gs *GameState) error {
+        return fmt.Errorf("Invalid opponent action!")
+    }
+
+    tribe.handleEndOfGame = func(gs *GameState) {}
 
     return &tribe
 }

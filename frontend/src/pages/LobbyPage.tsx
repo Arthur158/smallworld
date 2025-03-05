@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import { sendMessageToBackend } from '../services/backendService';
-import { reset } from '../redux/slices/applicationSlice';
+import { reset, clearError } from '../redux/slices/applicationSlice';
 import { Room, SaveGameInfo } from '../types/Board';
 
 export default function LobbyPage() {
@@ -16,6 +16,7 @@ export default function LobbyPage() {
     name: username,
     isAuthenticated,
     rooms,
+    roomsInProgress,
     roomid,
     gameStarted,
     saveGames,
@@ -27,6 +28,7 @@ export default function LobbyPage() {
     name: state.application.name,
     isAuthenticated: state.application.isAuthenticated,
     rooms: state.application.rooms,
+    roomsInProgress: state.application.roomsInProgress,
     roomid: state.application.roomid,
     gameStarted: state.application.gameStarted,
     saveGames: state.application.saveGames as SaveGameInfo[],
@@ -37,6 +39,24 @@ export default function LobbyPage() {
   }));
 
   const [roomName, setRoomName] = useState('');
+  const [activeTab, setActiveTab] = useState<'saves' | 'dlc'>('saves');
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA") {
+        return;
+      }
+      if (event.key.toLowerCase() === "s") {
+        setActiveTab((prev) => (prev === "saves" ? "dlc" : "saves"));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, []);
 
   let currentRoom: Room | null = null;
   if (rooms) {
@@ -70,6 +90,9 @@ export default function LobbyPage() {
       if (event.key.toLowerCase() === 'p' && currentRoom?.creator === username) {
         handleStartGame();
       }
+      if (event.key.toLowerCase() === 'c' && currentRoom?.creator === username) {
+        dispatch(clearError());
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -89,6 +112,13 @@ export default function LobbyPage() {
   const handleJoinRoom = (selectedRoomId: string) => {
     if (!username.trim()) return;
     sendMessageToBackend('joinRoom', {
+      roomId: selectedRoomId,
+    });
+  };
+
+  const handleSpectateRoom = (selectedRoomId: string) => {
+    if (!username.trim()) return;
+    sendMessageToBackend('spectateRoom', {
       roomId: selectedRoomId,
     });
   };
@@ -148,11 +178,20 @@ export default function LobbyPage() {
     <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
       <div className="flex w-full h-full">
         {/* Left column */}
-        <div className="w-2/3 h-full flex flex-col border-r border-[#5F4B32] bg-[#FDF5E6]">
-          <div className="flex-1 overflow-y-auto p-6">
+        <div 
+          className="w-2/3 h-full flex flex-col border-r border-[#5F4B32] relative"
+          style={{
+            backgroundImage: "url('/background.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        >
+          <div className="absolute inset-0 z-0"></div>
+          <div className="relative z-10 flex-1 overflow-y-auto p-6 bg-white/0">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-              <span className="text-lg font-semibold">Logged in as: {username}</span>
+              <span className="text-lg font-semibold text-white">Logged in as: {username}</span>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 text-white py-1 px-4 rounded shadow-md transition-colors"
@@ -160,10 +199,10 @@ export default function LobbyPage() {
                 Log Out
               </button>
             </div>
+
             {/* Not in room: Create Room and Room List */}
             {!userInRoom && (
               <div className="space-y-8">
-                {/* Create Room Card */}
                 <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
                   <h2 className="text-xl font-bold mb-4 underline">Create a Room</h2>
                   <div className="mb-4">
@@ -183,7 +222,7 @@ export default function LobbyPage() {
                     Create Room
                   </button>
                 </div>
-                {/* Available Rooms Card */}
+
                 <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
                   <h2 className="text-xl font-bold mb-4 underline">Available Rooms</h2>
                   {rooms?.length === 0 ? (
@@ -201,13 +240,53 @@ export default function LobbyPage() {
                               ({rm.players?.length || 0})
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleJoinRoom(rm.id)}
-                            className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
-                          >
-                            Join
-                          </button>
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSpectateRoom(rm.id)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
+                            >
+                              Spectate
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleJoinRoom(rm.id)}
+                              className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
+                            >
+                              Join
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
+                  <h2 className="text-xl font-bold mb-4 underline">Ongoing Games</h2>
+                  {roomsInProgress?.length === 0 ? (
+                    <p className="text-gray-600"></p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {roomsInProgress.map((rm) => (
+                        <li
+                          key={rm.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded border border-transparent hover:border-[#8B4513] transition-colors"
+                        >
+                          <div className="text-md font-medium">
+                            <strong>{rm.name}</strong>{' '}
+                            <span className="text-sm text-gray-600">
+                              ({rm.players?.length || 0})
+                            </span>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSpectateRoom(rm.id)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
+                            >
+                              Spectate
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -215,6 +294,7 @@ export default function LobbyPage() {
                 </div>
               </div>
             )}
+
             {/* In room: Room Details */}
             {userInRoom && currentRoom && (
               <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
@@ -298,60 +378,99 @@ export default function LobbyPage() {
             )}
           </div>
         </div>
-        {/* Right column: Saved Games */}
-        <div className="w-1/3 h-full flex flex-col bg-[#FDF5E6] border-l border-[#5F4B32]">
-          <div className="p-6 border-b border-[#5F4B32]">
-            <h2 className="text-2xl font-bold underline">Saved Games</h2>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6">
-            <button
-              type="button"
-              onClick={handleEnterDisplayRoom}
-              className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 rounded transition-colors shadow-md mb-6"
-            >
-              Enter Display Room
-            </button>
-            {userInRoom && currentRoom && currentRoom.creator === username ? (
-              <>
-                {saveGames && saveGames.length > 0 ? (
-                  <ul className="space-y-4">
-                    {saveGames.map((gameSave) => (
-                      <li
-                        key={gameSave.saveId}
-                        className={`relative flex items-center p-4 cursor-pointer bg-white rounded border-2 transition-colors ${
-                          gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
-                        }`}
-                        onClick={() => handleGameIdClick(gameSave.saveId)}
-                      >
-                        <div className="flex-1">
-                          <div className="font-bold">ID: {gameSave.saveId}</div>
-                          <div className="text-sm text-gray-600">{gameSave.summary}</div>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteGame(gameSave.saveId);
-                          }}
-                          className="absolute right-4 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-600">No saved games available.</p>
-                )}
 
-                {/* RENDER EXTRA CHOICES BELOW SAVED GAMES IF HOST */}
-                {saveSelectionId === -1 && <ExtraChoices />}
+        {/* Right column with togglable menu */}
+        <div className="w-1/3 h-full flex flex-col bg-[#FDF5E6] border-l border-[#5F4B32]">
+          <div className="p-6 border-b border-[#5F4B32] flex items-center justify-between">
+            <div className="text-2xl font-bold underline">Menu</div>
+            <div className="space-x-4">
+              <button
+                onClick={() => setActiveTab('saves')}
+                className={`py-1 px-3 rounded ${
+                  activeTab === 'saves'
+                    ? 'bg-[#8B4513] text-white'
+                    : 'bg-white text-[#5F4B32] border border-[#8B4513]'
+                }`}
+              >
+                Saves
+              </button>
+              <button
+                onClick={() => setActiveTab('dlc')}
+                className={`py-1 px-3 rounded ${
+                  activeTab === 'dlc'
+                    ? 'bg-[#8B4513] text-white'
+                    : 'bg-white text-[#5F4B32] border border-[#8B4513]'
+                }`}
+              >
+                Races&Traits
+              </button>
+            </div>
+          </div>
+
+          {/* Content area of the right column */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {activeTab === 'saves' && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleEnterDisplayRoom}
+                  className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 rounded transition-colors shadow-md mb-6"
+                >
+                  Enter Display Room
+                </button>
+                {userInRoom && currentRoom && currentRoom.creator === username ? (
+                  <>
+                    {saveGames && saveGames.length > 0 ? (
+                      <ul className="space-y-4">
+                        {saveGames.map((gameSave) => (
+                          <li
+                            key={gameSave.saveId}
+                            className={`relative flex items-center p-4 cursor-pointer bg-white rounded border-2 transition-colors ${
+                              gameSave.saveId === saveSelectionId
+                                ? 'border-[#8B4513]'
+                                : 'border-transparent'
+                            }`}
+                            onClick={() => handleGameIdClick(gameSave.saveId)}
+                          >
+                            <div className="flex-1">
+                              <div className="font-bold">ID: {gameSave.saveId}</div>
+                              <div className="text-sm text-gray-600">{gameSave.summary}</div>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteGame(gameSave.saveId);
+                              }}
+                              className="absolute right-4 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-600">No saved games available.</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-gray-600">You are not the owner</p>
+                )}
               </>
-            ) : (
-              <p className="text-gray-600">You are not the owner</p>
+            )}
+
+            {activeTab === 'dlc' && (
+              <>
+                {userInRoom && currentRoom && currentRoom.creator === username ? (
+                  <ExtraChoices />
+                ) : (
+                  <p className="text-gray-600">You are not the owner</p>
+                )}
+              </>
             )}
           </div>
         </div>
       </div>
+
       {/* Error Banner at the Bottom */}
       {error && (
         <div className="fixed bottom-0 left-0 w-full bg-red-500 text-white text-center py-2 z-50">
@@ -404,13 +523,14 @@ function ExtraChoices() {
   };
 
   return (
-    <div className="mt-8 p-4 bg-white rounded border border-[#8B4513]">
+    <div className="mt-4 p-4 bg-white rounded border border-[#8B4513]">
       <div className="mb-4">
         <label className="flex items-center space-x-2">
           <input
             type="checkbox"
             checked={globalToggle}
             onChange={(e) => handleToggleAll(e.target.checked)}
+            className="appearance-none w-5 h-5 border-2 border-[#8B4513] rounded-md checked:bg-[#8B4513] checked:border-[#5F4B32] focus:outline-none focus:ring-2 focus:ring-[#A0522D]"
           />
           <span>Toggle All</span>
         </label>
@@ -426,6 +546,7 @@ function ExtraChoices() {
                 onChange={(e) =>
                   handleToggleExtension(ext.extensionName, e.target.checked)
                 }
+                className="appearance-none w-5 h-5 border-2 border-[#8B4513] rounded-md checked:bg-[#8B4513] checked:border-[#5F4B32] focus:outline-none focus:ring-2 focus:ring-[#A0522D]"
               />
               <span>{ext.extensionName}</span>
             </label>
@@ -445,6 +566,7 @@ function ExtraChoices() {
                             e.target.checked
                           )
                         }
+                        className="appearance-none w-5 h-5 border-2 border-[#8B4513] rounded-md checked:bg-[#8B4513] checked:border-[#5F4B32] focus:outline-none focus:ring-2 focus:ring-[#A0522D]"
                       />
                       <span>{race.choice}</span>
                     </label>
@@ -466,6 +588,7 @@ function ExtraChoices() {
                             e.target.checked
                           )
                         }
+                        className="appearance-none w-5 h-5 border-2 border-[#8B4513] rounded-md checked:bg-[#8B4513] checked:border-[#5F4B32] focus:outline-none focus:ring-2 focus:ring-[#A0522D]"
                       />
                       <span>{trait.choice}</span>
                     </label>

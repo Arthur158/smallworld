@@ -45,7 +45,7 @@ export default function LoginRegisterPage() {
     <div
       className="w-screen h-screen bg-cover bg-center font-serif text-[#5F4B32]"
       style={{ 
-        backgroundImage: "url('/background.png')",
+        backgroundImage: "url('/background2.png')",
     backgroundSize: "100% 100%", // Ensures the entire image is displayed
     backgroundPosition: "center", // Centers the image
     backgroundRepeat: "no-repeat", // Prevents tiling

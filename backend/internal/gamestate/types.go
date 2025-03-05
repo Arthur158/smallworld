@@ -31,14 +31,16 @@ type Tribe struct {
 	// conquest for attacker
 	countAttack func(*Tile, int, string) ([]PieceStack, int, int, int);
 	computeDiscount func(string, *Tile) int;
-	countNewTileStacks func([]PieceStack, *Tile) []PieceStack;
+	countNewTileStacks func([]PieceStack, *Tile, *GameState) []PieceStack;
 	calculateRemainingAttackingStacks func([]PieceStack, *Tile, *GameState) ([]PieceStack, bool, bool, error)
-	specialConquest func(*GameState, *Tile, string, *Player, int) (bool, error);
+	specialConquest func(*GameState, *Tile, string) (bool, error);
+	handleMovement func(string, *Tile, *Tile, *GameState) error
 
 	//conquest for defender
-	countDefense func(*Tile) (int, int, int, error);
+	countDefense func(*Tile, *Player, *GameState) (int, int, int, error);
 	handleReturn func(*Tile, *GameState, int)
 	clearTile func(*Tile, *GameState, int);
+	specialDefense func(*GameState, *Tile, *Tribe, string) (bool, error);
 
 	// redeployment
 	startRedeployment func(*GameState) []PieceStack;
@@ -48,7 +50,11 @@ type Tribe struct {
 	handleDeploymentOut func(*Tile, string, int, *GameState) error;
 	handleDeploymentIn func(*Tile, string, int, *GameState) error;
 
+	// misc
+	handleOpponentAction func(string, *Player, *GameState) error;
+
 	// end of turn
+	canEndTurn func(*GameState) error;
 	countPoints func(*Tile) int;
 	countExtrapoints func(*GameState) int;
 
@@ -56,8 +62,10 @@ type Tribe struct {
 	countRemovablePieces func(*Tile) []PieceStack;
 	countRemovableAttackingStacks func(*Player) []PieceStack;
 	canGoIntoDecline func(*GameState) bool;
-	goIntoDecline func(*GameState) int;
+	goIntoDecline func(*GameState);
 	prepareRemoval func(*GameState) bool;
+
+	handleEndOfGame func(*GameState);
 }
 
 type TribeEntry struct {
@@ -85,113 +93,7 @@ type Player struct {
 	PointsEachTurn []int;
 }
 
-type Phase int
-
-const (
-	TribeChoice Phase = iota
-	DeclineChoice
-	TileAbandonment
-	Conquest
-	Redeployment
-	GameFinished
-)
-
-func (b Phase) String() string {
-	switch b {
-	case TribeChoice:
-		return "TribeChoice"
-	case DeclineChoice:
-		return "DeclineChoice"
-	case TileAbandonment:
-		return "TileAbandonment"
-	case Conquest:
-		return "Conquest"
-	case Redeployment:
-		return "Redeployment"
-	case GameFinished:
-		return "GameFinished"
-	default:
-		return "Unknown"
-	}
-}
-
-
-type TurnInfo struct {
-	TurnIndex int;
-	PlayerIndex int;
-	Phase Phase;
-}
-
-
-type Biome int
-
-// Enum values for Biome
-const (
-	Forest Biome = iota
-	Hill
-	Field
-	Swamp
-	Water
-	Mountain
-)
-
-func (b Biome) String() string {
-	switch b {
-	case Forest:
-		return "Forest"
-	case Hill:
-		return "Hill"
-	case Field:
-		return "Field"
-	case Swamp:
-		return "Swamp"
-	case Water:
-		return "Water"
-	case Mountain:
-		return "Mountain"
-	default:
-		return "Unknown"
-	}
-}
-
-type Attribute int;
-
-const (
-	Magic Attribute = iota
-	Mine
-	Cave
-)
-
-func (b Attribute) String() string {
-	switch b {
-	case Magic:
-		return "Magic"
-	case Mine:
-		return "Mine"
-	case Cave:
-		return "Cave"
-	default:
-		return "Unknown"
-	}
-}
-
-type Presence int;
-
-const (
-	None Presence = iota
-	Active
-	Passive
-)
-
-func (b Presence) String() string {
-	switch b {
-	case None:
-		return "None"
-	case Active:
-		return "Active"
-	case Passive:
-		return "Passive"
-	default:
-		return "Unknown"
-	}
+type Message struct {
+	Receivers []int;
+	Content string;
 }

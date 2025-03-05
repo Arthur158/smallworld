@@ -18,7 +18,6 @@ func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
 
 func (gs *GameState) GetPieceStackForConquest(player *Player) {
     player.ActiveTribe.getStacksForConquestTurn(player, gs)
-    // }
     for _, tribe := range(player.PassiveTribes) {
         tribe.getStacksForConquestTurn(player, gs)
     }

@@ -26,6 +26,11 @@ func (client *Client) handleTribePick (msg messages.Message) {
 		return
 	}
 
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
+		return
+	}
+
 	if err := client.Room.Gamestate.HandleTribeChoice(client.Index, pickData.PickIndex); err != nil {
 		client.sendError(err.Error())
 	} else {
@@ -49,6 +54,11 @@ func (client *Client) handleAbandonment (msg messages.Message) {
 	}
 	if !client.Room.InProgress {
 		client.sendError("Client's room's game has not started yet")
+		return
+	}
+
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
 		return
 	}
 
@@ -78,6 +88,10 @@ func (client *Client) handleConquest (msg messages.Message) {
 		client.sendError("Client's room's game has not started yet")
 		return
 	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
+		return
+	}
 
 	if err := client.Room.Gamestate.HandleConquest(conquestData.TileID, client.Index, conquestData.AttackingStackType); err != nil {
 		client.sendError(err.Error())
@@ -94,6 +108,10 @@ func (client *Client) handleStartRedeployment () {
 	}
 	if !client.Room.InProgress {
 		client.sendError("Client's room's game has not started yet")
+		return
+	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
 		return
 	}
 
@@ -123,6 +141,10 @@ func (client *Client) handleRedeploymentIn (msg messages.Message) {
 		client.sendError("Client's room's game has not started yet")
 		return
 	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
+		return
+	}
 
 	if err := client.Room.Gamestate.HandleRedeploymentIn(client.Index, deployData.TileID, deployData.StackType, 1); err != nil {
 		client.sendError(err.Error())
@@ -148,6 +170,10 @@ func (client *Client) handleRedeploymentOut (msg messages.Message) {
 	}
 	if !client.Room.InProgress {
 		client.sendError("Client's room's game has not started yet")
+		return
+	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
 		return
 	}
 
@@ -178,6 +204,10 @@ func (client *Client) handleRedeploymentThrough (msg messages.Message) {
 		client.sendError("Client's room's game has not started yet")
 		return
 	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
+		return
+	}
 
 	if err := client.Room.Gamestate.HandleRedeploymentOut(client.Index, deployData.TileFromID, deployData.StackType); err != nil {
 		client.sendError(err.Error())
@@ -188,6 +218,37 @@ func (client *Client) handleRedeploymentThrough (msg messages.Message) {
 	}
 }
 
+func (client *Client) handleMovement (msg messages.Message) {
+	var deployData struct {
+		TileFromID          string `json:"tileFromId"`
+		TileToID          string `json:"tileToId"`
+		StackType	string `json:"stackType"`
+	}
+
+	if err := json.Unmarshal([]byte(msg.Data), &deployData); err != nil {
+		client.sendError("Invalid deploy data")
+		return
+	}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+		return
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+		return
+	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
+		return
+	}
+
+	if err := client.Room.Gamestate.HandleMovement(client.Index, deployData.TileFromID, deployData.TileToID, deployData.StackType); err != nil {
+		client.sendError(err.Error())
+	} else {
+		client.Room.sendBigUpdate()
+	}
+}
 
 func (client *Client) handleFinishTurn () {
 	if client.Room == nil {
@@ -196,6 +257,10 @@ func (client *Client) handleFinishTurn () {
 	}
 	if !client.Room.InProgress {
 		client.sendError("Client's room's game has not started yet")
+		return
+	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
 		return
 	}
 
@@ -221,6 +286,10 @@ func (client *Client) handleDecline () {
 		client.sendError("Client's room's game has not started yet")
 		return
 	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
+		return
+	}
 
 	if err := client.Room.Gamestate.HandleDecline(client.Index); err != nil {
 		client.sendError(err.Error())
@@ -234,3 +303,39 @@ func (client *Client) handleDecline () {
 	}
 }
 
+func (client *Client) handleOppponentAction (msg messages.Message) {
+	var data struct {
+		OpponentName          string `json:"opponentName"`
+		StackType	string `json:"stackType"`
+	}
+
+	if err := json.Unmarshal([]byte(msg.Data), &data); err != nil {
+		client.sendError("Invalid deploy data")
+		return
+	}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+		return
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+		return
+	}
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
+		return
+	}
+	opponentIndex := 0
+	for _, client := range(client.Room.Players) {
+		if client.Username == data.OpponentName {
+			opponentIndex = client.Index
+		}
+	}
+
+	if err := client.Room.Gamestate.HandleOpponentAction(client.Index, opponentIndex, data.StackType); err != nil {
+		client.sendError(err.Error())
+	} else {
+		client.Room.sendBigUpdate()
+	}
+}

@@ -56,8 +56,11 @@ func Map3(gs *GameState) map[string]*Tile {
     }
 
     for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+        tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
+        tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
+        tileMap[key].State = make(map[string]interface{})
     }
 
         // Step 2: Set adjacency by adding pointers to AdjacentTiles
@@ -236,8 +239,11 @@ func Map2(gs *GameState) map[string]*Tile {
     }
 
     for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+        tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
+        tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
+        tileMap[key].State = make(map[string]interface{})
     }
         // Step 2: Set adjacency by adding pointers to AdjacentTiles
     tileMap["0"].AdjacentTiles = []*Tile{
@@ -403,8 +409,11 @@ func Map4(gs *GameState) map[string]*Tile {
     }
 
     for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+        tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
+        tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
+        tileMap[key].State = make(map[string]interface{})
     }
 
         // Step 2: Set adjacency by adding pointers to AdjacentTiles
@@ -645,6 +654,14 @@ func MapIsles2(gs *GameState) map[string]*Tile {
         tileMap["7i"], tileMap["8i"], 
     }
 
+    for key := range(tileMap) {
+        tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
+        tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
+        tileMap[key].State = make(map[string]interface{})
+    }
+
     lostTribe := CreateBaseTribe()
     lostTribe.Race = "Lost Tribe"
     lostTribe.Trait = "Lost"
@@ -672,10 +689,10 @@ func MapIsles2(gs *GameState) map[string]*Tile {
                 }
             }
             if !foundOutlier {
-                gs.Messages = append(gs.Messages, fmt.Sprintf(
+                gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf(
                                 "%s owns an entire island!",
                                 p.Name,
-                ))
+                )})
                 i += 1
             }
         }
@@ -689,10 +706,10 @@ func MapIsles2(gs *GameState) map[string]*Tile {
                 }
             }
             if !foundOutlier {
-                gs.Messages = append(gs.Messages, fmt.Sprintf(
+                gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf(
                                 "%s owns an entire island!",
                                 p.Name,
-                ))
+                )})
                 i += 1
             }
         }
@@ -765,6 +782,14 @@ func MapIsles3(gs *GameState) map[string]*Tile {
         tileMap[id].Presence = Passive
     }
 
+    for key := range(tileMap) {
+        tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
+        tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
+        tileMap[key].State = make(map[string]interface{})
+    }
+
     gs.ModifierPoints["islands"] = func(i int, p *Player) int {
         if tile, ok := tileMap["0i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
@@ -775,10 +800,10 @@ func MapIsles3(gs *GameState) map[string]*Tile {
                 }
             }
             if !foundOutlier {
-                gs.Messages = append(gs.Messages, fmt.Sprintf(
+                gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf(
                                 "%s owns an entire island!",
                                 p.Name,
-                ))
+                )})
                 i += 1
             }
         }
@@ -792,10 +817,10 @@ func MapIsles3(gs *GameState) map[string]*Tile {
                 }
             }
             if !foundOutlier {
-                gs.Messages = append(gs.Messages, fmt.Sprintf(
+                gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf(
                                 "%s owns an entire island!",
                                 p.Name,
-                ))
+                )})
                 i += 1
             }
         }
@@ -809,10 +834,10 @@ func MapIsles3(gs *GameState) map[string]*Tile {
                 }
             }
             if !foundOutlier {
-                gs.Messages = append(gs.Messages, fmt.Sprintf(
+                gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf(
                                 "%s owns an entire island!",
                                 p.Name,
-                ))
+                )})
                 i += 1
             }
         }
@@ -987,8 +1012,11 @@ func Map5(gs *GameState) map[string]*Tile {
     }
 
     for key := range(tileMap) {
-        tileMap[key].ModifierDefenses = make(map[string]func(int, error) (int, error))
-        tileMap[key].ModifierPoints = make(map[string]func(int) (int))
+        tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
+        tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
+        tileMap[key].State = make(map[string]interface{})
     }
 
         // Step 2: Set adjacency by adding pointers to AdjacentTiles

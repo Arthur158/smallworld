@@ -16,7 +16,7 @@ func DoesPlayerHaveStack(stackType string, player *Player) bool {
 }
 
 func (player *Player) getTribe(stackType string) (*Tribe, error) {
-    if player.ActiveTribe.IsStackValid(stackType) {
+    if player.HasActiveTribe && player.ActiveTribe.IsStackValid(stackType) {
 	return player.ActiveTribe, nil;
     }
     // Thinking of zombie-like tribes here

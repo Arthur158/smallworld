@@ -1,6 +1,9 @@
 package gamestate
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 
 
@@ -135,7 +138,7 @@ var TraitMap = map[Trait]TraitValue {
 	"Mounted": {Transform: func(t *Tribe) {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
-			if (tile.Biome == Field || tile.Biome == Hill) && t.IsActive == true {
+			if (tile.Biome == Field || tile.Biome == Hill) && t.IsActive {
 				return oldcomputeDiscount(stackType, tile) + 1
 			}
 			return oldcomputeDiscount(stackType, tile)
@@ -191,9 +194,8 @@ var TraitMap = map[Trait]TraitValue {
 			oldGetStacksForConquestTurn(p, gs)
 			val := RollDice()
 			t.State["diceroll"] = val
-			gs.Messages = append(gs.Messages, fmt.Sprintf("New throw of dice for berserk tribe: %d", val))
+			gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("New throw of dice for berserk tribe: %d", val)})
 		}
-
 		oldCalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
 		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
 			stacks, diceUsed, ok, err := oldCalculateRemainingAttackingStacks(ps, tile, gs)
@@ -205,7 +207,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			val := RollDice()
 			t.State["diceroll"] = val
-			gs.Messages = append(gs.Messages, fmt.Sprintf("New throw of dice for berserk tribe: %d", val))
+			gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("New throw of dice for berserk tribe: %d", val)})
 			return stacks, false, true, nil
 		}
 		}, Count: 4},
@@ -221,8 +223,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldIsStackValid(s) || s == "Fortress"
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -279,8 +281,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -369,8 +371,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -439,6 +441,16 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return oldStacks
 		}
+		oldClearTile := t.clearTile
+		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
+			oldClearTile(tile, gs, pk)
+			for i, stack := range tile.PieceStacks {
+			    if stack.Type == "Hero"{
+				tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+				return // Exit after removal to avoid index shifting issues
+			    }
+			}
+		}
 		}, Count: 5},
 	"Dragon Master": {Transform: func(t *Tribe) {
 		oldgiveInitialStacks := t.giveInitialStacks
@@ -458,8 +470,8 @@ var TraitMap = map[Trait]TraitValue {
 			}
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -508,8 +520,8 @@ var TraitMap = map[Trait]TraitValue {
 		}, Count: 5},
 	"Corrupt": {Transform: func(t *Tribe) {
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -650,8 +662,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldgetRedeploymentStack(s, ps)
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -755,8 +767,8 @@ var TraitMap = map[Trait]TraitValue {
 			}
 		}
 		oldCountDefense := t.countDefense
-		t.countDefense = func(tile *Tile) (int, int, int, error) {
-			old, g, l, err := oldCountDefense(tile)
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
 			if err != nil {
 				return old, g, l, err
 			}
@@ -767,7 +779,6 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return old, g, l, nil
 		}
-
 		oldIsStackValid := t.IsStackValid
 		t.IsStackValid = func(stackType string) bool {
 			return (stackType == "Catapult" && t.IsActive) || oldIsStackValid(stackType)
@@ -793,8 +804,8 @@ var TraitMap = map[Trait]TraitValue {
 			return oldStacks
 		}
 		oldSpecialConquest := t.specialConquest
-		t.specialConquest = func(gs *GameState, tile *Tile, stackType string, attacker *Player, attackerIndex int) (bool, error) {
-			ok, err := oldSpecialConquest(gs, tile, stackType, attacker, attackerIndex)
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType)
 			if ok {
 				return ok, err
 			}
@@ -807,10 +818,10 @@ var TraitMap = map[Trait]TraitValue {
 			}
 
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Catapult", Amount: 1}})
-			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Catapult", Amount: 1}})
+			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Catapult", Amount: 1}})
 
 			t.State["justPlaced"] = true
-			gs.Messages = append(gs.Messages, "The catapult was just placed!")
+			gs.Messages = append(gs.Messages,Message{Content:  "The catapult was just placed!"})
 
 			return true, nil
 		}
@@ -849,14 +860,24 @@ var TraitMap = map[Trait]TraitValue {
 		}
 		}, Count: 4},
 	"Stout": {Transform: func(t *Tribe) {
+		t.State["extrapoints"] = 0
 		t.canGoIntoDecline = func(gs *GameState) bool {
 			return true
 		}
 		oldgoIntoDecline := t.goIntoDecline
-		t.goIntoDecline = func(gs *GameState) int {
-			points := gs.countPoints(t.Owner)
-			_ = oldgoIntoDecline(gs)
-			return points
+		t.goIntoDecline = func(gs *GameState) {
+			pluspoints := gs.countPoints(t.Owner)
+			gs.GetPieceStackForConquest(t.Owner)
+			oldgoIntoDecline(gs)
+			minuspoints := gs.countPoints(t.Owner)
+			t.State["extrapoints"] = pluspoints - minuspoints
+		}
+		oldCountExtraPoints := t.countExtrapoints
+		t.countExtrapoints = func(gs *GameState) int {
+			count := oldCountExtraPoints(gs)
+			extraPoints := t.State["extrapoints"].(int)
+			t.State["extrapoints"] = 0
+			return count + extraPoints
 		}
 		}, Count: 4},
 	"Fireball": {Transform: func(t *Tribe) {
@@ -889,8 +910,8 @@ var TraitMap = map[Trait]TraitValue {
 			return stacks, a, b, c
 		}
 		oldcountNewTileStacks := t.countNewTileStacks
-		t.countNewTileStacks = func(ps []PieceStack, tile *Tile) []PieceStack {
-			stacks := oldcountNewTileStacks(ps, tile)
+		t.countNewTileStacks = func(ps []PieceStack, tile *Tile, gs *GameState) []PieceStack {
+			stacks := oldcountNewTileStacks(ps, tile, gs)
 			for i := range(stacks) {
 				if stacks[i].Type == "Fireball" {
 					return append(stacks[:i], stacks[i+1:]...)
@@ -1070,6 +1091,658 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			t.State["mountains"] = []string{}
 			oldgetStacksForConquestTurn(p, gs)
+		}
+		}, Count: 5},
+	"Diplomat": {Transform: func(t *Tribe) {
+		t.State["playersAttacked"] = []int{}
+		oldHandleopponentAction := t.handleOpponentAction
+		t.handleOpponentAction = func(stackType string, opponent *Player, gs *GameState) error {
+			err := oldHandleopponentAction(stackType, opponent, gs)
+			if err == nil {
+				return nil
+			}
+			if stackType == "Diplomat" {
+				if gs.TurnInfo.Phase != Redeployment {
+					return fmt.Errorf("You must be in Redeployment to establish a peace treaty!")
+				}
+
+				playersAttacked, _ := t.State["playersAttacked"].([]int)
+				for _, index := range(playersAttacked) {
+					if index == opponent.Index {
+						return fmt.Errorf("You have attacked this player during your turn!")
+					}
+				}
+
+				opponent.PieceStacks = AddPieceStacks(opponent.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+				return nil
+			}
+			return err
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Diplomat"
+		}
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+			return stacks
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range p.PieceStacks {
+				if stack.Type == "Diplomat" {
+					return old, g, l, fmt.Errorf("You have a Peace pact with this player!")
+				}
+			}
+			return old, g, l, nil
+		}
+		oldcalculateRemainingAttackingStacks := t.calculateRemainingAttackingStacks
+		t.calculateRemainingAttackingStacks = func(ps []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
+			stacks, b1, b2, err := oldcalculateRemainingAttackingStacks(ps, tile, gs)
+			if err != nil {
+				return stacks, b1, b2, err
+			}
+			if tile.Presence == Active && tile.OwningTribe != nil {
+				playersAttacked, _ := t.State["playersAttacked"].([]int)
+				playersAttacked = append(playersAttacked, tile.OwningTribe.Owner.Index)
+				t.State["playersAttacked"] = playersAttacked
+			}
+			return stacks, b1, b2, err
+		}
+		oldGetStacksForConquestTurn := t.getStacksForConquestTurn
+		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+			oldGetStacksForConquestTurn(p, gs)
+			t.State["playersAttacked"] = []int{}
+			for _, player := range(gs.Players) {
+				for i := range(player.PieceStacks) {
+					if player.PieceStacks[i].Type == "Diplomat" && player != p {
+						t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+						player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, []PieceStack{{Type: "Diplomat", Amount: 1}})
+						return
+
+					}
+				}
+			}
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Diplomat" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		}, Count: 5},
+	"Haggling": {Transform: func(t *Tribe) {
+		oldHandleopponentAction := t.handleOpponentAction
+		t.handleOpponentAction = func(stackType string, opponent *Player, gs *GameState) error {
+			err := oldHandleopponentAction(stackType, opponent, gs)
+			if err == nil {
+				return nil
+			}
+			if stackType == "Treaty" {
+				if gs.TurnInfo.Phase != Redeployment {
+					return fmt.Errorf("You must be in Redeployment to establish a peace treaty!")
+				}
+
+				opponent.PieceStacks = AddPieceStacks(opponent.PieceStacks, []PieceStack{{Type: "Treaty", Amount: 1}})
+				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Treaty", Amount: 1}})
+				return nil
+			}
+			return err
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Treaty"
+		}
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Treaty", Amount: 5}})
+			return stacks
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range p.PieceStacks {
+				if stack.Type == "Treaty" {
+					l += stack.Amount
+					g += stack.Amount
+					p.PieceStacks, _ = SubtractPieceStacks(p.PieceStacks, []PieceStack{stack})
+					t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{stack})
+				}
+			}
+			return old, g, l, nil
+		}
+		oldGetStacksForConquestTurn := t.getStacksForConquestTurn
+		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+			oldGetStacksForConquestTurn(p, gs)
+			for _, player := range(gs.Players) {
+				for i := range(player.PieceStacks) {
+					if player.PieceStacks[i].Type == "Treaty" && player != p {
+						t.Owner.CoinPile -= player.PieceStacks[i].Amount
+						player.CoinPile += player.PieceStacks[i].Amount
+						t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Treaty", Amount: player.PieceStacks[i].Amount}})
+						player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, []PieceStack{{Type: "Treaty", Amount: player.PieceStacks[i].Amount}})
+						break
+
+					}
+				}
+			}
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Treaty" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		}, Count: 5},
+	"Zeppelined": {Transform: func(t *Tribe) {
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Zeppelin"
+		}
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Zeppelin", Amount: 5}})
+			return stacks
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Zeppelin" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		oldSpecialConquest := t.specialConquest
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType)
+			if ok {
+				return ok, err
+			}
+			if stackType != "Zeppelin" {
+				return false, nil
+			}
+
+			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				return true, fmt.Errorf("This tile already belongs to the tribe!")
+			}
+
+			if err := t.checkZoneAccess(tile); err != nil {
+				return true, err
+			}
+
+			found := false
+			for _, stack := range(t.Owner.PieceStacks) {
+				if stack.Type == string(t.Race) {
+					found = true
+				}
+			}
+
+			if !found {
+				return true, fmt.Errorf("You need at least one Race token to launch a zeppelin attack!")
+			}
+
+			tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
+			if tile.Presence != None {
+				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, t.Owner, gs)
+			} else {
+				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
+			}
+			
+			if err != nil {
+				return true, err
+			}
+
+			diceThrow := RollDice()
+
+			if diceThrow == 0 {
+				gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Failure: The throw of dice for zeppelined tribe was: %d", diceThrow)})
+				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Zeppelin", Amount: 1}})
+				if tile.Presence != None {
+					tile.OwningTribe.handleReturn(tile, gs, 1)
+				}
+				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Burning Zeppelin", Amount: 1}})
+				tile.ModifierDefenses["Burning Zeppelin"] = TileModifierDefenses["Burning Zeppelin"]
+				return true, nil
+			}
+
+			gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Success: The throw of dice for zeppelined tribe was: %d", diceThrow)})
+			// counts the cost for the attacker
+			attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := t.countAttack(tile, tileCost - diceThrow, string(t.Race))
+			attackCostStacks = append(attackCostStacks, PieceStack{Type: "Zeppelin", Amount: 1})
+			newStacks, hasDiceBeenUsed, _, err := t.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
+			if err != nil {
+				return true, err
+			}
+
+			if hasDiceBeenUsed {
+				return true, fmt.Errorf("The dice cannot be used twice on a Zeppelin attack!")
+			}
+
+			// Enact changes
+			if tile.Presence != None {
+				tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
+				tile.OwningTribe.handleReturn(tile, gs, pawnKill)
+			}
+
+			newTileStacks := t.countNewTileStacks(newStacks, tile, gs)
+			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
+			tile.handleAfterConquest(gs)
+
+			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, newStacks)
+			t.Owner.CoinPile += moneyGainAttacker - moneyLossAttacker
+			tile.OwningTribe = t
+
+			if tile.OwningTribe.IsActive {
+				tile.Presence = Active
+			} else {
+				tile.Presence = Passive
+			} 	
+			if hasDiceBeenUsed {
+				return true, gs.HandleStartRedeployment(t.Owner.Index)
+			} else {
+				gs.TurnInfo.Phase = Conquest
+			}
+
+			return true, nil
+		}
+		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
+		t.getStacksForConquestTurn = func(p *Player, gs *GameState) {
+			for _, tile := range(gs.TileList) {
+				for i := range(tile.PieceStacks) {
+					if tile.PieceStacks[i].Type == "Burning Zeppelin" || tile.PieceStacks[i].Type == "Zeppelin" {
+						tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+						delete(tile.ModifierDefenses, "Burning Zeppelin")
+						t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Zeppelin", Amount: 1}})
+					}
+				}
+			}
+			oldgetStacksForConquestTurn(p, gs)
+		}
+		oldClearTile := t.clearTile
+		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
+			oldClearTile(tile, gs, pk)
+			for i, stack := range tile.PieceStacks {
+			    if stack.Type == "Zeppelin" {
+				tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+				t.Owner.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{stack})
+				return // Exit after removal to avoid index shifting issues
+			    }
+			}
+		}
+		}, Count: 5},
+	"Gunner": {Transform: func(t *Tribe) {
+		t.State["leftcannonplayed"] = false
+		t.State["rightcannonplayed"] = false
+		oldHandleMovement := t.handleMovement
+		t.handleMovement = func(stackType string, tileFrom, tileTo *Tile, gs *GameState) error {
+			err := oldHandleMovement(stackType, tileFrom, tileTo, gs)
+			if err == nil {
+				return nil
+			}
+			if stackType != "Left Cannon" && stackType != "Right Cannon" {
+				return err
+			}
+
+			if tileFrom == tileTo {
+				return fmt.Errorf("Cannot move cannon on its own tile!")
+			}
+
+			if tileFrom.Presence == None || !tileFrom.OwningTribe.checkPresence(tileTo, t.Race) {
+				return fmt.Errorf("Invalid starting tile")
+			}
+			if tileTo.Presence == None || !tileTo.OwningTribe.checkPresence(tileFrom, t.Race) {
+				return fmt.Errorf("Invalid arriving tile")
+			}
+
+			found := false
+			for _, stack := range(tileFrom.PieceStacks) {
+				if stack.Type == stackType {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("No cannon to move!")
+			}
+
+			hasPlayed := false
+			if stackType == "Left Cannon" {
+				hasPlayed = t.State["leftcannonplayed"].(bool)
+			} else {
+				hasPlayed = t.State["rightcannonplayed"].(bool)
+			}
+			if hasPlayed {
+				return fmt.Errorf("This cannon has already moved!")
+			}
+
+			tileFrom.PieceStacks, _ = SubtractPieceStacks(tileFrom.PieceStacks, []PieceStack{{Type: stackType, Amount: 1}})
+			tileTo.PieceStacks = AddPieceStacks(tileTo.PieceStacks, []PieceStack{{Type: stackType, Amount: 1}})
+
+			if stackType == "Left Cannon" {
+				t.State["leftcannonplayed"] = true
+			} else {
+				t.State["rightcannonplayed"] = true
+			}
+
+			return nil
+		}
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Cannon Trigger", Amount: 1}, {Type: "Left Cannon", Amount: 1}, {Type: "Right Cannon", Amount: 1}})
+			return stacks
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Cannon Trigger" || s == "Left Cannon" || s == "Right Cannon"
+		}
+		oldCanBeRedeployedIn := t.canBeRedeployedIn
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			return oldCanBeRedeployedIn(tile, stackType, gs) || stackType == "Left Cannon" || stackType == "Right Cannon"
+		}
+		oldcountRemovablePieces := t.countRemovablePieces
+		t.countRemovablePieces = func(tile *Tile) []PieceStack {
+			oldStacks := oldcountRemovablePieces(tile)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range tile.PieceStacks {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" || stack.Type == "Firing Left Cannon" || stack.Type == "Firing Right Cannon" {
+					return 1000, g, l, fmt.Errorf("A tile with a cannon cannot be conquered")
+				}
+			}
+			return old, g, l, nil
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+		oldSpecialConquest := t.specialConquest
+		t.specialConquest = func(gs *GameState, tile *Tile, stackType string) (bool, error) {
+			ok, err := oldSpecialConquest(gs, tile, stackType)
+			if ok {
+				return ok, err
+			}
+			if stackType != "Cannon Trigger" {
+				return false, nil
+			}
+
+			if !tile.OwningTribe.checkPresence(tile, t.Race)  {
+				return true, fmt.Errorf("Needs to be the tribe's own tile")
+			}
+
+			found := false
+			cannonType := ""
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Type == "Left Cannon" || stack.Type == "Right Cannon" {
+					found = true
+					cannonType = stack.Type
+					break
+				}
+			}
+			if !found {
+				return true, fmt.Errorf("No cannon to trigger!")
+			}
+
+			hasPlayed := false
+			if cannonType == "Left Cannon" {
+				hasPlayed = t.State["leftcannonplayed"].(bool)
+			} else {
+				hasPlayed = t.State["rightcannonplayed"].(bool)
+			}
+			if hasPlayed {
+				return true, fmt.Errorf("This cannon has already moved!")
+			}
+			
+			if cannonType == "Left Cannon" {
+				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Firing Left Cannon", Amount: 1}})
+				tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Left Cannon", Amount: 1}})
+			} else {
+				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Firing Right Cannon", Amount: 1}})
+				tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Right Cannon", Amount: 1}})
+			}
+
+			if stackType == "Left Cannon" {
+				t.State["leftcannonplayed"] = true
+			} else {
+				t.State["rightcannonplayed"] = true
+			}
+
+			gs.Messages = append(gs.Messages, Message{Content: "A cannon was just triggered!"})
+
+			return true, nil
+		}
+		oldcomputeDiscount := t.computeDiscount
+		t.computeDiscount = func(stackType string, tile *Tile) int {
+			discount := oldcomputeDiscount(stackType, tile)
+			for _, neighbour := range tile.AdjacentTiles {
+				if neighbour.Presence != None && neighbour.OwningTribe.checkPresence(neighbour, t.Race) {
+					for _, stack := range(neighbour.PieceStacks) {
+						if stack.Type == "Firing Left Cannon" || stack.Type == "Firing Right Cannon" {
+							discount += 2
+						}
+					}
+				}
+			}
+			return discount
+		}
+		oldGetStacksForConquest := t.getStacksForConquest
+		t.getStacksForConquest = func(tile *Tile, p *Player) {
+			oldGetStacksForConquest(tile, p)
+			for i, stack := range tile.PieceStacks {
+				if stack.Type == "Firing Left Cannon" {
+					tile.PieceStacks[i].Type = "Left Cannon"
+				}
+				if stack.Type == "Firing Right Cannon" {
+					tile.PieceStacks[i].Type = "Right Cannon"
+				}
+			}
+			t.State["leftcannonplayed"] = false
+			t.State["rightcannonplayed"] = false
+		}
+		}, Count: 3},
+	"Tomb": {Transform: func(t *Tribe) {
+		oldcountRemovablePieces := t.countRemovablePieces
+		t.countRemovablePieces = func(tile *Tile) []PieceStack {
+			oldStacks := oldcountRemovablePieces(tile)
+			newstacks := []PieceStack{}
+			for _, stack := range(oldStacks) {
+				if stack.Type != string(t.Race) {
+					stack.Tribe  = t
+					newstacks = append(newstacks, stack)
+				}
+			}
+			return newstacks
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || (s == string(t.Race) && !t.IsActive)
+		}
+		oldgoIntoDecline := t.goIntoDecline
+		t.goIntoDecline = func(gs *GameState) {
+			oldgoIntoDecline(gs)
+			log.Println("we here")
+			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
+				player: gs.TurnInfo.PlayerIndex,
+				TurnInfo: &TurnInfo{
+					TurnIndex: gs.TurnInfo.TurnIndex,
+					PlayerIndex: gs.TurnInfo.PlayerIndex,
+					Phase: Redeployment,
+				},
+			})
+
+		}
+		oldcountRemovableAttackingStacks := t.countRemovableAttackingStacks
+		t.countRemovableAttackingStacks = func(p *Player) []PieceStack {
+			oldStacks := oldcountRemovableAttackingStacks(p)
+			for i, stack := range(oldStacks) {
+				if stack.Type == string(t.Race) {
+					oldStacks = append(oldStacks[:i], oldStacks[i+1:]...)
+					break
+				}
+			}
+			return oldStacks
+		}
+		oldHandleReturn := t.handleReturn
+		t.handleReturn = func(tile *Tile, gs *GameState, pk int) {
+			oldHandleReturn(tile, gs, pk)
+			if !t.IsActive {
+				for _, stack := range(t.Owner.PieceStacks) {
+					if stack.Type == string(t.Race) {
+						found := false
+						for _, entry := range(gs.ModifierTurnsAfter) {
+							if entry.player == t.Owner.Index && entry.TurnInfo.TurnIndex == gs.TurnInfo.TurnIndex && entry.TurnInfo.Phase == Redeployment {
+								found = true
+							}
+						}
+						if !found {
+							gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
+								player: gs.TurnInfo.PlayerIndex,
+								TurnInfo: &TurnInfo{
+									TurnIndex: gs.TurnInfo.TurnIndex,
+									PlayerIndex: t.Owner.Index,
+									Phase: Redeployment,
+								},
+								actionBefore: func(gs *GameState) {},
+							})
+
+						}
+					}
+				}
+			}
+		}
+		}, Count: 5},
+	"Royal": {Transform: func(t *Tribe) {
+		oldgiveInitialStacks := t.giveInitialStacks
+		t.giveInitialStacks = func() []PieceStack {
+			stacks := oldgiveInitialStacks()
+			stacks = AddPieceStacks(stacks, []PieceStack{{Type: "Queen", Amount: 1}})
+			return stacks
+		}
+		oldCountDefense := t.countDefense
+		t.countDefense = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			old, g, l, err := oldCountDefense(tile, p, gs)
+			if err != nil {
+				return old, g, l, err
+			}
+			for _, stack := range tile.PieceStacks {
+				if stack.Type == "Queen" {
+					return 1000, g, l, fmt.Errorf("A tile with the queen cannot be conquered!")
+				}
+			}
+			return old, g, l, nil
+		}
+
+		oldCanBeRedeployedIn := t.canBeRedeployedIn
+		t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
+			if oldCanBeRedeployedIn(tile, stackType, gs) {
+				return true
+			}
+			return stackType == "Queen"
+		}
+		oldGetStacksForConquest := t.getStacksForConquest
+		t.getStacksForConquest = func(tile *Tile, p *Player) {
+			oldGetStacksForConquest(tile, p)
+			if !t.IsActive {
+				return
+			}
+			for i, stack := range tile.PieceStacks {
+				if stack.Type == "Queen" {
+					tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+					p.PieceStacks = AddPieceStacks(p.PieceStacks, []PieceStack{stack})
+				}
+			}
+		}
+		oldGetStacksOutRedeployment := t.getStacksOutRedeployment
+		t.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
+			stacks, err := oldGetStacksOutRedeployment(tile, stackType)
+			if err != nil && t.IsActive {
+				if stackType == "Queen" {
+					for _, stack := range tile.PieceStacks {
+						if stack.Type == stackType {
+							stack.Amount -= 1
+							return []PieceStack{{Type: "Hero", Amount: 1}}, nil
+						}
+
+					}
+				}
+			}
+			return stacks, err
+		}
+		oldIsStackValid := t.IsStackValid
+		t.IsStackValid = func(s string) bool {
+			return oldIsStackValid(s) || s == "Queen"
+		}
+		oldClearTile := t.clearTile
+		t.clearTile = func(tile *Tile, gs *GameState, pk int) {
+			oldClearTile(tile, gs, pk)
+			for i, stack := range tile.PieceStacks {
+			    if stack.Type == "Queen"{
+				tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+				return // Exit after removal to avoid index shifting issues
+			    }
+			}
+		}
+		oldgoIntoDecline := t.goIntoDecline
+		t.goIntoDecline = func(gs *GameState) {
+			oldgoIntoDecline(gs)
+			gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
+				player: t.Owner.Index,
+				TurnInfo: &TurnInfo{
+					TurnIndex: gs.TurnInfo.TurnIndex,
+					PlayerIndex: gs.TurnInfo.PlayerIndex,
+					Phase: Redeployment,
+				},
+				actionBefore: func(gs *GameState) {},
+			})
+
+		}
+		}, Count: 5},
+	"Immortal": {Transform: func(t *Tribe) {
+		oldHandleReturn := t.handleReturn
+		t.handleReturn = func(tile *Tile, gs *GameState, pk int) {
+			if t.IsActive {
+				oldHandleReturn(tile, gs, 0)
+			} else {
+				oldHandleReturn(tile, gs, pk)
+			}
 		}
 		}, Count: 5},
 }

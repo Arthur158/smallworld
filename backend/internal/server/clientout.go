@@ -16,6 +16,7 @@ type Client struct {
 	Index		int
 	Room		*Room
 	DisplayRoom	*Room
+	IsSpectator	bool
 }
 
 func readMessages(client *Client) {
@@ -47,6 +48,7 @@ func readMessages(client *Client) {
 // -----------------------------------------------------------------------------
 
 func (client *Client) handleClientMessage(msg messages.Message) {
+	log.Println(client)
 	switch msg.Type {
 
 	// -------------------------------------------------------------------------
@@ -66,6 +68,10 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.handleRedeploymentOut(msg)
 	case "deploymentthrough":
 		client.handleRedeploymentThrough(msg)
+	case "movement":
+		client.handleMovement(msg)
+	case "opponentaction":
+		client.handleOppponentAction(msg)
 	case "finishturn":
 		client.handleFinishTurn()
 	case "decline":
@@ -75,6 +81,8 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			RoomName  string `json:"roomName"`
 			MaxPlayers int   `json:"maxPlayers"`
 		}
+		log.Println("in client out")
+		log.Println(client.Username)
 		if err := json.Unmarshal(msg.Data, &data); err != nil {
 			log.Println("Error unmarshalling createRoom data:", err)
 			return
@@ -87,6 +95,14 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.DisplayRoom.sendMapChoices()
 		client.sendMessage("displayroom", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "leaveroom":
+		if client.IsSpectator {
+			log.Println("should not be a spectator")
+			client.Room.removeSpectator(client.Username)
+			return;
+		}
+		log.Println("about to leave room")
+		log.Println(client.Username)
+		log.Println(client.Room)
 		client.Room.removePlayer(client.Username)
 		sendRoomsUpdateToAll()
 	case "requestrefresh":
@@ -101,6 +117,15 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		joinRoom(client, data.RoomID, client.Username)
+	case "spectateRoom":
+		var data struct {
+			RoomID   string `json:"roomId"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling joinRoom data:", err)
+			return
+		}
+		spectateRoom(client, data.RoomID)
 
 	case "startGame":
 		var data struct {
