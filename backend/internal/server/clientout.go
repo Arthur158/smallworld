@@ -16,6 +16,7 @@ type Client struct {
 	Index		int
 	Room		*Room
 	DisplayRoom	*Room
+	IsSpectator	bool
 }
 
 func readMessages(client *Client) {
@@ -47,6 +48,7 @@ func readMessages(client *Client) {
 // -----------------------------------------------------------------------------
 
 func (client *Client) handleClientMessage(msg messages.Message) {
+	log.Println(client)
 	switch msg.Type {
 
 	// -------------------------------------------------------------------------
@@ -91,6 +93,10 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		client.DisplayRoom.sendMapChoices()
 		client.sendMessage("displayroom", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "leaveroom":
+		if client.IsSpectator {
+			client.Room.removeSpectator(client.Username)
+			return;
+		}
 		client.Room.removePlayer(client.Username)
 		sendRoomsUpdateToAll()
 	case "requestrefresh":
@@ -105,6 +111,15 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 			return
 		}
 		joinRoom(client, data.RoomID, client.Username)
+	case "spectateRoom":
+		var data struct {
+			RoomID   string `json:"roomId"`
+		}
+		if err := json.Unmarshal(msg.Data, &data); err != nil {
+			log.Println("Error unmarshalling joinRoom data:", err)
+			return
+		}
+		spectateRoom(client, data.RoomID)
 
 	case "startGame":
 		var data struct {

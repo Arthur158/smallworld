@@ -34,6 +34,7 @@ export interface ApplicationState {
   Xmult: number
   Ymult: number
   inDisplayRoom: boolean
+  isSpectating: boolean
   extensionChoices: {
     extensionName: string;
     isChecked: boolean;

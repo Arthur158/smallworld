@@ -114,6 +114,13 @@ export default function LobbyPage() {
     });
   };
 
+  const handleSpectateRoom = (selectedRoomId: string) => {
+    if (!username.trim()) return;
+    sendMessageToBackend('spectateRoom', {
+      roomId: selectedRoomId,
+    });
+  };
+
   const handleEnterDisplayRoom = () => {
     if (!username.trim()) return;
     sendMessageToBackend('enterdisplayroom', {});
@@ -231,13 +238,22 @@ export default function LobbyPage() {
                               ({rm.players?.length || 0})
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleJoinRoom(rm.id)}
-                            className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
-                          >
-                            Join
-                          </button>
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSpectateRoom(rm.id)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
+                            >
+                              Spectate
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleJoinRoom(rm.id)}
+                              className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
+                            >
+                              Join
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>

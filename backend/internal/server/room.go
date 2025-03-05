@@ -17,6 +17,7 @@ type Room struct {
 	Name         string
 	HostUsername string
 	Players      []*Client
+	Spectators   []*Client
 	InProgress   bool
 	Gamestate    gamestate.GameState
 	mu	     sync.Mutex
@@ -43,6 +44,7 @@ func createRoom(client *Client, roomName, username string) {
 		Name:         roomName,
 		HostUsername: username,
 		Players:      make([]*Client, gameMap.Capacity), // Create a fixed-size slice with nil values
+		Spectators:      []*Client{},
 		InProgress:   false,
 		Gamestate:    gamestate.GameState{},
 		Map:          gameMap,
@@ -313,6 +315,73 @@ func joinRoom(client *Client, roomID, username string) {
 	sendRoomsUpdateToAll()
 }
 
+func spectateRoom(client *Client, roomID string) {
+	roomsMu.Lock()
+	defer roomsMu.Unlock()
+
+	// If the client was already in a different room, remove them from that old room
+	oldRoom := client.Room
+	if oldRoom != nil {
+		for i, c := range oldRoom.Players {
+			if c == client {
+				oldRoom.Players[i] = nil // Mark the slot as empty
+				break
+			}
+		}
+		// If the old room becomes empty, optionally remove it
+		empty := true
+		for _, c := range oldRoom.Players {
+			if c != nil {
+				empty = false
+				break
+			}
+		}
+		if empty {
+			delete(rooms, oldRoom.ID)
+		}
+	}
+
+	// Now try to join the new room
+	newRoom, exists := rooms[roomID]
+	if !exists {
+		client.sendError("That room does not exist.")
+		return
+	}
+
+	client.Room = newRoom
+	client.Room.Spectators = append(client.Room.Spectators, client)
+
+	// Notify client about successful join
+	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + newRoom.ID + `"}`)))
+	client.Room.sendPlayerStatuses()
+
+	// Broadcast the updated rooms list to everyone
+	sendRoomsUpdateToAll()
+}
+
+func (room *Room) removeSpectator(username string) {
+	roomsMu.Lock()
+	defer roomsMu.Unlock()
+	var client Client
+
+	if room == nil || room.Spectators == nil {
+		log.Println("room uninitialized or something")
+		return
+	}
+
+	for i, player := range room.Spectators {
+		if player != nil && player.Username == username {
+			client = *player
+			room.Spectators = append(room.Spectators[:i], room.Spectators[i+1:]...)
+			break;
+		}
+	}
+	client.Room = nil
+	client.IsSpectator = false
+	client.sendMessage("lobby", nil)
+
+}
+
 func (room *Room) removePlayer(username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
@@ -513,6 +582,11 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		client.Index = i
 
 	}
+
+	for _, spectator := range room.Spectators {
+		spectator.IsSpectator = true
+		spectator.sendMessage("spectate", json.RawMessage([]byte(`{"index": "` + strconv.Itoa(1) + `"}`)))
+	}
 	room.sendBigUpdate()
 
 	sendRoomsUpdateToAll()
@@ -520,6 +594,17 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 func (room *Room) sendToRoomPlayers (msg messages.Message) {
 	for _, player := range room.Players {
+		if player != nil {
+			room.mu.Lock()
+			err := player.Conn.WriteJSON(msg)
+			room.mu.Unlock()
+			if err != nil {
+				log.Println("Error sending message:", err)
+			}
+		}
+	}
+
+	for _, player := range room.Spectators {
 		if player != nil {
 			room.mu.Lock()
 			err := player.Conn.WriteJSON(msg)
@@ -562,16 +647,8 @@ func (room *Room) sendBigUpdate() {
 	if room.InProgress {
 		room.sendMegaUpdate()
 		room.SendCoinUpdate()
-		room.sendNextPlayerReady()
+		// room.sendNextPlayerReady()
 	}
-	// if (room.InProgress) {
-	// 	room.sendAllTileUpdate()
-	// 	room.sendTurnUpdate()
-	// 	room.sendPlayerUpdate()
-	// 	room.sendEntriesUpdate()
-	// 	room.sendNextPlayerReady()
-	// }
-	// sendRoomsUpdateToAll()
 }
 
 func (room *Room) sendTurnUpdate() {

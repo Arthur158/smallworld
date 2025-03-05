@@ -40,6 +40,7 @@ const initialState: ApplicationState = {
   Xmult: 1,
   Ymult: 1,
   inDisplayRoom: false,
+  isSpectating: false,
   extensionChoices: [],
   globalToggle: true,
 };
@@ -150,12 +151,20 @@ const applicationSlice = createSlice({
         case 'lobby':
           state.roomid = ""
           state.gameStarted = false
+          state.isSpectating = false
           state.error = null
           break;
         case 'displayroom':
           state.inDisplayRoom = true
           state.gameStarted = false
+          state.isSpectating = false
           state.saveSelectionId = -1
+          state.error = null
+          break;
+        case 'spectate':
+          state.inDisplayRoom = false
+          state.gameStarted = true
+          state.isSpectating = true
           state.error = null
           break;
         case 'leavedisplayroom':
