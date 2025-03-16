@@ -9,7 +9,7 @@ import (
 
 func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
     for _, tile := range gs.TileList {
-        if tile.Presence != None && tile.OwningTribe.checkPresence(tile, race) {
+        if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, race) {
             return true
         }
     }
@@ -22,7 +22,7 @@ func (gs *GameState) GetPieceStackForConquest(player *Player) {
         tribe.getStacksForConquestTurn(player, gs)
     }
     for _, tile := range gs.TileList {
-        if tile.Presence != None {
+        if tile.CheckPresence() != None {
             if tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
                 player.ActiveTribe.getStacksForConquest(tile, player)
             }
@@ -72,8 +72,8 @@ func pickTwoRandom(strings []string) (string, string, error) {
 func (gs *GameState) countPoints(player *Player) int {
 	total := 0
 	for _, tile := range gs.TileList {
-		if tile.Presence != None {
-			if player.HasActiveTribe && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
+		if tile.CheckPresence() != None {
+			if player.ActiveTribe != nil && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
 				total += player.ActiveTribe.countPoints(tile)
 			}
 			for _, tribe := range(player.PassiveTribes) {
@@ -83,7 +83,7 @@ func (gs *GameState) countPoints(player *Player) int {
 			}
 		}
 	}
-	if player.HasActiveTribe {
+	if player.ActiveTribe != nil {
 		total += player.ActiveTribe.countExtrapoints(gs)
 	}
 	for _, passiveTribe := range player.PassiveTribes {

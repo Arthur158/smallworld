@@ -12,7 +12,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *GameState) {
     "Loot" : func(tile *Tile, gs *GameState) {
         val := tile.State["loot"]
 
-        if gs.Players[gs.TurnInfo.PlayerIndex].HasActiveTribe && gs.Players[gs.TurnInfo.PlayerIndex].ActiveTribe.Race == "Skags" {
+        if gs.Players[gs.TurnInfo.PlayerIndex].ActiveTribe != nil && gs.Players[gs.TurnInfo.PlayerIndex].ActiveTribe.Race == "Skags" {
             return
         }
 

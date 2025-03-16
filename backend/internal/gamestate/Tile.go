@@ -7,7 +7,6 @@ type Tile struct {
 	OwningTribe *Tribe;
 	Biome Biome;
 	Attributes []Attribute;
-	Presence Presence;
 	IsEdge bool;
 
 	State map[string]interface{};
@@ -110,6 +109,16 @@ func (b Attribute) String() string {
 		return "Cave"
 	default:
 		return "Unknown"
+	}
+}
+
+func (tile *Tile) CheckPresence() Presence {
+	if tile.OwningTribe == nil {
+		return None
+	} else if tile.OwningTribe.IsActive {
+		return Active
+	} else {
+		return Passive
 	}
 }
 

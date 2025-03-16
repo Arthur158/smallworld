@@ -704,7 +704,7 @@ func (room *Room) sendPlayerUpdate () {
 			continue
 		}
 		playerData.Name = room.Players[i].Username
-		if p.HasActiveTribe {
+		if p.ActiveTribe != nil {
 			playerData.ActiveTribe = Tribe{
 				Race:  string(p.ActiveTribe.Race),
 				Trait: string(p.ActiveTribe.Trait),
@@ -754,7 +754,7 @@ func (room *Room) sendTileUpdate (tileID string) {
 		tileUpdate.Stacks = append(tileUpdate.Stacks, PieceStack{
 		Type:     stack.Type,
 		Amount:   stack.Amount,
-		IsActive: *copyOrDefault(stack.Tribe, tile.Presence == gamestate.Active),
+		IsActive: *copyOrDefault(stack.Tribe, tile.CheckPresence() == gamestate.Active),
 	})
 	}
 
@@ -788,7 +788,7 @@ func (room *Room) sendAllTileUpdate() {
 			tu.Stacks = append(tu.Stacks, PieceStack{
 			Type:     stack.Type,
 			Amount:   stack.Amount,
-			IsActive: *copyOrDefault(stack.Tribe, tile.Presence == gamestate.Active),
+			IsActive: *copyOrDefault(stack.Tribe, tile.CheckPresence() == gamestate.Active),
 			})
 		}
 		tileUpdates = append(tileUpdates, tu)
@@ -980,7 +980,7 @@ func (room *Room) sendMegaUpdate() {
 		}, 0)
 
 		playerData.Name = p.Name
-		if p.HasActiveTribe {
+		if p.ActiveTribe != nil {
 			playerData.ActiveTribe.Race = string(p.ActiveTribe.Race)
 			playerData.ActiveTribe.Trait = string(p.ActiveTribe.Trait)
 		} else {
@@ -1055,7 +1055,7 @@ func (room *Room) sendMegaUpdate() {
 		}, 0)
 
 		for _, stack := range tile.PieceStacks {
-			isActive := (tile.Presence != gamestate.Passive)
+			isActive := (tile.CheckPresence() != gamestate.Passive)
 			if stack.Tribe != nil {
 				isActive = stack.Tribe.IsActive
 			}

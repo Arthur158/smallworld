@@ -89,7 +89,6 @@ type Player struct {
 	PassiveTribes []*Tribe;
 	CoinPile int
 	PieceStacks []PieceStack
-	HasActiveTribe bool
 	PointsEachTurn []int;
 }
 

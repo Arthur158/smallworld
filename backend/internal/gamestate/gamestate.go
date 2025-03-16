@@ -2,7 +2,6 @@ package gamestate
 
 import (
 	"fmt"
-	"log"
 )
 
 type GameState struct {
@@ -28,7 +27,6 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 			PassiveTribes:  []*Tribe{}, // Initialize as empty slice
 			CoinPile: 5,
 			PieceStacks: []PieceStack{},
-			HasActiveTribe: false,
 			PointsEachTurn: []int{5},
 		}
 	}
@@ -38,11 +36,14 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 		PlayerIndex: 0,
 		Phase: TribeChoice,
 	}
-
 	gs.RealTurninfo = nil
+	gs.ModifierTurnsAfter = []TurninfoEntry{}
 
 	var err error;
 	gs.TribeList, err = createTribeList(raceKeys, traitKeys)
+	if err != nil {
+		return nil, err
+	}
 
 	gs.ModifierPoints = make(map[string]func(int, *Player) int)
 	function, ok := MapRegistry[mapName]
@@ -55,8 +56,6 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
             return nil, fmt.Errorf("failed to create list of tribe entries", err)
         }
 
-	gs.ModifierTurnsAfter = []TurninfoEntry{}
-
 	return gs, nil
 }
 
@@ -64,8 +63,6 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 	if gs.TurnInfo.PlayerIndex != chooserIndex {
 		return fmt.Errorf("It is not this player's turn!")
 	}
-
-	chooser := gs.Players[chooserIndex]
 
 	if gs.TurnInfo.Phase != TribeChoice {
 		return fmt.Errorf("The player is not supposed to pick a new tribe!")
@@ -79,19 +76,20 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 		return fmt.Errorf("not enough tribe entries")
 	}
 
+	chooser := gs.Players[chooserIndex]
+
 	if chooser.CoinPile < entryIndex {
 		return fmt.Errorf("The player only has %d coins, but they need %d for picking this tribe", chooser.CoinPile, entryIndex)
 	}
 
 	entry := gs.TribeList[entryIndex]
-	// Enact changes
+
 	tempActiveTribe, err := CreateTribe(entry.Race, entry.Trait)
 	if err != nil {
 		return fmt.Errorf("Could not create tribe:", err)
 	}
 	chooser.ActiveTribe = tempActiveTribe
 	chooser.ActiveTribe.Owner = chooser
-	chooser.HasActiveTribe = true
 	chooser.CoinPile += entry.CoinPile - entryIndex 
 	chooser.PointsEachTurn[len(chooser.PointsEachTurn) - 1] += entry.CoinPile - entryIndex
 	gs.TribeList = append(gs.TribeList[:entryIndex], gs.TribeList[entryIndex+1:]...)
@@ -101,7 +99,6 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, []PieceStack{{Type: string(entry.Race), Amount: entry.PiecePile}})
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
-	log.Println(chooser.PieceStacks)
 	gs.GetPieceStackForConquest(chooser)
 
 	gs.TurnInfo.Phase = TileAbandonment
@@ -131,7 +128,7 @@ func (gs *GameState) HandleAbandonment(playerIndex int, tileId string, stackType
 		return fmt.Errorf("No tile with this id!")
 	}
 
-	if tile.Presence == None || !tile.OwningTribe.checkPresence(tile, tribe.Race) {
+	if tile.CheckPresence() == None || !tile.OwningTribe.checkPresence(tile, tribe.Race) {
 		return fmt.Errorf("This tile does not belong to the player!")
 	}
 
@@ -177,7 +174,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return err
 	}
 
-	if tile.Presence != None {
+	if tile.CheckPresence() != None {
 	    ok, err := tile.OwningTribe.specialDefense(gs, tile, attackingTribe, attackingStackType)
 	    if ok {
 		return err
@@ -189,7 +186,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 		return err
 	}
 
-	if tile.Presence != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
+	if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
 		return fmt.Errorf("This tile already belongs to the tribe!")
 	}
 
@@ -201,7 +198,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
-	if tile.Presence != None {
+	if tile.CheckPresence() != None {
 		tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker, gs)
 	} else {
 		tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
@@ -222,7 +219,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	// Enact changes
-	if tile.Presence != None {
+	if tile.CheckPresence() != None {
 		tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
 		tile.OwningTribe.handleReturn(tile, gs, pawnKill)
 	}
@@ -235,11 +232,6 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	tile.OwningTribe = attackingTribe
 
-	if tile.OwningTribe.IsActive {
-		tile.Presence = Active
-	} else {
-		tile.Presence = Passive
-	} 	
 	if hasDiceBeenUsed {
 		return gs.HandleStartRedeployment(attackerIndex)
 	} else {
@@ -288,7 +280,7 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 		return fmt.Errorf("No tile with this id!")
 	}
 
-	if tile.Presence != None && !tile.OwningTribe.checkPresence(tile, tribe.Race) {
+	if tile.CheckPresence() != None && !tile.OwningTribe.checkPresence(tile, tribe.Race) {
 		return fmt.Errorf("This tile does not belong to the player!")
 	}
 
@@ -337,7 +329,7 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 
 	player := gs.Players[playerIndex]
 
-	if player.HasActiveTribe {
+	if player.ActiveTribe != nil {
 		if err := player.ActiveTribe.canEndTurn(gs); err != nil {
 			return err
 		}
@@ -400,7 +392,7 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 
 	player := gs.Players[playerIndex];
 
-	if !player.HasActiveTribe {
+	if player.ActiveTribe == nil {
 		return fmt.Errorf("The player does not have an active tribe!")
 	}
 
@@ -426,15 +418,11 @@ func (gs *GameState) handleNextPlayerTurn() {
 	}
 
 	for i := len(gs.ModifierTurnsAfter) - 1; i >= 0; i-- {
-		log.Println(gs.ModifierTurnsAfter[i].player)
-		log.Println(gs.TurnInfo.PlayerIndex)
 	    if gs.ModifierTurnsAfter[i].player == gs.TurnInfo.PlayerIndex {
-		log.Println("we here 2")
 		if gs.ModifierTurnsAfter[i].actionBefore != nil {
 		    gs.ModifierTurnsAfter[i].actionBefore(gs)
 		}
 		if gs.ModifierTurnsAfter[i].TurnInfo != nil {
-		log.Println("we here 3")
 		    gs.RealTurninfo = gs.TurnInfo
 		    gs.TurnInfo = gs.ModifierTurnsAfter[i].TurnInfo
 		    gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter[:i], gs.ModifierTurnsAfter[i+1:]...)
@@ -448,7 +436,7 @@ func (gs *GameState) handleNextPlayerTurn() {
 	player.CoinPile += gs.countPoints(player)
 	player.PointsEachTurn = append(player.PointsEachTurn, player.CoinPile)
 
-	if player.HasActiveTribe {
+	if player.ActiveTribe != nil {
 		gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf(
 			"%s made %d points this turn",
 			player.Name,
@@ -483,7 +471,7 @@ func (gs *GameState) handleNextPlayerTurn() {
 }
 
 func (gs *GameState) ChoosePlayerStart() {
-	if gs.Players[gs.TurnInfo.PlayerIndex].HasActiveTribe {
+	if gs.Players[gs.TurnInfo.PlayerIndex].ActiveTribe != nil {
 		gs.TurnInfo.Phase = DeclineChoice
 		gs.GetPieceStackForConquest(gs.Players[gs.TurnInfo.PlayerIndex])
 	} else {

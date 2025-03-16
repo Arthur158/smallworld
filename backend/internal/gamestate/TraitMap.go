@@ -168,7 +168,7 @@ var TraitMap = map[Trait]TraitValue {
 				}
 				if hasCave {
 					for _, otherTile := range gs.TileList {
-						if otherTile.Presence != None && otherTile.OwningTribe.Race == t.Race {
+						if otherTile.CheckPresence() != None && otherTile.OwningTribe.Race == t.Race {
 							for _, attr := range otherTile.Attributes {
 								if attr == Cave {
 									return nil
@@ -536,7 +536,7 @@ var TraitMap = map[Trait]TraitValue {
 		oldCountAttack := t.countAttack
 		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
 			old, g, l, k := oldCountAttack(tile, cost, stackType)
-			if tile.Presence == Active {
+			if tile.CheckPresence() == Active {
 				g += 1
 				l += 1
 			}
@@ -547,7 +547,7 @@ var TraitMap = map[Trait]TraitValue {
 		oldCountAttack := t.countAttack
 		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
 			old, g, l, k := oldCountAttack(tile, cost, stackType)
-			if tile.Presence != None && t.IsActive {
+			if tile.CheckPresence() != None && t.IsActive {
 				g += 1
 			}
 			return old, g , l, k
@@ -560,7 +560,7 @@ var TraitMap = map[Trait]TraitValue {
 			if t.IsActive {
 				count := 0
 				for _, tile := range(gs.TileList) {
-					if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+					if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 						count += 1
 					}
 				}
@@ -575,7 +575,7 @@ var TraitMap = map[Trait]TraitValue {
 		addBehemoth := func(gs *GameState) {
 			maleFound, femaleFound := false, false
 			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 					for _, stack := range(tile.PieceStacks) {
 						if stack.Type == "Male Behemoth" {
 							tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
@@ -598,7 +598,7 @@ var TraitMap = map[Trait]TraitValue {
 		deleteBehemoth := func(gs *GameState) {
 			maleFound, femaleFound := false, false
 			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 					for _, stack := range(tile.PieceStacks) {
 						if stack.Type == "Male Behemoth" {
 							tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Male Behemoth", Amount: 1}})
@@ -833,7 +833,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			t.State["justPlaced"] = false
 			for _, tile2 := range(gs.TileList) {
-				if tile2.Presence != None && tile2.OwningTribe.checkPresence(tile2, t.Race) {
+				if tile2.CheckPresence() != None && tile2.OwningTribe.checkPresence(tile2, t.Race) {
 					for _, stack := range(tile2.PieceStacks) {
 						if stack.Type == "Catapult" && gs.CheckJump(tile, tile2) {
 							t.State["justUsed"] = true
@@ -886,7 +886,7 @@ var TraitMap = map[Trait]TraitValue {
 			stacks := oldStartRedeployment(gs)
 			count := 0
 			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 					for _, attr := range(tile.Attributes) {
 						if attr == Magic {
 							count += 1
@@ -940,7 +940,7 @@ var TraitMap = map[Trait]TraitValue {
 			count := oldCountExtraPoints(gs)
 			amount := 0
 			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 					amount += 1
 				}
 			}
@@ -985,7 +985,7 @@ var TraitMap = map[Trait]TraitValue {
 			if err != nil  || !ok{
 				return stacks, diceUsed, ok, err
 			}
-			if tile.Presence == Active {
+			if tile.CheckPresence() == Active {
 				t.State["hasattacked"] = true
 			}
 			return stacks, diceUsed, true, nil
@@ -1016,7 +1016,7 @@ var TraitMap = map[Trait]TraitValue {
 			count := 0
 			mountains, _ := t.State["mountains"].([]string)
 			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) && tile.Biome == Mountain {
+				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) && tile.Biome == Mountain {
 					mountains = append(mountains, tile.Id)
 					count += 1
 				}
@@ -1025,21 +1025,6 @@ var TraitMap = map[Trait]TraitValue {
 			stacks = append(stacks, PieceStack{Type:"Lava", Amount: count})
 			return stacks
 		}
-		// oldCanBeRedeployedIn := t.canBeRedeployedIn
-		// t.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
-		// 	if oldCanBeRedeployedIn(tile, stackType, gs) {
-		// 		return true
-		// 	}
-		// 	if stackType == "Lava" {
-		// 		for _, stack := range tile.PieceStacks {
-		// 			if stack.Type == "Lava" {
-		// 				return false
-		// 			}
-		// 		}
-		// 		return true
-		// 	}
-		// 	return false
-		// }
 		oldhandleDeploymentIn := t.handleDeploymentIn
 		t.handleDeploymentIn = func(tile *Tile, stackType string, i int, gs *GameState) error {
 			err := oldhandleDeploymentIn(tile, stackType, i, gs)
@@ -1082,8 +1067,8 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			player.PieceStacks = newStacks
 
-			if tile.Presence != None {
-				tile.OwningTribe.clearTile(tile, gs, 0)
+			if tile.CheckPresence() != None {
+				tile.OwningTribe.handleReturn(tile, gs, 0)
 			}
 
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
@@ -1103,6 +1088,7 @@ var TraitMap = map[Trait]TraitValue {
 			for i := range(p.PieceStacks) {
 				if p.PieceStacks[i].Type == "Lava" {
 					p.PieceStacks = append(p.PieceStacks[:i], p.PieceStacks[i+1:]...)
+					break;
 				}
 			}
 			t.State["mountains"] = []string{}
@@ -1164,7 +1150,7 @@ var TraitMap = map[Trait]TraitValue {
 			if err != nil {
 				return stacks, b1, b2, err
 			}
-			if tile.Presence == Active && tile.OwningTribe != nil {
+			if tile.CheckPresence() == Active && tile.OwningTribe != nil {
 				playersAttacked, _ := t.State["playersAttacked"].([]int)
 				playersAttacked = append(playersAttacked, tile.OwningTribe.Owner.Index)
 				t.State["playersAttacked"] = playersAttacked
@@ -1299,7 +1285,7 @@ var TraitMap = map[Trait]TraitValue {
 				return false, nil
 			}
 
-			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+			if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 				return true, fmt.Errorf("This tile already belongs to the tribe!")
 			}
 
@@ -1319,7 +1305,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 
 			tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
-			if tile.Presence != None {
+			if tile.CheckPresence() != None {
 				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, t.Owner, gs)
 			} else {
 				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
@@ -1334,7 +1320,7 @@ var TraitMap = map[Trait]TraitValue {
 			if diceThrow == 0 {
 				gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Failure: The throw of dice for zeppelined tribe was: %d", diceThrow)})
 				t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Zeppelin", Amount: 1}})
-				if tile.Presence != None {
+				if tile.CheckPresence() != None {
 					tile.OwningTribe.handleReturn(tile, gs, 1)
 				}
 				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: "Burning Zeppelin", Amount: 1}})
@@ -1356,7 +1342,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 
 			// Enact changes
-			if tile.Presence != None {
+			if tile.CheckPresence() != None {
 				tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
 				tile.OwningTribe.handleReturn(tile, gs, pawnKill)
 			}
@@ -1369,11 +1355,6 @@ var TraitMap = map[Trait]TraitValue {
 			t.Owner.CoinPile += moneyGainAttacker - moneyLossAttacker
 			tile.OwningTribe = t
 
-			if tile.OwningTribe.IsActive {
-				tile.Presence = Active
-			} else {
-				tile.Presence = Passive
-			} 	
 			if hasDiceBeenUsed {
 				return true, gs.HandleStartRedeployment(t.Owner.Index)
 			} else {
@@ -1424,10 +1405,10 @@ var TraitMap = map[Trait]TraitValue {
 				return fmt.Errorf("Cannot move cannon on its own tile!")
 			}
 
-			if tileFrom.Presence == None || !tileFrom.OwningTribe.checkPresence(tileTo, t.Race) {
+			if tileFrom.CheckPresence() == None || !tileFrom.OwningTribe.checkPresence(tileTo, t.Race) {
 				return fmt.Errorf("Invalid starting tile")
 			}
-			if tileTo.Presence == None || !tileTo.OwningTribe.checkPresence(tileFrom, t.Race) {
+			if tileTo.CheckPresence() == None || !tileTo.OwningTribe.checkPresence(tileFrom, t.Race) {
 				return fmt.Errorf("Invalid arriving tile")
 			}
 
@@ -1569,7 +1550,7 @@ var TraitMap = map[Trait]TraitValue {
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			discount := oldcomputeDiscount(stackType, tile)
 			for _, neighbour := range tile.AdjacentTiles {
-				if neighbour.Presence != None && neighbour.OwningTribe.checkPresence(neighbour, t.Race) {
+				if neighbour.CheckPresence() != None && neighbour.OwningTribe.checkPresence(neighbour, t.Race) {
 					for _, stack := range(neighbour.PieceStacks) {
 						if stack.Type == "Firing Left Cannon" || stack.Type == "Firing Right Cannon" {
 							discount += 2

@@ -203,7 +203,6 @@ func Map3(gs *GameState) map[string]*Tile {
     for _, id := range []string{ "22", "21", "4", "3", "11", "26", "1", "13", "16", "0"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
-        tileMap[id].Presence = Passive
     }
 
 
@@ -357,7 +356,6 @@ func Map2(gs *GameState) map[string]*Tile {
     for _, id := range []string{ "0", "2", "6", "7", "8", "9", "13", "21", "17"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
-        tileMap[id].Presence = Passive
     }
 
 
@@ -599,7 +597,6 @@ func Map4(gs *GameState) map[string]*Tile {
     for _, id := range []string{"7", "8", "9", "10", "12", "14", "16", "17", "36", "35", "34", "30", "31", "25", "27"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
-        tileMap[id].Presence = Passive
     }
 
 
@@ -676,15 +673,14 @@ func MapIsles2(gs *GameState) map[string]*Tile {
     for _, id := range []string{"0i", "7i", "8i"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
-        tileMap[id].Presence = Passive
     }
 
     gs.ModifierPoints["islands"] = func(i int, p *Player) int {
-        if tile, ok := tileMap["0i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
+        if tile, ok := tileMap["0i"]; ok && tile.CheckPresence() != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"1i", "2i", "3i"} {
-                if tile, ok := tileMap[id]; !(ok && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
+                if tile, ok := tileMap[id]; !(ok && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
                     foundOutlier = true
                 }
             }
@@ -697,11 +693,11 @@ func MapIsles2(gs *GameState) map[string]*Tile {
             }
         }
 
-        if tile, ok := tileMap["9i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
+        if tile, ok := tileMap["9i"]; ok && tile.CheckPresence() != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"4i", "5i", "7i", "8i"} {
-                if tile, ok := tileMap[id]; !(ok && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
+                if tile, ok := tileMap[id]; !(ok && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
                     foundOutlier = true
                 }
             }
@@ -779,7 +775,6 @@ func MapIsles3(gs *GameState) map[string]*Tile {
     for _, id := range []string{"1i", "5i", "7i"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
-        tileMap[id].Presence = Passive
     }
 
     for key := range(tileMap) {
@@ -791,11 +786,11 @@ func MapIsles3(gs *GameState) map[string]*Tile {
     }
 
     gs.ModifierPoints["islands"] = func(i int, p *Player) int {
-        if tile, ok := tileMap["0i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
+        if tile, ok := tileMap["0i"]; ok && tile.CheckPresence() != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"1i", "2i", "3i"} {
-                if tile, ok := tileMap[id]; !(ok && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
+                if tile, ok := tileMap[id]; !(ok && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
                     foundOutlier = true
                 }
             }
@@ -808,11 +803,11 @@ func MapIsles3(gs *GameState) map[string]*Tile {
             }
         }
 
-        if tile, ok := tileMap["4i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
+        if tile, ok := tileMap["4i"]; ok && tile.CheckPresence() != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"5i"} {
-                if tile, ok := tileMap[id]; !(ok && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
+                if tile, ok := tileMap[id]; !(ok && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
                     foundOutlier = true
                 }
             }
@@ -825,11 +820,11 @@ func MapIsles3(gs *GameState) map[string]*Tile {
             }
         }
 
-        if tile, ok := tileMap["6i"]; ok && tile.Presence != None && tile.OwningTribe.Owner == p {
+        if tile, ok := tileMap["6i"]; ok && tile.CheckPresence() != None && tile.OwningTribe.Owner == p {
             tribe := tile.OwningTribe
             foundOutlier := false
             for _, id := range []string{"7i", "8i"} {
-                if tile, ok := tileMap[id]; !(ok && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
+                if tile, ok := tileMap[id]; !(ok && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race)) {
                     foundOutlier = true
                 }
             }
@@ -1037,7 +1032,7 @@ func Map5(gs *GameState) map[string]*Tile {
     }
 
     tileMap["4"].AdjacentTiles = []*Tile{
-        tileMap["3"], tileMap["11"], tileMap["18"], tileMap["12"], 
+        tileMap["3"], tileMap["11"], tileMap["18"], tileMap["12"], tileMap["5"],
     }
 
     tileMap["5"].AdjacentTiles = []*Tile{
@@ -1154,7 +1149,7 @@ func Map5(gs *GameState) map[string]*Tile {
     }
 
     tileMap["31"].AdjacentTiles = []*Tile{
-        tileMap["17"], tileMap["35"], tileMap["32"], tileMap["36"], tileMap["35"],
+        tileMap["17"], tileMap["25"], tileMap["32"], tileMap["36"], tileMap["35"],
     }
 
     tileMap["32"].AdjacentTiles = []*Tile{
@@ -1234,9 +1229,7 @@ func Map5(gs *GameState) map[string]*Tile {
     for _, id := range []string{"0", "1", "13", "21", "19", "25", "10", "16", "7", "23", "8", "29", "30", "27", "33", "34", "39", "47", "36", "25"} {
         tileMap[id].PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
         tileMap[id].OwningTribe = lostTribe
-        tileMap[id].Presence = Passive
     }
-
 
     return result
 }

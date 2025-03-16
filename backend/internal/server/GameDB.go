@@ -62,7 +62,6 @@ type TileCopy struct {
 	OwningTribe         string
 	Biome               string
 	Attributes          []string
-	Presence            string
 	IsEdge              bool
 	TileModifierPoints  []string
 	TileModifierDefenses []string
@@ -133,8 +132,8 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 			PassiveTribes:  passiveTribes,
 			CoinPile:       p.CoinPile,
 			PieceStacks:    pieceStacks,
-			HasActiveTribe: p.HasActiveTribe,
 			PointsEachTurn: p.PointsEachTurn,
+			HasActiveTribe: p.ActiveTribe != nil,
 		}
 	}
 
@@ -206,7 +205,6 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 			OwningTribe:          owningTribe,
 			Biome:                t.Biome.String(),
 			Attributes:           attributes,
-			Presence:             t.Presence.String(),
 			IsEdge:               t.IsEdge,
 			TileModifierPoints:   modifierPoints,
 			TileModifierDefenses: modifierDefenses,
@@ -239,7 +237,6 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		players[i] = &gamestate.Player{
 			CoinPile:       pc.CoinPile,
 			PieceStacks:    nil,
-			HasActiveTribe: pc.HasActiveTribe,
 			PointsEachTurn: pc.PointsEachTurn,
 			Index: i,
 		}
@@ -247,10 +244,13 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 	}
 
 	for i, pc := range copyState.Players {
-		activeTribe, _ := gamestate.CreateTribe(gamestate.Race(pc.ActiveTribe.Race), gamestate.Trait(pc.ActiveTribe.Trait))
-		activeTribe.State = pc.ActiveTribe.State
-		activeTribe.Owner = players[i]
-		tribeMap[string(activeTribe.Race)] = activeTribe
+		if pc.HasActiveTribe {
+			activeTribe, _ := gamestate.CreateTribe(gamestate.Race(pc.ActiveTribe.Race), gamestate.Trait(pc.ActiveTribe.Trait))
+			activeTribe.State = pc.ActiveTribe.State
+			activeTribe.Owner = players[i]
+			tribeMap[string(activeTribe.Race)] = activeTribe
+			players[i].ActiveTribe = activeTribe
+		}
 
 		passiveTribes := make([]*gamestate.Tribe, len(pc.PassiveTribes))
 		for j, pt := range pc.PassiveTribes {
@@ -260,8 +260,6 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			passiveTribes[j].Owner = players[i]
 			tribeMap[string(passiveTribes[j].Race)] = passiveTribes[j]
 		}
-
-		players[i].ActiveTribe = activeTribe
 		players[i].PassiveTribes = passiveTribes
 	}
 
@@ -324,7 +322,6 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			OwningTribe:     nil,
 			Biome:           parseBiome(tc.Biome),
 			Attributes:      parseAttributes(tc.Attributes),
-			Presence:        parsePresence(tc.Presence),
 			IsEdge:          tc.IsEdge,
 			ModifierDefenses: modifierDefenses,
 			ModifierPoints:   modifierPoints,

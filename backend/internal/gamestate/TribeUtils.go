@@ -106,11 +106,10 @@ func CreateBaseTribe() *Tribe {
             if stack.Type == string(tribe.Race) {
                 tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                 stack.Amount = max(0, stack.Amount - pawnKill)
-                if tile.Presence != None {
+                if tile.CheckPresence() != None {
                     tribe.Owner.PieceStacks = AddPieceStacks(tribe.Owner.PieceStacks, []PieceStack{stack})
                 }
                 if tile.OwningTribe == &tribe {
-                    tile.Presence = None
                     tile.OwningTribe = nil
                 }
                 return // Exit after removal to avoid index shifting issues
@@ -146,7 +145,7 @@ func CreateBaseTribe() *Tribe {
     }
 
     tribe.handleDeploymentOut = func(tile *Tile, stackType string, i int, gs *GameState) error {
-        if tile.Presence == None {
+        if tile.CheckPresence() == None {
             return fmt.Errorf("This tile does not contain any tribe!")
         }
 	stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
@@ -197,7 +196,7 @@ func CreateBaseTribe() *Tribe {
     tribe.checkAdjacency = func(t *Tile, gs *GameState) error {
         if gs.IsTribePresentOnTheBoard(tribe.Race) {
             for _, neighbour := range t.AdjacentTiles {
-                if neighbour.Presence != None && neighbour.OwningTribe.Race == tribe.Race {
+                if neighbour.CheckPresence() != None && neighbour.OwningTribe.Race == tribe.Race {
                     return nil
                 }
             }
@@ -259,7 +258,7 @@ func CreateBaseTribe() *Tribe {
 
     tribe.prepareRemoval = func(gs *GameState) bool {
         for _, tile := range gs.TileList {
-            if tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race){
+            if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race){
                 tribe.clearTile(tile, gs, 0)
             }
         }
@@ -285,9 +284,8 @@ func CreateBaseTribe() *Tribe {
 	}
 
 	for _, tile := range gs.TileList {
-            if tile.Presence != None && tile.OwningTribe.Race == player.ActiveTribe.Race {
+            if tile.CheckPresence() != None && tile.OwningTribe.Race == player.ActiveTribe.Race {
                 tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, tile.OwningTribe.countRemovablePieces(tile))
-                tile.Presence = Passive
             }
         }
 
@@ -296,7 +294,6 @@ func CreateBaseTribe() *Tribe {
 
 	player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
 	player.ActiveTribe = nil
-	player.HasActiveTribe = false
 
 	return
     }
@@ -347,7 +344,7 @@ func CreateBaseTribe() *Tribe {
     }
 
     tribe.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
-        return stackType == string(tribe.Race) && tile.Presence != None && tile.OwningTribe.checkPresence(tile, tribe.Race)
+        return stackType == string(tribe.Race) && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race)
     }
     
     tribe.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {

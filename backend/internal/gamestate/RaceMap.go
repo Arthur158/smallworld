@@ -204,7 +204,7 @@ var RaceMap = map[Race]RaceValue {
 	"Goblins": {Transform: func(t *Tribe) {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
-			if tile.Presence == Passive {
+			if tile.CheckPresence() == Passive {
 				return oldcomputeDiscount(stackType, tile) + 1
 			}
 			return oldcomputeDiscount(stackType, tile)
@@ -214,7 +214,7 @@ var RaceMap = map[Race]RaceValue {
 		oldcomputeDiscount := t.computeDiscount
 		t.computeDiscount = func(stackType string, tile *Tile) int {
 			for _, neighbour := range tile.AdjacentTiles {
-				if neighbour.Biome == Mountain && neighbour.Presence != None && neighbour.OwningTribe.checkPresence(neighbour, t.Race) {
+				if neighbour.Biome == Mountain && neighbour.CheckPresence() != None && neighbour.OwningTribe.checkPresence(neighbour, t.Race) {
 					return oldcomputeDiscount(stackType, tile) + 1
 				}
 			}
@@ -225,7 +225,7 @@ var RaceMap = map[Race]RaceValue {
 		oldCountAttack := t.countAttack
 		t.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
 			old, g, l, k := oldCountAttack(tile, cost, stackType)
-			if tile.Presence != None {
+			if tile.CheckPresence() != None {
 				g += 1
 			}
 			return old, g , l, k
@@ -239,7 +239,7 @@ var RaceMap = map[Race]RaceValue {
 			if err != nil || !ok {
 				return stacks, diceUsed, ok, err
 			}
-			if tile.Presence != None {
+			if tile.CheckPresence() != None {
 				if killCount, ok := t.State["killcount"].(int); ok {
 					t.State["killcount"] = killCount + 1
 				}
@@ -282,7 +282,7 @@ var RaceMap = map[Race]RaceValue {
 		t.startRedeployment = func(gs *GameState) []PieceStack {
 			stacks := oldStartRedeployment(gs)
 			for _, tile := range gs.TileList {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 					t.getStacksForConquest(tile, t.Owner)
 				}
 			}
@@ -338,7 +338,7 @@ var RaceMap = map[Race]RaceValue {
 				return false, nil
 			}
 
-			if tile.Presence != Active {
+			if tile.CheckPresence() != Active {
 				return true, fmt.Errorf("tribe needs to be active")
 			}
 
@@ -353,7 +353,7 @@ var RaceMap = map[Race]RaceValue {
 				return true, fmt.Errorf("you need to be already present on the board")
 			}
 
-			if tile.Presence == Active {
+			if tile.CheckPresence() == Active {
 				// Maybe do something with those, in case this is actually considered a conquest
 				_, _, _, err := tile.OwningTribe.countDefense(tile, t.Owner, gs)
 				if err != nil {
@@ -429,7 +429,7 @@ var RaceMap = map[Race]RaceValue {
 				return true, fmt.Errorf("This is not a forest!")
 			}
 
-			if tile.Presence != None {
+			if tile.CheckPresence() != None {
 				// Maybe do something with those, in case this is actually considered a conquest
 				_, _, _, err := tile.OwningTribe.countDefense(tile, attacker, gs)
 				if err != nil {
@@ -437,11 +437,10 @@ var RaceMap = map[Race]RaceValue {
 				}
 			} 
 
-			if tile.Presence != None {
+			if tile.CheckPresence() != None {
 				tile.OwningTribe.clearTile(tile, gs, 1)
 			}
 			tile.OwningTribe = nil
-			tile.Presence = None
 			attacker.PieceStacks = AddPieceStacks(attacker.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
 			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Power", Amount: 1}})
 			gs.TurnInfo.Phase = Conquest
@@ -652,7 +651,7 @@ var RaceMap = map[Race]RaceValue {
 			if err != nil || !ok {
 				return stacks, diceUsed, ok, err
 			}
-			if tile.Presence == Active {
+			if tile.CheckPresence() == Active {
 				if activeCount, ok := t.State["activecount"].(int); ok {
 					t.State["activecount"] = activeCount + 1
 				}
@@ -781,7 +780,7 @@ var RaceMap = map[Race]RaceValue {
 			if ok {
 				return ok, err
 			}
-			if tile.Presence != Passive {
+			if tile.CheckPresence() != Passive {
 				return false, nil
 			}
 
@@ -789,7 +788,7 @@ var RaceMap = map[Race]RaceValue {
 			attacker := t.Owner
 
 
-			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+			if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 				return true, fmt.Errorf("tribe cannot attack itself")
 			}
 
@@ -823,13 +822,6 @@ var RaceMap = map[Race]RaceValue {
 			attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
 			tile.OwningTribe = t
 
-			if tile.OwningTribe != nil && tile.OwningTribe.IsActive {
-				tile.Presence = Active
-			} else if tile.OwningTribe != nil {
-				tile.Presence = Passive
-			} else {
-				tile.Presence = None
-			}
 			if hasDiceBeenUsed {
 				return true, gs.HandleStartRedeployment(attacker.Index)
 			} else {
@@ -892,7 +884,6 @@ var RaceMap = map[Race]RaceValue {
 			for _, stack := range(tile.PieceStacks) {
 				if stack.Tribe != nil && stack.Tribe != t {
 					tile.OwningTribe = stack.Tribe
-					tile.Presence = Passive // Scavengers only accept passive tribes
 				}
 			}
 		}
@@ -933,7 +924,7 @@ var RaceMap = map[Race]RaceValue {
 			}
 			count := 0
 			for _, otherTile := range(gs.TileList) {
-				if tile.Id != otherTile.Id && otherTile.Presence != None && otherTile.OwningTribe.checkPresence(otherTile, t.Race) {
+				if tile.Id != otherTile.Id && otherTile.CheckPresence() != None && otherTile.OwningTribe.checkPresence(otherTile, t.Race) {
 					t.clearTile(otherTile, gs, 10000)
 					count += 1
 				}
@@ -971,7 +962,7 @@ var RaceMap = map[Race]RaceValue {
 			stacks := oldStartRedeployment(gs)
 			count := 0
 			for _, tile := range(gs.TileList) {
-				if tile.Presence != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 					for _, attr := range(tile.Attributes) {
 						if attr == Magic {
 							count += 1
@@ -1005,6 +996,9 @@ var RaceMap = map[Race]RaceValue {
 				return true
 			}
 			if stackType == "Winter" {
+				if tile.CheckPresence() == None || !tile.OwningTribe.checkPresence(tile, t.Race) {
+					return false
+				}
 				for _, stack := range tile.PieceStacks {
 					if stack.Type == "Winter" {
 						return false
@@ -1059,7 +1053,7 @@ var RaceMap = map[Race]RaceValue {
 			attacker := attackingTribe.Owner
 			attackerIndex := attacker.Index
 
-			if tile.Presence != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
+			if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
 				return true, fmt.Errorf("This tile already belongs to the tribe!")
 			}
 
@@ -1071,7 +1065,7 @@ var RaceMap = map[Race]RaceValue {
 			}
 
 			tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
-			if tile.Presence != None {
+			if tile.CheckPresence() != None {
 				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker, gs)
 			} else {
 				tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
@@ -1097,7 +1091,7 @@ var RaceMap = map[Race]RaceValue {
 			}
 
 			// Enact changes
-			if tile.Presence != None {
+			if tile.CheckPresence() != None {
 				tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
 				tile.OwningTribe.handleReturn(tile, gs, pawnKill)
 			}
@@ -1109,11 +1103,6 @@ var RaceMap = map[Race]RaceValue {
 			// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 			tile.OwningTribe = attackingTribe
 
-			if tile.OwningTribe.IsActive {
-				tile.Presence = Active
-			} else {
-				tile.Presence = Passive
-			} 	
 			if hasDiceBeenUsed {
 				return true, gs.HandleStartRedeployment(attackerIndex)
 			} else {
@@ -1144,7 +1133,7 @@ var RaceMap = map[Race]RaceValue {
 				dummyTribe.Trait = t.Trait
 
 				for _, tile := range(gs.TileList) {
-					if tile.Presence != None  && tile.OwningTribe.checkPresence(tile, t.Race) {
+					if tile.CheckPresence() != None  && tile.OwningTribe.checkPresence(tile, t.Race) {
 						moneyCount += dummyTribe.countPoints(tile)
 					}
 				}
