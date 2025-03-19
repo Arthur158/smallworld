@@ -60,43 +60,19 @@ func CreateBaseTribe() *Tribe {
         State: make(map[string]interface{}),
     }
 
-    tribe.checkPresence = func(tile *Tile, race Race) bool {
-        return tile.OwningTribe.Race == race
-    }
+    tribe.checkPresenceMap = make(map[string]func(*Tile, Race) bool)
 
-    tribe.IsStackValid = func(s string) bool {
-        return  s == string(tribe.Race) && tribe.IsActive
-    }
+    tribe.IsStackValidMap = make(map[string]func(string) bool)
 
-    tribe.countAttack = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int) {
-        if stackType == string(tribe.Race) {
-            return []PieceStack{{Type: string(tribe.Race), Amount: max(tribe.Minimum, cost - tribe.computeDiscount(stackType, tile))}}, 0, 0, 1
-        } else {
-            return []PieceStack{{Type: string(tribe.Race), Amount: 1000 + cost}}, 0, 0, 1
-        }
-    }
+    tribe.countAttackMap = make(map[string]func(*Tile, int, string) ([]PieceStack, int, int, int, error))
+    tribe.computeDiscountMap = make(map[string]func(*Tile) int)
+    tribe.computeGainAttackerMap = make(map[string]func(*Tile) int)
+    tribe.computeLossDefenderMap = make(map[string]func(*Tile) int)
+    tribe.computePawnKillMap = make(map[string]func(*Tile) int)
 
-    tribe.computeDiscount = func(s string, tile *Tile) int {
-        return 0
-    }
+    tribe.countDefenseMap = make(map[string]func(*Tile, *Player, *GameState) (int, int, int, error))
 
-    tribe.countDefense = func(tile *Tile, player *Player, gs *GameState) (int, int, int, error) {
-        price, b, c, error := tile.countDefense(gs)
-        if error != nil {
-            return price, b, c, error
-        }
-        for _, stack := range tile.PieceStacks {
-            if stack.Type == string(tribe.Race) {
-                price += stack.Amount
-            }
-        }
-        return price, b, c, nil
-    }
-
-    tribe.handleAbandonment = func(tile *Tile, gs *GameState) {
-        tribe.clearTile(tile, gs, 0)
-    }
-
+    tribe.handleAbandonmentMap = make(map[string]func(*Tile, *GameState))
     tribe.handleReturn = func(tile *Tile, gs *GameState, cost int) {
         tribe.clearTile(tile, gs , cost)
     }
@@ -117,14 +93,9 @@ func CreateBaseTribe() *Tribe {
         }
     }
 
-    tribe.countNewTileStacks = func(ps []PieceStack, tile *Tile, gs *GameState) []PieceStack {
-        return ps
-    }
+    tribe.countNewTileStacksMap = make(map[string]func([]PieceStack, *Tile, *GameState) []PieceStack)
 
-    tribe.canTileBeAbandoned = func(tile *Tile) bool {
-        return tribe.IsActive && tile.OwningTribe.checkPresence(tile, tribe.Race)
-    }
-
+    tribe.canTileBeAbandonedMap = make(map[string]func(*Tile) bool)
     tribe.startRedeployment = func(gs *GameState) []PieceStack {
         return []PieceStack{}
     }
@@ -186,42 +157,10 @@ func CreateBaseTribe() *Tribe {
 	return nil
     }
 
-    tribe.checkZoneAccess = func(t *Tile) error {
-        if t.Biome == Water {
-            return fmt.Errorf("Cannot conquer water!")
-        }
-        return nil
-    }
+    tribe.checkZoneAccessMap = make(map[string]func(*Tile, error) error)
 
-    tribe.checkAdjacency = func(t *Tile, gs *GameState) error {
-        if gs.IsTribePresentOnTheBoard(tribe.Race) {
-            for _, neighbour := range t.AdjacentTiles {
-                if neighbour.CheckPresence() != None && neighbour.OwningTribe.Race == tribe.Race {
-                    return nil
-                }
-            }
-            return fmt.Errorf("The tile is not adjacent to current territory")
-        } else {
-            if !t.IsEdge {
-                return fmt.Errorf("The tile is not an edge!")
-            }
-            return nil
-        }
-    }
-
-    tribe.getStacksForConquest = func(tile *Tile, player *Player) {
-        if tribe.IsActive {
-            for _, stack := range tile.PieceStacks {
-                if stack.Type == string(tribe.Race) {
-                    // Making sure the action is atomic
-                    movingStack := []PieceStack{{Type: stack.Type, Amount: stack.Amount - tribe.Minimum}}
-                    tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, movingStack)
-                    player.PieceStacks = AddPieceStacks(player.PieceStacks, movingStack)
-                }
-            }
-        }
-    }
-
+    tribe.checkAdjacencyMap = make(map[string]func(*Tile, *GameState, error) error)
+    tribe.getStacksForConquestMap = make(map[string]func(*Tile, *Player))
     tribe.countPoints = func(tile *Tile) int {
         return tile.countPoints()
     }
@@ -246,15 +185,13 @@ func CreateBaseTribe() *Tribe {
         return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: amount - 1}}
     }
 
-    tribe.specialConquest = func(gs *GameState, tile *Tile, s string) (bool, error) {
-        return false, nil
-    }
+    tribe.specialConquestMap = make(map[string]func(*GameState, *Tile, string) (bool, error))
     
     tribe.specialDefense = func(gs *GameState, t1 *Tile, t2 *Tribe, s string) (bool, error) {
         return false, nil
     }
 
-    tribe.getStacksForConquestTurn = func(*Player, *GameState) {}
+    tribe.getStacksForConquestTurnMap = make(map[string]func(*Player, *GameState))
 
     tribe.prepareRemoval = func(gs *GameState) bool {
         for _, tile := range gs.TileList {
@@ -294,54 +231,17 @@ func CreateBaseTribe() *Tribe {
 
 	player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
 	player.ActiveTribe = nil
-
-	return
     }
 
-    tribe.giveInitialStacks = func() []PieceStack {
-        return nil
-    }
+    tribe.giveInitialStacksMap = make(map[string]func() []PieceStack)
 
     tribe.countExtrapoints = func(gs *GameState) int {
         return 0
     }
 
     // probs the ugliest piece of code of this project
-    tribe.calculateRemainingAttackingStacks = func(expanses []PieceStack, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
-        result := []PieceStack{} // Start with an empty list
-        hasDiceBeenUsed := false
-
-	for _, expanse := range expanses {
-                found := false
-		// Search for a matching type in expanses
-		for _, reserve := range tribe.Owner.PieceStacks {
-			if expanse.Type == reserve.Type {
-                                found = true
-				if reserve.Amount + 3 < expanse.Amount {
-					// Not enough quantity to subtract
-					return nil, false, false, fmt.Errorf("Even the dice can't help")
-				} else if reserve.Amount < expanse.Amount {
-                                        diceThrow := RollDice()
-                                        if reserve.Amount + diceThrow >= expanse.Amount {
-                            gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow)})
-                                            hasDiceBeenUsed = true
-                                            result = append(result, reserve)
-                                        } else {
-                            gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Failure: the result of the dice throw was: %d", diceThrow)})
-                                            return nil, true, false, nil
-                                        }        
-                                } else {
-                                    result = append(result, expanse)
-                                }
-                                break
-			}
-		}
-                if !found {
-                return nil, false, false, fmt.Errorf("Player did not have stack %s", expanse.Type)
-                }
-	}
-	return result, hasDiceBeenUsed, true, nil
-    }
+    tribe.calculateRemainingAttackingStacksMap = make(map[string]func([]PieceStack, bool, bool, error, *Tile, *GameState) ([]PieceStack, bool, bool, error))
+    tribe.postConquestMap = make(map[string]func(*Tile, *GameState))
 
     tribe.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
         return stackType == string(tribe.Race) && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race)
@@ -359,9 +259,7 @@ func CreateBaseTribe() *Tribe {
         return fmt.Errorf("Invalid opponent action!")
     }
 
-    tribe.handleMovement = func(s string, t1, t2 *Tile, gs *GameState) error {
-        return fmt.Errorf("Invalid opponent action!")
-    }
+    tribe.handleMovementMap = make(map[string]func(string, *Tile, *Tile, *GameState) error)
 
     tribe.handleEndOfGame = func(gs *GameState) {}
 

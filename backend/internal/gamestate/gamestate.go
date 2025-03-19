@@ -209,7 +209,11 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	// counts the cost for the attacker
-	attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill := attackingTribe.countAttack(tile, tileCost, attackingStackType)
+	attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill, err := attackingTribe.countAttack(tile, tileCost, attackingStackType)
+	if err != nil {
+		return err
+	}
+
 	newStacks, hasDiceBeenUsed, ok, err := attackingTribe.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
 	if err != nil {
 		return err
@@ -225,6 +229,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
+	attackingTribe.postConquest(tile, gs)
 	tile.handleAfterConquest(gs)
 	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, attackingTribe.countNewTileStacks(newStacks, tile, gs))
 
