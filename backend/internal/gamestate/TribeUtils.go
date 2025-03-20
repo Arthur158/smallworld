@@ -73,195 +73,47 @@ func CreateBaseTribe() *Tribe {
     tribe.countDefenseMap = make(map[string]func(*Tile, *Player, *GameState) (int, int, int, error))
 
     tribe.handleAbandonmentMap = make(map[string]func(*Tile, *GameState))
-    tribe.handleReturn = func(tile *Tile, gs *GameState, cost int) {
-        tribe.clearTile(tile, gs , cost)
-    }
+    tribe.handleReturnMap = make(map[string]func(*Tile, *GameState, int))
 
-    tribe.clearTile = func(tile *Tile, gs *GameState, pawnKill int) {
-        for i, stack := range tile.PieceStacks {
-            if stack.Type == string(tribe.Race) {
-                tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
-                stack.Amount = max(0, stack.Amount - pawnKill)
-                if tile.CheckPresence() != None {
-                    tribe.Owner.PieceStacks = AddPieceStacks(tribe.Owner.PieceStacks, []PieceStack{stack})
-                }
-                if tile.OwningTribe == &tribe {
-                    tile.OwningTribe = nil
-                }
-                return // Exit after removal to avoid index shifting issues
-            }
-        }
-    }
-
+    tribe.clearTileMap = make(map[string]func(*Tile, *GameState, int))
     tribe.countNewTileStacksMap = make(map[string]func([]PieceStack, *Tile, *GameState) []PieceStack)
 
     tribe.canTileBeAbandonedMap = make(map[string]func(*Tile) bool)
-    tribe.startRedeployment = func(gs *GameState) []PieceStack {
-        return []PieceStack{}
-    }
+    tribe.startRedeploymentMap = make(map[string]func(*GameState) []PieceStack)
 
-    tribe.getStacksOutRedeployment = func(tile *Tile, stackType string) ([]PieceStack, error) {
-        if stackType == string(tribe.Race) {
-            for _, stack := range tile.PieceStacks {
-                if stack.Type == stackType {
-                    if stack.Amount == tribe.Minimum {
-                        return nil, fmt.Errorf("cannot take off single tribe")
-                    } else {
-                        return []PieceStack{{Type: stackType, Amount: 1}}, nil
-                    }
-                }
-            }
-        }
-        return nil, fmt.Errorf("There is no such stack")
-    }
-
-    tribe.handleDeploymentOut = func(tile *Tile, stackType string, i int, gs *GameState) error {
-        if tile.CheckPresence() == None {
-            return fmt.Errorf("This tile does not contain any tribe!")
-        }
-	stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
-	if err != nil {
-		return fmt.Errorf("Unable to redeploy", err)
-	}
-
-        player := tribe.Owner
-
-        ok := false
-        tile.PieceStacks, ok = SubtractPieceStacks(tile.PieceStacks, stacks)
-	if !ok {
-		return fmt.Errorf("Could not substract the stacks")
-	}
-	
-	player.PieceStacks = AddPieceStacks(player.PieceStacks, stacks)
-
-	return nil
-    }
-
-    tribe.handleDeploymentIn = func(tile *Tile, stackType string, i int, gs *GameState) error {
-	if !tribe.canBeRedeployedIn(tile, stackType, gs) {
-		return fmt.Errorf("Cannot redeploy here")
-	}
-
-        player := tribe.Owner
-
-	movingStack := tribe.getRedeploymentStack(stackType, player.PieceStacks)
-
-	newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
-	if !ok {
-		return fmt.Errorf("Cannot redeploy pieces you don't have")
-	}
-	player.PieceStacks = newStacks
-
-	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
-
-	return nil
-    }
-
+    tribe.getStacksOutRedeploymentMap = make(map[string]func(*Tile, string) ([]PieceStack, error))
+    tribe.handleDeploymentOutMap = make(map[string]func(*Tile, string, *GameState) error)
+    tribe.handleDeploymentInMap = make(map[string]func(*Tile, string, int, *GameState) error)
     tribe.checkZoneAccessMap = make(map[string]func(*Tile, error) error)
 
     tribe.checkAdjacencyMap = make(map[string]func(*Tile, *GameState, error) error)
     tribe.getStacksForConquestMap = make(map[string]func(*Tile, *Player))
-    tribe.countPoints = func(tile *Tile) int {
-        return tile.countPoints()
-    }
+    tribe.countPointsMap = make(map[string]func(*Tile) int)
 
-    tribe.countRemovableAttackingStacks = func(player *Player) []PieceStack {
-        newstacks := []PieceStack{}
-        for _, stack := range(player.PieceStacks) {
-            if stack.Type == string(tribe.Race) {
-                newstacks = append(newstacks, stack)
-            }
-        }
-        return newstacks
-    }
-
-    tribe.countRemovablePieces = func(tile *Tile) []PieceStack {
-        amount := 1
-        for _, stack := range(tile.PieceStacks) {
-            if stack.Type == string(tribe.Race) {
-                amount = stack.Amount
-            }
-        }
-        return []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: amount - 1}}
-    }
+    tribe.countRemovableAttackingStacksMap = make(map[string]func([]PieceStack, *Player) []PieceStack)
+    tribe.countRemovablePiecesMap = make(map[string]func([]PieceStack, *Tile) []PieceStack)
 
     tribe.specialConquestMap = make(map[string]func(*GameState, *Tile, string) (bool, error))
     
-    tribe.specialDefense = func(gs *GameState, t1 *Tile, t2 *Tribe, s string) (bool, error) {
-        return false, nil
-    }
+    tribe.specialDefenseMap = make(map[string]func(*GameState, *Tile, *Tribe, string) (bool, error))
 
     tribe.getStacksForConquestTurnMap = make(map[string]func(*Player, *GameState))
 
-    tribe.prepareRemoval = func(gs *GameState) bool {
-        for _, tile := range gs.TileList {
-            if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race){
-                tribe.clearTile(tile, gs, 0)
-            }
-        }
-        player := tribe.Owner
-        player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, tribe.countRemovableAttackingStacks(player))
+    tribe.prepareRemovalMap = make(map[string]func(*GameState) bool)
+    tribe.alternativeDeclineMap = make(map[string]func(*GameState) bool)
 
-        return true
-    }
-
-    tribe.canGoIntoDecline = func(gs *GameState) bool {
-        return gs.TurnInfo.Phase == DeclineChoice
-    }
-
-    // This function should be used to undo tribe advantages in certain tribe, although in an ideal world this would also deactivate any illegal actions, but should not be possible in the first place.
-    tribe.goIntoDecline = func(gs *GameState) {
-        player := tribe.Owner
-
-	for i, tribe := range player.PassiveTribes {
-		if (tribe.prepareRemoval(gs)) {
-			player.PassiveTribes = append(player.PassiveTribes[:i], player.PassiveTribes[i+1:]...)
-                        player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, tribe.countRemovableAttackingStacks(player))
-		}
-	}
-
-	for _, tile := range gs.TileList {
-            if tile.CheckPresence() != None && tile.OwningTribe.Race == player.ActiveTribe.Race {
-                tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, tile.OwningTribe.countRemovablePieces(tile))
-            }
-        }
-
-	player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, player.ActiveTribe.countRemovableAttackingStacks(player))
-        tribe.IsActive = false
-
-	player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
-	player.ActiveTribe = nil
-    }
-
+    tribe.canGoIntoDeclineMap = make(map[string]func(bool, *GameState) bool)
+    tribe.goIntoDeclineMap = make(map[string]func(*GameState))
     tribe.giveInitialStacksMap = make(map[string]func() []PieceStack)
-
-    tribe.countExtrapoints = func(gs *GameState) int {
-        return 0
-    }
-
-    // probs the ugliest piece of code of this project
+    tribe.countExtrapointsMap = make(map[string]func(*GameState) int)
     tribe.calculateRemainingAttackingStacksMap = make(map[string]func([]PieceStack, bool, bool, error, *Tile, *GameState) ([]PieceStack, bool, bool, error))
     tribe.postConquestMap = make(map[string]func(*Tile, *GameState))
-
-    tribe.canBeRedeployedIn = func(tile *Tile, stackType string, gs *GameState) bool {
-        return stackType == string(tribe.Race) && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race)
-    }
-    
-    tribe.getRedeploymentStack = func(s string, ps []PieceStack) []PieceStack {
-        return []PieceStack{{Type: s, Amount: 1, Tribe: &tribe}}
-    }
-
-    tribe.canEndTurn = func(gs *GameState) error {
-        return nil
-    }
-
-    tribe.handleOpponentAction = func(s string, p *Player, gs *GameState) error {
-        return fmt.Errorf("Invalid opponent action!")
-    }
-
+    tribe.canBeRedeployedInMap = make(map[string]func(bool, *Tile, string, *GameState) bool)    
+    tribe.getRedeploymentStackMap = make(map[string]func(string, []PieceStack) []PieceStack)
+    tribe.canEndTurnMap = make(map[string]func(*GameState) error)
+    tribe.handleOpponentActionMap = make(map[string]func(string, *Player, *GameState) error)
     tribe.handleMovementMap = make(map[string]func(string, *Tile, *Tile, *GameState) error)
-
-    tribe.handleEndOfGame = func(gs *GameState) {}
+    tribe.handleEndOfGameMap = make(map[string]func(*GameState))
 
     return &tribe
 }

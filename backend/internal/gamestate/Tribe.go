@@ -45,34 +45,36 @@ type Tribe struct {
 
 	//conquest for defender
 	countDefenseMap map[string]func(*Tile, *Player, *GameState) (int, int, int, error);
-	handleReturn func(*Tile, *GameState, int)
-	clearTile func(*Tile, *GameState, int);
-	specialDefense func(*GameState, *Tile, *Tribe, string) (bool, error);
+	handleReturnMap map[string]func(*Tile, *GameState, int)
+	clearTileMap map[string]func(*Tile, *GameState, int);
+	specialDefenseMap map[string]func(*GameState, *Tile, *Tribe, string) (bool, error);
 
 	// redeployment
-	startRedeployment func(*GameState) []PieceStack;
-	getStacksOutRedeployment func(*Tile, string) ([]PieceStack, error);
-	canBeRedeployedIn func(*Tile, string, *GameState) bool;
-	getRedeploymentStack func(string, []PieceStack) []PieceStack
-	handleDeploymentOut func(*Tile, string, int, *GameState) error;
-	handleDeploymentIn func(*Tile, string, int, *GameState) error;
+	startRedeploymentMap map[string]func(*GameState) []PieceStack;
+	getStacksOutRedeploymentMap map[string]func(*Tile, string) ([]PieceStack, error);
+	canBeRedeployedInMap map[string]func(bool, *Tile, string, *GameState) bool;
+	canBeRedeployedOutMap map[string]func(bool, *Tile, string) bool;
+	getRedeploymentStackMap map[string]func(string, []PieceStack) []PieceStack
+	handleDeploymentOutMap map[string]func(*Tile, string, *GameState) error;
+	handleDeploymentInMap map[string]func(*Tile, string, int, *GameState) error;
 
 	// misc
-	handleOpponentAction func(string, *Player, *GameState) error;
+	handleOpponentActionMap map[string]func(string, *Player, *GameState) error;
 
 	// end of turn
-	canEndTurn func(*GameState) error;
-	countPoints func(*Tile) int;
-	countExtrapoints func(*GameState) int;
+	canEndTurnMap map[string]func(*GameState) error;
+	countPointsMap map[string]func(*Tile) int;
+	countExtrapointsMap map[string]func(*GameState) int;
 
 	// decline
-	countRemovablePieces func(*Tile) []PieceStack;
-	countRemovableAttackingStacks func(*Player) []PieceStack;
-	canGoIntoDecline func(*GameState) bool;
-	goIntoDecline func(*GameState);
-	prepareRemoval func(*GameState) bool;
+	countRemovablePiecesMap map[string]func([]PieceStack, *Tile) []PieceStack;
+	countRemovableAttackingStacksMap map[string]func([]PieceStack, *Player) []PieceStack;
+	canGoIntoDeclineMap map[string]func(bool, *GameState) bool;
+	goIntoDeclineMap map[string]func(*GameState);
+	prepareRemovalMap map[string]func(*GameState) bool;
+	alternativeDeclineMap map[string]func(*GameState) bool
 
-	handleEndOfGame func(*GameState);
+	handleEndOfGameMap map[string]func(*GameState);
 }
 
 func (t *Tribe) giveInitialStacks() []PieceStack {
@@ -119,6 +121,9 @@ func (t *Tribe) getStacksForConquestTurn(player *Player, gs *GameState) {
 }
 
 func (t *Tribe) getStacksForConquest(tile *Tile, player *Player) {
+    for _, f := range(t.getStacksForConquestMap) {
+	f(tile, player)
+    }
     if t.IsActive {
 	for _, stack := range tile.PieceStacks {
 	    if stack.Type == string(t.Race) {
@@ -128,9 +133,6 @@ func (t *Tribe) getStacksForConquest(tile *Tile, player *Player) {
 		player.PieceStacks = AddPieceStacks(player.PieceStacks, movingStack)
 	    }
 	}
-    }
-    for _, f := range(t.getStacksForConquestMap) {
-	f(tile, player)
     }
 }
 
@@ -323,4 +325,286 @@ func (t *Tribe) countDefense(tile *Tile, player *Player, gs *GameState) (int, in
 	c += newc
     }
     return price, b, c, nil
+}
+
+func (t *Tribe) handleReturn(tile *Tile, gs *GameState, cost int) {
+    t.clearTile(tile, gs , cost)
+    for _, f := range(t.handleReturnMap) {
+	f(tile, gs, cost)
+    }
+}
+
+func (t *Tribe) clearTile(tile *Tile, gs *GameState, cost int) {
+    for i, stack := range tile.PieceStacks {
+	if stack.Type == string(t.Race) {
+	    tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
+	    stack.Amount = max(0, stack.Amount - cost)
+	    if tile.CheckPresence() != None {
+		t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, []PieceStack{stack})
+	    }
+	    if tile.OwningTribe == t {
+		tile.OwningTribe = nil
+	    }
+	    return
+	}
+    }
+    for _, f := range(t.clearTileMap) {
+	f(tile, gs, cost)
+    }
+}
+
+func (t *Tribe) specialDefense(gs *GameState, tile *Tile, attackingTribe *Tribe, s string) (bool, error) {
+    for _, f := range(t.specialDefenseMap) {
+	ok, err := f(gs, tile, attackingTribe, s)
+	if ok {
+	    return ok, err
+	}
+    }
+    return false, nil
+}
+
+func (t *Tribe) startRedeployment(gs *GameState) []PieceStack {
+    stacks := []PieceStack{}
+    for _, f := range(t.startRedeploymentMap) {
+        stacks = AddPieceStacks(stacks, f(gs))
+    }
+    return stacks
+}
+
+func (t *Tribe) getStacksOutRedeployment(tile *Tile, stackType string) ([]PieceStack, error) {
+
+    if !t.canBeRedeployedOut(tile, stackType) {
+	return nil, fmt.Errorf("cannot redeploy out")
+    }
+
+    err := fmt.Errorf("There is no such stack")
+    ps := []PieceStack{}
+    if stackType == string(t.Race) {
+	for _, stack := range tile.PieceStacks {
+	    if stack.Type == stackType {
+		if stack.Amount == t.Minimum {
+		    err = fmt.Errorf("cannot take off single tribe")
+		} else {
+		    ps = []PieceStack{{Type: stackType, Amount: 1}}
+		    err = nil
+		}
+	    }
+	}
+    }
+    for _, f := range(t.getStacksOutRedeploymentMap) {
+	ps, err := f(tile, stackType)
+	if err == nil {
+	    return ps, nil
+	}
+    }
+
+    return ps, err
+}
+
+func (t *Tribe) canBeRedeployedOut(tile *Tile, s string) bool {
+    res := s == string(t.Race)
+    for _, f := range(t.canBeRedeployedOutMap) {
+	res = f(res, tile, s)
+    }
+    return res
+}
+
+func (t *Tribe) canBeRedeployedIn(tile *Tile, s string, gs *GameState) bool {
+    res := s == string(t.Race)
+    for _, f := range(t.canBeRedeployedInMap) {
+	res = f(res, tile, s, gs)
+    }
+    return res
+}
+
+func (t *Tribe) handleDeploymentOut(tile *Tile, stackType string, gs *GameState) error {
+
+    for _, f := range(t.handleDeploymentOutMap) {
+	err := f(tile, stackType, gs)
+	if err == nil {
+	    return nil
+	}
+    }
+
+    if tile.CheckPresence() == None {
+	return fmt.Errorf("This tile does not contain any tribe!")
+    }
+    stacks, err := tile.OwningTribe.getStacksOutRedeployment(tile, stackType)
+    if err != nil {
+	    return err
+    }
+
+    player := t.Owner
+
+    ok := false
+    tile.PieceStacks, ok = SubtractPieceStacks(tile.PieceStacks, stacks)
+    if !ok {
+	    return fmt.Errorf("Could not substract the stacks")
+    }
+    
+    player.PieceStacks = AddPieceStacks(player.PieceStacks, stacks)
+
+    return nil
+}
+
+func (t *Tribe) handleDeploymentIn(tile *Tile, stackType string, i int, gs *GameState) error {
+    for _, f := range(t.handleDeploymentInMap) {
+	err := f(tile, stackType, i, gs)
+	if err == nil {
+	    return nil
+	}
+    }
+
+    if !t.canBeRedeployedIn(tile, stackType, gs) {
+	    return fmt.Errorf("Cannot redeploy here")
+    }
+
+    player := t.Owner
+
+    movingStack := t.getRedeploymentStack(stackType, player.PieceStacks)
+
+    newStacks, ok := SubtractPieceStacks(player.PieceStacks, movingStack)
+    if !ok {
+	    return fmt.Errorf("Cannot redeploy pieces you don't have")
+    }
+    player.PieceStacks = newStacks
+
+    tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
+
+    return nil
+}
+
+func (t *Tribe) getRedeploymentStack(s string, ps []PieceStack) []PieceStack {
+    for _, f := range(t.getRedeploymentStackMap) {
+	stacks := f(s, ps)
+	if len(stacks) > 0 {
+	    return stacks
+	}
+    }
+    return []PieceStack{{Type: s, Amount: 1, Tribe: t}}
+}
+
+func (t *Tribe) handleOpponentAction(s string, p *Player, gs *GameState) error {
+    for _, f := range(t.handleOpponentActionMap) {
+	err := f(s, p, gs)
+	if err == nil {
+	    return nil
+	}
+    }
+    return fmt.Errorf("Invalid opponent action!")
+}
+func (t *Tribe) canEndTurn(gs *GameState) error {
+    for _, f := range(t.canEndTurnMap) {
+	err := f(gs)
+	if err != nil {
+	    return err
+	}
+    }
+    return nil
+}
+func (t *Tribe) countPoints(tile *Tile) int {
+    total := tile.countPoints()
+    for _, f := range(t.countPointsMap) {
+	total += f(tile)
+    }
+    return max(0, total)
+}
+
+func (t *Tribe) countExtrapoints(gs *GameState) int {
+    count := 0
+    for _, f := range(t.countExtrapointsMap) {
+	count += f(gs)
+    }
+    return count
+}
+
+func (t *Tribe) countRemovablePieces(tile *Tile) []PieceStack {
+    amount := 1
+    for _, stack := range(tile.PieceStacks) {
+	if stack.Type == string(t.Race) {
+	    amount = stack.Amount
+	}
+    }
+    stacks := []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: amount - 1}}
+
+    for _, f := range(t.countRemovablePiecesMap) {
+	stacks = f(stacks, tile)
+    }
+
+    return stacks
+}
+
+func (t *Tribe) countRemovableAttackingStacks(player *Player) []PieceStack {
+    newstacks := []PieceStack{}
+    for _, stack := range(player.PieceStacks) {
+	if stack.Type == string(t.Race) {
+	    newstacks = append(newstacks, stack)
+	}
+    }
+
+    for _, f := range(t.countRemovableAttackingStacksMap) {
+	newstacks = f(newstacks, player)
+    }
+    return newstacks
+}
+
+func (t *Tribe) canGoIntoDecline(gs *GameState) bool {
+    res := gs.TurnInfo.Phase == DeclineChoice
+    for _, f := range(t.canGoIntoDeclineMap) {
+	res = f(res, gs)
+    }
+    return res
+}
+
+func (t *Tribe) goIntoDecline(gs *GameState) {
+    for _, f := range(t.alternativeDeclineMap) {
+	ok := f(gs)
+	if ok {
+	    return
+	}
+    }
+    player := t.Owner
+
+    for i, tribe := range player.PassiveTribes {
+	    if (tribe.prepareRemoval(gs)) {
+		    player.PassiveTribes = append(player.PassiveTribes[:i], player.PassiveTribes[i+1:]...)
+		    player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, tribe.countRemovableAttackingStacks(player))
+	    }
+    }
+
+    for _, tile := range gs.TileList {
+	if tile.CheckPresence() != None && tile.OwningTribe.Race == player.ActiveTribe.Race {
+	    tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, tile.OwningTribe.countRemovablePieces(tile))
+	}
+    }
+
+    player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, player.ActiveTribe.countRemovableAttackingStacks(player))
+    t.IsActive = false
+
+    player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
+    player.ActiveTribe = nil
+
+    for _, f := range(t.goIntoDeclineMap) {
+	f(gs)
+    }
+}
+
+func (t *Tribe) prepareRemoval(gs *GameState) bool {
+    for _, f := range(t.prepareRemovalMap) {
+	return f(gs)
+    }
+    for _, tile := range gs.TileList {
+	if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race){
+	    t.clearTile(tile, gs, 0)
+	}
+    }
+    player := t.Owner
+    player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, t.countRemovableAttackingStacks(player))
+    return true
+}
+
+func (t *Tribe) handleEndOfGame(gs *GameState) {
+    for _, f := range(t.handleEndOfGameMap) {
+	f(gs)
+    }
 }

@@ -223,13 +223,13 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	// Enact changes
+	attackingTribe.postConquest(tile, gs)
 	if tile.CheckPresence() != None {
 		tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
 		tile.OwningTribe.handleReturn(tile, gs, pawnKill)
 	}
 
 	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
-	attackingTribe.postConquest(tile, gs)
 	tile.handleAfterConquest(gs)
 	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, attackingTribe.countNewTileStacks(newStacks, tile, gs))
 
@@ -289,7 +289,7 @@ func (gs *GameState) HandleRedeploymentOut(playerIndex int, tileId string, stack
 		return fmt.Errorf("This tile does not belong to the player!")
 	}
 
-	return tribe.handleDeploymentOut(tile, stackType, 1, gs)
+	return tribe.handleDeploymentOut(tile, stackType, gs)
 }
 
 func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackType string, amount int) error {

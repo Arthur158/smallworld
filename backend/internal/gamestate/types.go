@@ -1,13 +1,11 @@
 package gamestate
 
-
 type TribeEntry struct {
 	Race Race;
 	Trait Trait;
 	CoinPile int;
 	PiecePile int;
 }
-
 
 type PieceStack struct {
 	Type string;

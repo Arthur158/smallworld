@@ -17,13 +17,15 @@ func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
 }
 
 func (gs *GameState) GetPieceStackForConquest(player *Player) {
-    player.ActiveTribe.getStacksForConquestTurn(player, gs)
+    if player.ActiveTribe != nil {
+	player.ActiveTribe.getStacksForConquestTurn(player, gs)
+    }
     for _, tribe := range(player.PassiveTribes) {
         tribe.getStacksForConquestTurn(player, gs)
     }
     for _, tile := range gs.TileList {
         if tile.CheckPresence() != None {
-            if tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
+            if player.ActiveTribe != nil && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
                 player.ActiveTribe.getStacksForConquest(tile, player)
             }
             for _, tribe := range(player.PassiveTribes) {
