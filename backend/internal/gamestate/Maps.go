@@ -57,7 +57,7 @@ func Map3(gs *GameState) map[string]*Tile {
 
     for key := range(tileMap) {
         tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
-        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *Tribe, *GameState))
         tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
         tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
         tileMap[key].State = make(map[string]interface{})
@@ -239,7 +239,7 @@ func Map2(gs *GameState) map[string]*Tile {
 
     for key := range(tileMap) {
         tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
-        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *Tribe, *GameState))
         tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
         tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
         tileMap[key].State = make(map[string]interface{})
@@ -408,7 +408,7 @@ func Map4(gs *GameState) map[string]*Tile {
 
     for key := range(tileMap) {
         tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
-        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *Tribe, *GameState))
         tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
         tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
         tileMap[key].State = make(map[string]interface{})
@@ -653,7 +653,7 @@ func MapIsles2(gs *GameState) map[string]*Tile {
 
     for key := range(tileMap) {
         tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
-        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *Tribe, *GameState))
         tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
         tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
         tileMap[key].State = make(map[string]interface{})
@@ -779,7 +779,7 @@ func MapIsles3(gs *GameState) map[string]*Tile {
 
     for key := range(tileMap) {
         tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
-        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *Tribe, *GameState))
         tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
         tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
         tileMap[key].State = make(map[string]interface{})
@@ -1008,7 +1008,7 @@ func Map5(gs *GameState) map[string]*Tile {
 
     for key := range(tileMap) {
         tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
-        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *GameState))
+        tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *Tribe, *GameState))
         tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
         tileMap[key].ModifierPoints = make(map[string]func(*Tile) (int))
         tileMap[key].State = make(map[string]interface{})

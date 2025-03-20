@@ -314,7 +314,7 @@ var RaceMap = map[Race]RaceValue {
 
 			tile.OwningTribe.clearTile(tile, gs, 1)
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
-			tile.handleAfterConquest(gs)
+			tile.handleAfterConquest(gs, t)
 			tile.OwningTribe = t
 			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Staff", Amount: 1}})
 			return true, nil
@@ -817,15 +817,6 @@ var RaceMap = map[Race]RaceValue {
 		t.IsStackValidMap["Ice Witches"] = func(s string) bool {
 			return s == "Winter"
 		}
-		t.countDefenseMap["Ice Witches"] = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
-			def := 0
-			for _, stack := range tile.PieceStacks {
-				if stack.Type == "Winter" {
-					def += stack.Amount
-				}
-			}
-			return def, 0, 0, nil
-		}
 		t.handleDeploymentInMap["Ice Witches"] = func (tile *Tile, stackType string, i int, gs *GameState) error {
 			if stackType == "Winter" {
 				if tile.CheckPresence() == None || !tile.OwningTribe.checkPresence(tile, t.Race) {
@@ -845,6 +836,7 @@ var RaceMap = map[Race]RaceValue {
 
 				tile.PieceStacks = AddPieceStacks(tile.PieceStacks, movingStack)
 				tile.ModifierPoints["Winter"] = TileModifierPoints["Winter"]
+				tile.ModifierDefenses["Winter"] = TileModifierDefenses["Winter"]
 				return nil
 			}
 			return fmt.Errorf("Not a Winter")

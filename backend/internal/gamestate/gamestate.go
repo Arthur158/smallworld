@@ -2,6 +2,8 @@ package gamestate
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 )
 
 type GameState struct {
@@ -50,7 +52,44 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 	if !ok {
 		return nil, fmt.Errorf("map not found")
 	}
+
 	gs.TileList = function(gs)
+
+	// Testing Powers
+	testingPowers := true
+	if testingPowers {
+		rand.Seed(time.Now().UnixNano())
+		keys := make([]string, 0, len(PowerMap))
+		for key := range PowerMap {
+			keys = append(keys, key)
+		}
+		rand.Shuffle(len(keys), func(i, j int) {
+			keys[i], keys[j] = keys[j], keys[i]
+		})
+		for _, tile := range(gs.TileList) {
+			if tile.CheckPresence() != None && len(keys) != 0 {
+				power := PowerMap[keys[0]]()
+				if len(keys) > 1 {
+					keys = keys[1:]
+				} else {
+					keys = []string{}
+				}
+				randomBool := rand.Intn(2) < 1
+				if randomBool {
+					tile.ModifierAfterConquest[power.Name] = power.Spawn
+				}
+			}
+		}
+	}
+
+
+	// power := "Mine of the Lost Dwarf"
+	// dmdfields := PowerMap[power]()
+	// for _, tile := range(gs.TileList) {
+	// 	if tile.CheckPresence() != None {
+	// 		tile.ModifierAfterConquest[power] = dmdfields.Spawn
+	// 	}
+	// }
 
         if err != nil {
             return nil, fmt.Errorf("failed to create list of tribe entries", err)
@@ -223,6 +262,7 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	// Enact changes
+	tile.handleAfterConquest(gs, attackingTribe)
 	attackingTribe.postConquest(tile, gs)
 	if tile.CheckPresence() != None {
 		tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
@@ -230,7 +270,6 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	}
 
 	attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
-	tile.handleAfterConquest(gs)
 	tile.PieceStacks = AddPieceStacks(tile.PieceStacks, attackingTribe.countNewTileStacks(newStacks, tile, gs))
 
 	attacker.CoinPile += moneyGainAttacker - moneyLossAttacker

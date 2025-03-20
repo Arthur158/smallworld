@@ -985,9 +985,7 @@ var TraitMap = map[Trait]TraitValue {
 				t.State["playersAttacked"] = playersAttacked
 			}
 		}
-		oldGetStacksForConquestTurn := t.getStacksForConquestTurn
 		t.getStacksForConquestTurnMap["Diplomat"] = func(p *Player, gs *GameState) {
-			oldGetStacksForConquestTurn(p, gs)
 			t.State["playersAttacked"] = []int{}
 			for _, player := range(gs.Players) {
 				for i := range(player.PieceStacks) {
@@ -1040,9 +1038,7 @@ var TraitMap = map[Trait]TraitValue {
 			}
 			return 0, g, l, nil
 		}
-		oldGetStacksForConquestTurn := t.getStacksForConquestTurn
 		t.getStacksForConquestTurnMap["Haggling"] = func(p *Player, gs *GameState) {
-			oldGetStacksForConquestTurn(p, gs)
 			for _, player := range(gs.Players) {
 				for i := range(player.PieceStacks) {
 					if player.PieceStacks[i].Type == "Treaty" && player != p {
@@ -1153,7 +1149,7 @@ var TraitMap = map[Trait]TraitValue {
 
 			newTileStacks := t.countNewTileStacks(newStacks, tile, gs)
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
-			tile.handleAfterConquest(gs)
+			tile.handleAfterConquest(gs, t)
 
 			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, newStacks)
 			t.Owner.CoinPile += moneyGainAttacker - moneyLossAttacker
@@ -1167,7 +1163,6 @@ var TraitMap = map[Trait]TraitValue {
 
 			return true, nil
 		}
-		oldgetStacksForConquestTurn := t.getStacksForConquestTurn
 		t.getStacksForConquestTurnMap["Zeppelined"] = func(p *Player, gs *GameState) {
 			for _, tile := range(gs.TileList) {
 				for i := range(tile.PieceStacks) {
@@ -1178,7 +1173,6 @@ var TraitMap = map[Trait]TraitValue {
 					}
 				}
 			}
-			oldgetStacksForConquestTurn(p, gs)
 		}
 		t.clearTileMap["Zeppelined"] = func(tile *Tile, gs *GameState, pk int) {
 			for i, stack := range tile.PieceStacks {

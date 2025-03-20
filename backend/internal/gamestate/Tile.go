@@ -12,7 +12,7 @@ type Tile struct {
 	State map[string]interface{};
 	ModifierPoints map[string]func(*Tile) int;
 	ModifierDefenses map[string]func(*Tile, *GameState) (int, int, int, error);
-	ModifierAfterConquest map[string]func(*Tile, *GameState);
+	ModifierAfterConquest map[string]func(*Tile, *Tribe, *GameState);
 	ModifierSpecialDefenses map[string]func(*Tile, *GameState, *Tribe, string) (bool, error);
 }
 
@@ -54,9 +54,9 @@ func (tile *Tile) specialDefense(gs *GameState, attackingTribe *Tribe, attacking
 	return false, nil
 }
 
-func (tile *Tile) handleAfterConquest(gs *GameState) {
+func (tile *Tile) handleAfterConquest(gs *GameState, tribe *Tribe) {
 	for _, modifier := range(tile.ModifierAfterConquest) {
-		modifier(tile, gs)
+		modifier(tile, tribe, gs)
 	}
 }
 

@@ -109,6 +109,7 @@ func CreateBaseTribe() *Tribe {
     tribe.calculateRemainingAttackingStacksMap = make(map[string]func([]PieceStack, bool, bool, error, *Tile, *GameState) ([]PieceStack, bool, bool, error))
     tribe.postConquestMap = make(map[string]func(*Tile, *GameState))
     tribe.canBeRedeployedInMap = make(map[string]func(bool, *Tile, string, *GameState) bool)    
+    tribe.canBeRedeployedOutMap = make(map[string]func(bool, *Tile, string) bool)
     tribe.getRedeploymentStackMap = make(map[string]func(string, []PieceStack) []PieceStack)
     tribe.canEndTurnMap = make(map[string]func(*GameState) error)
     tribe.handleOpponentActionMap = make(map[string]func(string, *Player, *GameState) error)

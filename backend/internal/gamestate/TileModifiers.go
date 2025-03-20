@@ -6,13 +6,19 @@ var TileModifierPoints = map[string]func(*Tile) int {
     "Winter" : func(tile *Tile) int {
             return -1
     },
+    "Keep on the Motherland" : func(tile *Tile) (int) {
+        return 1
+    },
+    "Mine of the Lost Dwarf" : func(tile *Tile) (int) {
+        return 2
+    },
 }
 
-var TileModifierAfterConquests = map[string]func(*Tile, *GameState) {
-    "Loot" : func(tile *Tile, gs *GameState) {
+var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
+    "Loot" : func(tile *Tile, t *Tribe, gs *GameState) {
         val := tile.State["loot"]
 
-        if gs.Players[gs.TurnInfo.PlayerIndex].ActiveTribe != nil && gs.Players[gs.TurnInfo.PlayerIndex].ActiveTribe.Race == "Skags" {
+        if t.Race == "Skags" {
             return
         }
 
@@ -25,6 +31,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *GameState) {
         }
         delete(tile.ModifierDefenses, "Loot")
         delete(tile.ModifierSpecialDefenses, "Loot")
+        delete(tile.ModifierAfterConquest, "Loot")
         for i := range(tile.PieceStacks) {
             if tile.PieceStacks[i].Type == "Loot" {
                 tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
@@ -33,6 +40,46 @@ var TileModifierAfterConquests = map[string]func(*Tile, *GameState) {
         }
         gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("The loot was: %d", loot)})
         gs.Players[gs.TurnInfo.PlayerIndex].CoinPile += loot
+    },
+    "Diamond Fields" : func(tile *Tile, t *Tribe,  gs *GameState) {
+        var power *Power
+        for i, p := range(tile.OwningTribe.Owner.Powers) {
+            power = p
+            if p.Name == "Diamond Fields" {
+                tile.OwningTribe.Owner.Powers = append(tile.OwningTribe.Owner.Powers[:i], tile.OwningTribe.Owner.Powers[i+1:]...)
+            }
+        }
+        gs.Players[gs.TurnInfo.PlayerIndex].Powers = append(gs.Players[gs.TurnInfo.PlayerIndex].Powers, power)
+    },
+    "Great Brass Pipe" : func(tile *Tile, t *Tribe,  gs *GameState) {
+        var power *Power
+        for i, p := range(tile.OwningTribe.Owner.Powers) {
+            power = p
+            if p.Name == "Great Brass Pipe" {
+                tile.OwningTribe.Owner.Powers = append(tile.OwningTribe.Owner.Powers[:i], tile.OwningTribe.Owner.Powers[i+1:]...)
+            }
+        }
+        gs.Players[gs.TurnInfo.PlayerIndex].Powers = append(gs.Players[gs.TurnInfo.PlayerIndex].Powers, power)
+        delete(tile.OwningTribe.checkAdjacencyMap, "Great Brass Pipe")
+        t.checkAdjacencyMap["Great Brass Pipe"] = func(t *Tile, gs *GameState, err error) error {
+            if err == nil {
+                return nil
+            }
+            if t.Biome == power.Tile.Biome {
+                return nil
+            }
+            return err
+        }
+    },
+    "Fountain of Youth" : func(tile *Tile, t *Tribe,  gs *GameState) {
+        var power *Power
+        for i, p := range(tile.OwningTribe.Owner.Powers) {
+            power = p
+            if p.Name == "Fountain of Youth" {
+                tile.OwningTribe.Owner.Powers = append(tile.OwningTribe.Owner.Powers[:i], tile.OwningTribe.Owner.Powers[i+1:]...)
+            }
+        }
+        gs.Players[gs.TurnInfo.PlayerIndex].Powers = append(gs.Players[gs.TurnInfo.PlayerIndex].Powers, power)
     },
 }
 
@@ -45,6 +92,12 @@ var TileModifierDefenses = map[string]func(*Tile, *GameState) (int, int, int, er
     },
     "Burning Zeppelin" : func(tile *Tile, gs *GameState) (int, int, int, error) {
         return 0, 0, 0, fmt.Errorf("Cannot conquer zone with burning zeppelin!")
+    },
+    "Keep on the Motherland" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+        return 1, 0, 0, nil
+    },
+    "Winter" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+        return 1, 0, 0, nil
     },
 }
 

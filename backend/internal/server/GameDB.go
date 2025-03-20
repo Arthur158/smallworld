@@ -306,7 +306,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			modifierDefenses[key] = gamestate.TileModifierDefenses[key]
 		}
 
-		ModifierAfterConquest := make(map[string]func(*gamestate.Tile, *gamestate.GameState))
+		ModifierAfterConquest := make(map[string]func(*gamestate.Tile, *gamestate.Tribe, *gamestate.GameState))
 		for _, key := range tc.ModifierAfterConquest {
 			ModifierAfterConquest[key] = gamestate.TileModifierAfterConquests[key]
 		}

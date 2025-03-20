@@ -1,9 +1,10 @@
-package gamestate;
+package gamestate
 
 import (
-    "fmt"
-    "math/rand"
-    "time"
+	"fmt"
+	"log"
+	"math/rand"
+	"time"
 )
 
 
@@ -22,6 +23,9 @@ func (gs *GameState) GetPieceStackForConquest(player *Player) {
     }
     for _, tribe := range(player.PassiveTribes) {
         tribe.getStacksForConquestTurn(player, gs)
+    }
+    for _, power := range(player.Powers) {
+	power.GetStacksForConquest()
     }
     for _, tile := range gs.TileList {
         if tile.CheckPresence() != None {
@@ -91,11 +95,15 @@ func (gs *GameState) countPoints(player *Player) int {
 	for _, passiveTribe := range player.PassiveTribes {
 		total += passiveTribe.countExtrapoints(gs)
 	}
+    log.Println("we heeeeere")
+	for _, power := range player.Powers {
+	    log.Println(power)
+	    total += power.CountPoints(gs)
+	}
 
         for _, modifier := range(gs.ModifierPoints) {
             total = modifier(total, player)
         }
-    
 
 	return total
 }
