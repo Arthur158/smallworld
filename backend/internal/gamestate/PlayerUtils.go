@@ -29,6 +29,21 @@ func (player *Player) getTribe(stackType string) (*Tribe, error) {
     return nil, fmt.Errorf("Player did not have valid tribe for piecestack")
 }
 
+func (player *Player) StartRedeployment(gs *GameState) {
+
+	player.PieceStacks = AddPieceStacks(player.PieceStacks, player.ActiveTribe.startRedeployment(gs))
+
+	for _, tribe := range(player.PassiveTribes) {
+		player.PieceStacks = AddPieceStacks(player.PieceStacks, tribe.startRedeployment(gs))
+	}
+
+	for _, power := range(gs.Powers) {
+		if power.Owner == player && power.StartRedeployment != nil {
+			player.PieceStacks = AddPieceStacks(player.PieceStacks, power.StartRedeployment(gs))
+		}
+	}
+}
+
 func AddPieceStacks(first, second []PieceStack) []PieceStack {
     result := append([]PieceStack{}, first...) // Copy first slice
 

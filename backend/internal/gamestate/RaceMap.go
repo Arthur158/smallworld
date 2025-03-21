@@ -312,7 +312,7 @@ var RaceMap = map[Race]RaceValue {
 				}
 			}
 
-			tile.OwningTribe.clearTile(tile, gs, 1)
+			tile.OwningTribe.handleReturn(tile, gs, 1)
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
 			tile.handleAfterConquest(gs, t)
 			tile.OwningTribe = t
@@ -372,7 +372,8 @@ var RaceMap = map[Race]RaceValue {
 			} 
 
 			if tile.CheckPresence() != None {
-				tile.OwningTribe.clearTile(tile, gs, 1)
+				tile.handleAfterConquest(gs, nil)
+				tile.OwningTribe.handleReturn(tile, gs, 1)
 			}
 			tile.OwningTribe = nil
 			attacker.PieceStacks = AddPieceStacks(attacker.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})

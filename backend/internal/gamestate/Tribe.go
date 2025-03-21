@@ -2,6 +2,7 @@ package gamestate
 
 import (
 	"fmt"
+    "log"
 )
 
 type Race string;
@@ -107,6 +108,7 @@ func (t *Tribe) canTileBeAbandoned(tile *Tile) bool {
 }
 
 func (t *Tribe) handleAbandonment(tile *Tile, gs *GameState) {
+    tile.handleAfterConquest(gs, nil)
     t.clearTile(tile, gs, 0)
 
     for _, f := range(t.handleAbandonmentMap) {
@@ -252,7 +254,11 @@ func (t *Tribe) calculateRemainingAttackingStacks(expanses []PieceStack, tile *T
 	found := false
 	// Search for a matching type in expanses
 	for _, reserve := range t.Owner.PieceStacks {
+	    log.Println("option")
+	    log.Println(reserve)
 	    if expanse.Type == reserve.Type {
+		log.Println("made it")
+		log.Println(reserve)
 		found = true
 		if reserve.Amount < expanse.Amount && expanse.Type != string(t.Race) {
 		    err = fmt.Errorf("Player did not have enough of %s", expanse.Type)
@@ -345,7 +351,6 @@ func (t *Tribe) clearTile(tile *Tile, gs *GameState, cost int) {
 	    if tile.OwningTribe == t {
 		tile.OwningTribe = nil
 	    }
-	    return
 	}
     }
     for _, f := range(t.clearTileMap) {
@@ -573,7 +578,7 @@ func (t *Tribe) goIntoDecline(gs *GameState) {
     }
 
     for _, tile := range gs.TileList {
-	if tile.CheckPresence() != None && tile.OwningTribe.Race == player.ActiveTribe.Race {
+	if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
 	    tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, tile.OwningTribe.countRemovablePieces(tile))
 	}
     }
@@ -595,6 +600,7 @@ func (t *Tribe) prepareRemoval(gs *GameState) bool {
     }
     for _, tile := range gs.TileList {
 	if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race){
+	    tile.handleAfterConquest(gs, nil)
 	    t.clearTile(tile, gs, 0)
 	}
     }

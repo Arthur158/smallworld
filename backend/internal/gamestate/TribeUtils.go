@@ -2,6 +2,7 @@ package gamestate
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 )
@@ -119,3 +120,65 @@ func CreateBaseTribe() *Tribe {
     return &tribe
 }
 
+func (t *Tribe) deletePower(s string, gs *GameState) {
+    if t.countRemovableAttackingStacksMap[s] != nil {
+        t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, t.countRemovableAttackingStacksMap[s](t.Owner.PieceStacks, t.Owner))
+    }
+    if t.countRemovablePiecesMap[s] != nil {
+        for _, tile := range gs.TileList {
+            if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+                tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, t.countRemovablePieces(tile))
+            }
+        }
+    }
+    delete(t.checkPresenceMap, s)
+    delete(t.IsStackValidMap, s)
+    delete(t.countAttackMap, s)
+    delete(t.computeDiscountMap, s)
+    delete(t.computeGainAttackerMap, s)
+    delete(t.computeLossDefenderMap, s)
+    delete(t.computePawnKillMap, s)
+    delete(t.countDefenseMap, s)
+    delete(t.handleAbandonmentMap, s)
+    delete(t.handleReturnMap, s)
+    delete(t.clearTileMap, s)
+    delete(t.countNewTileStacksMap, s)
+    delete(t.canTileBeAbandonedMap, s)
+    delete(t.startRedeploymentMap, s)
+    delete(t.getStacksOutRedeploymentMap, s)
+    delete(t.handleDeploymentOutMap, s)
+    delete(t.handleDeploymentInMap, s)
+    delete(t.checkZoneAccessMap, s)
+    delete(t.checkAdjacencyMap, s)
+    delete(t.getStacksForConquestMap, s)
+    delete(t.countPointsMap, s)
+    delete(t.countRemovableAttackingStacksMap, s)
+    delete(t.countRemovablePiecesMap, s)
+    delete(t.specialConquestMap, s)
+    delete(t.specialDefenseMap, s)
+    delete(t.getStacksForConquestTurnMap, s)
+    delete(t.prepareRemovalMap, s)
+    delete(t.alternativeDeclineMap, s)
+    delete(t.canGoIntoDeclineMap, s)
+    delete(t.goIntoDeclineMap, s)
+    delete(t.giveInitialStacksMap, s)
+    delete(t.countExtrapointsMap, s)
+    delete(t.calculateRemainingAttackingStacksMap, s)
+    delete(t.postConquestMap, s)
+    delete(t.canBeRedeployedInMap, s)
+    delete(t.canBeRedeployedOutMap, s)
+    delete(t.getRedeploymentStackMap, s)
+    delete(t.canEndTurnMap, s)
+    delete(t.handleOpponentActionMap, s)
+    delete(t.handleMovementMap, s)
+    delete(t.handleEndOfGameMap, s)
+}
+
+func (t *Tribe) giveTrait(trait Trait) {
+    log.Println(trait)
+    traitValue := TraitMap[trait]
+    traitValue.Transform(t)
+    if t.giveInitialStacksMap[string(trait)] != nil {
+        t.Owner.PieceStacks = AddPieceStacks(t.Owner.PieceStacks, t.giveInitialStacksMap[string(trait)]())
+    }
+}

@@ -15,6 +15,7 @@ type GameState struct {
 	Messages []Message
 	ModifierPoints map[string]func(int, *Player) int;
 	ModifierTurnsAfter []TurninfoEntry
+	Powers map[string]*Power
 }
 
 func New(playerNames []string, mapName string, raceKeys []string, traitKeys []string) (*GameState, error) {
@@ -83,7 +84,7 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 	}
 
 
-	// power := "Mine of the Lost Dwarf"
+	// power := "Shiny Orb"
 	// dmdfields := PowerMap[power]()
 	// for _, tile := range(gs.TileList) {
 	// 	if tile.CheckPresence() != None {
@@ -94,6 +95,8 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
         if err != nil {
             return nil, fmt.Errorf("failed to create list of tribe entries", err)
         }
+
+	gs.Powers = make(map[string]*Power)
 
 	return gs, nil
 }
@@ -206,6 +209,14 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 
 	attackingTribe, err := attacker.getTribe(attackingStackType)
 	if err != nil {
+		for _, power := range(gs.Powers) {
+			if power.Owner == attacker && power.HandleConquest != nil {
+				ok, err := power.HandleConquest(gs, tile, attackingStackType)
+				if ok {
+					return err
+				}
+			}
+		}
 		return err
 	}
 
@@ -295,8 +306,7 @@ func (gs *GameState) HandleStartRedeployment(playerIndex int) error {
 	}
 
 	player := gs.Players[playerIndex]
-	newStacks := player.ActiveTribe.startRedeployment(gs)
-	player.PieceStacks = AddPieceStacks(player.PieceStacks, newStacks)
+	player.StartRedeployment(gs)
 
 	gs.TurnInfo.Phase = Redeployment
 
@@ -340,17 +350,24 @@ func (gs *GameState) HandleRedeploymentIn(playerIndex int, tileId string, stackT
 		return fmt.Errorf("The player is in the %s phase!", gs.TurnInfo.Phase)
 	}
 
-	player := gs.Players[playerIndex]
-	tribe, err := player.getTribe(stackType)
-	if err != nil {
-		return err
-	}
-
 	tile, ok := gs.TileList[tileId]
 	if !ok {
 		return fmt.Errorf("No tile with this id!")
 	}
 
+	player := gs.Players[playerIndex]
+	tribe, err := player.getTribe(stackType)
+	if err != nil {
+		for _, power := range(gs.Powers) {
+			if power.Owner == player && power.HandleRedeploymentIn != nil {
+				err2 := power.HandleRedeploymentIn(tile, stackType, gs)
+				if err2 == nil {
+					return nil
+				}
+			}
+		}
+		return err
+	}
 	
 	return tribe.handleDeploymentIn(tile, stackType, amount, gs)
 
@@ -408,13 +425,6 @@ func (gs *GameState) HandleMovement(playerIndex int, tileFromId string, tileToId
 		return fmt.Errorf("It is not this player's turn!")
 	}
 
-	player := gs.Players[playerIndex]
-
-	playerTribe, err := player.getTribe(stackType)
-	if err != nil {
-		return err
-	}
-
 	tileTo, ok := gs.TileList[tileToId]
 	if !ok {
 		return fmt.Errorf("No tile with this id!")
@@ -423,6 +433,21 @@ func (gs *GameState) HandleMovement(playerIndex int, tileFromId string, tileToId
 	tileFrom, ok := gs.TileList[tileFromId]
 	if !ok {
 		return fmt.Errorf("No tile with this id!")
+	}
+
+	player := gs.Players[playerIndex]
+
+	playerTribe, err := player.getTribe(stackType)
+	if err != nil {
+		for _, power := range(gs.Powers) {
+			if power.Owner == player && power.HandleMovement != nil {
+				err2 := power.HandleMovement(stackType, tileFrom, tileTo, gs)
+				if err2 == nil {
+					return nil
+				}
+			}
+		}
+		return err
 	}
 
 	return playerTribe.handleMovement(stackType, tileFrom, tileTo, gs)

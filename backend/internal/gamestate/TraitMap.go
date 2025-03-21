@@ -918,6 +918,7 @@ var TraitMap = map[Trait]TraitValue {
 			player.PieceStacks = newStacks
 
 			if tile.CheckPresence() != None {
+				tile.handleAfterConquest(gs, nil)
 				tile.OwningTribe.handleReturn(tile, gs, 0)
 			}
 

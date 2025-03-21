@@ -18,7 +18,6 @@ type Player struct {
 	Index int;
 	ActiveTribe *Tribe;
 	PassiveTribes []*Tribe;
-	Powers []*Power;
 	CoinPile int
 	PieceStacks []PieceStack
 	PointsEachTurn []int;
