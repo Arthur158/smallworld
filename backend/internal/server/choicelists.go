@@ -35,6 +35,11 @@ var extensions = []ExtensionList {
 		Traits: []string{"Barricade", "Catapult", "Corrupt", "Imperial", "Mercenary"},
 	},
 	{
+		Name: "A Spider's Web",
+		Races : []string{"Ice Witches", "Skags", "Slingmen"},
+		Traits: []string{"Lava", "Copycat", "Soul-touch"},
+	},
+	{
 		Name: "Royal Bonus",
 		Races : []string{"Fauns", "Shrubmen"},
 		Traits: []string{"Aquatic", "Behemoth", "Fireball"},
@@ -55,8 +60,8 @@ var extensions = []ExtensionList {
 		Traits: []string{"Hordes of", "Ransacking"},
 	},
 	{
-		Name: "A Spider's Web",
-		Races : []string{"Ice Witches", "Skags", "Slingmen"},
-		Traits: []string{"Lava", "Copycat", "Soul-touch"},
+		Name: "Powers",
+		Races : []string{"Scepter of Avarice", "Froggy's Ring", "Shiny Orb", "Sword of the Killer Rabbit", "Stinky Troll's Socks", "Flying Doormat"},
+		Traits: []string{"Diamond Fields", "Great Brass Pipe", "Fountain of Youth", "Keep on the Motherland", "Mine of the Lost Dwarf", "Stonehedge", "Altar of Souls", "Crypt of the Tomb-raider", "Wickedest Pentacle"},
 	},
 }

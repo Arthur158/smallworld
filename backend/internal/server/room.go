@@ -515,8 +515,22 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	if room.saveId == -1 {
 		raceKeys := []string{}
 		traitKeys := []string{}
+		powerKeys := []string{}
 
 		for _, entry := range(room.ExtensionChoices) {
+			if entry.ExtensionName == "Powers" {
+				for _, entry2 := range(entry.RaceChoices) {
+					if entry2.IsChecked {
+						powerKeys = append(powerKeys, entry2.Choice)
+					}
+				}
+				for _, entry2 := range(entry.TraitChoices) {
+					if entry2.IsChecked {
+						powerKeys = append(powerKeys, entry2.Choice)
+					}
+				}
+				continue
+			}
 			for _, entry2 := range(entry.RaceChoices) {
 				if entry2.IsChecked {
 					raceKeys = append(raceKeys, entry2.Choice)
@@ -529,7 +543,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 			}
 		}
 
-		newstate, err := gamestate.New(playerNames, client.Room.Map.Name, raceKeys, traitKeys)
+		newstate, err := gamestate.New(playerNames, client.Room.Map.Name, raceKeys, traitKeys, powerKeys)
 		if err != nil {
 			log.Println("error creating state")
 		}

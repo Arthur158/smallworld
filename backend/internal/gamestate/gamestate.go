@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+	"log"
 )
 
 type GameState struct {
@@ -19,7 +20,7 @@ type GameState struct {
 	Powers map[string]*Power
 }
 
-func New(playerNames []string, mapName string, raceKeys []string, traitKeys []string) (*GameState, error) {
+func New(playerNames []string, mapName string, raceKeys []string, traitKeys []string, powerKeys []string) (*GameState, error) {
 	// Create a list of initialized players
 	gs := &GameState{}
 	gs.Players = make([]*Player, len(playerNames))
@@ -59,29 +60,24 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 	gs.TileList = function(gs)
 
 	// Testing Powers
-	testingPowers := false
+	testingPowers := true
 	if testingPowers {
 		rand.Seed(time.Now().UnixNano())
-		keys := make([]string, 0, len(PowerMap))
-		for key := range PowerMap {
-			keys = append(keys, key)
-		}
-		rand.Shuffle(len(keys), func(i, j int) {
-			keys[i], keys[j] = keys[j], keys[i]
+		rand.Shuffle(len(powerKeys), func(i, j int) {
+		    powerKeys[i], powerKeys[j] = powerKeys[j], powerKeys[i]
 		})
-		for _, tile := range(gs.TileList) {
-			if tile.CheckPresence() != None && len(keys) != 0 {
-				power := PowerMap[keys[0]]()
-				if len(keys) > 1 {
-					keys = keys[1:]
-				} else {
-					keys = []string{}
-				}
-				randomBool := rand.Intn(1) < 1
-				if randomBool {
-					tile.ModifierAfterConquest[power.Name + " Spawn"] = power.Spawn
-				}
+
+		for _, tile := range gs.TileList {
+		    if tile.CheckPresence() != None && len(powerKeys) > 0 {
+			log.Println(powerKeys[0])
+			power := PowerMap[powerKeys[0]]()
+			powerKeys = powerKeys[1:]
+
+			randomBool := rand.Intn(1) < 1
+			if randomBool {
+			    tile.ModifierAfterConquest[power.Name+" Spawn"] = power.Spawn
 			}
+		    }
 		}
 	}
 
