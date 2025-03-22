@@ -15,6 +15,7 @@ type GameState struct {
 	Messages []Message
 	ModifierPoints map[string]func(int, *Player) int;
 	ModifierTurnsAfter []TurninfoEntry
+	ModifierAfterPick map[string]func(int, *TribeEntry)
 	Powers map[string]*Power
 }
 
@@ -41,6 +42,7 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 	}
 	gs.RealTurninfo = nil
 	gs.ModifierTurnsAfter = []TurninfoEntry{}
+	gs.ModifierAfterPick = make(map[string]func(int, *TribeEntry))
 
 	var err error;
 	gs.TribeList, err = createTribeList(raceKeys, traitKeys)
@@ -57,7 +59,7 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 	gs.TileList = function(gs)
 
 	// Testing Powers
-	testingPowers := true
+	testingPowers := false
 	if testingPowers {
 		rand.Seed(time.Now().UnixNano())
 		keys := make([]string, 0, len(PowerMap))
@@ -75,20 +77,20 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 				} else {
 					keys = []string{}
 				}
-				randomBool := rand.Intn(2) < 1
+				randomBool := rand.Intn(1) < 1
 				if randomBool {
-					tile.ModifierAfterConquest[power.Name] = power.Spawn
+					tile.ModifierAfterConquest[power.Name + " Spawn"] = power.Spawn
 				}
 			}
 		}
 	}
 
 
-	// power := "Shiny Orb"
+	// power := "Great Brass Pipe"
 	// dmdfields := PowerMap[power]()
 	// for _, tile := range(gs.TileList) {
 	// 	if tile.CheckPresence() != None {
-	// 		tile.ModifierAfterConquest[power] = dmdfields.Spawn
+	// 		tile.ModifierAfterConquest[power + " Spawn"] = dmdfields.Spawn
 	// 	}
 	// }
 
@@ -143,9 +145,32 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 	chooser.PieceStacks = AddPieceStacks(chooser.PieceStacks, chooser.ActiveTribe.giveInitialStacks())
 	gs.GetPieceStackForConquest(chooser)
 
+	for _, f := range(gs.ModifierAfterPick) {
+		f(entryIndex, entry)
+	}
+
 	gs.TurnInfo.Phase = TileAbandonment
 
 	return nil;
+}
+
+func (gs *GameState) HandleEntryAction(playerIndex int, entryIndex int, stackType string) error {
+	if gs.TurnInfo.PlayerIndex != playerIndex {
+		return fmt.Errorf("It is not this player's turn!")
+	}
+
+	player := gs.Players[playerIndex]
+
+	if !DoesPlayerHaveStack(stackType, player) {
+		return fmt.Errorf("The stack is invalid for this player!")
+	}
+
+	tribe, err := player.getTribe(stackType)
+	if err != nil {
+		return err
+	}
+
+	return tribe.handleEntryAction(entryIndex, stackType, gs)
 }
 
 func (gs *GameState) HandleAbandonment(playerIndex int, tileId string, stackType string) error {

@@ -176,6 +176,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
         }
     },
     "Great Brass Pipe" : func(tile *Tile, t *Tribe,  gs *GameState) {
+        log.Println(gs.Powers)
         power := gs.Powers["Great Brass Pipe"]
         if t != nil {
             power.Owner = t.Owner
@@ -210,13 +211,12 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
         trait := power.State["trait"].(string)
         if t != nil {
             power.Owner = t.Owner
-            log.Println("heeere")
-            t.giveTrait(Trait(trait))
+            t.GiveTrait(Trait(trait))
         } else {
             power.Owner = nil
         }
         if tile.OwningTribe != nil {
-            tile.OwningTribe.deletePower(trait, gs)
+            tile.OwningTribe.DeletePower(trait, gs)
         }
     },
 }

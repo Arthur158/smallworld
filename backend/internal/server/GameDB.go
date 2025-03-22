@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"backend/internal/gamestate"
+	"strings"
 )
 
 func CreateGameStatesTable() {
@@ -31,6 +32,14 @@ type GameStateCopy struct {
 	TribeList  []TribeEntryCopy
 	TileList   []TileCopy
 	TurnInfo   TurnInfoCopy
+	Powers	   []PowerCopy
+}
+
+type PowerCopy struct {
+	Name string
+	State    map[string]interface{}
+	Owner int
+	Tile string
 }
 
 type TribeEntryCopy struct {
@@ -76,6 +85,7 @@ type TribeCopy struct {
 	Trait    string                 `json:"trait"`
 	IsActive bool                   `json:"is_active"`
 	State    map[string]interface{} `json:"state"`
+	AdditionalPowers []string `json:"additional_powers"`
 }
 
 type PieceStackCopy struct {
@@ -90,27 +100,53 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 		tileIDMap[tile] = id
 	}
 
+	powers := make([]PowerCopy, len(state.Powers))
+	for _, p := range state.Powers {
+		tileId := ""
+		if p.Tile == nil {
+			tileId = ""
+		} else {
+			tileId = p.Tile.Id
+		}
+		powers = append(powers, PowerCopy{
+			Name: p.Name,
+			State: p.State,
+			Tile: tileId,
+			Owner: p.Owner.Index,
+		})
+	}
+
 	players := make([]PlayerCopy, len(state.Players))
 	for i, p := range state.Players {
 		var activeTribe TribeCopy
 		if p.ActiveTribe != nil {
+			additionalPowersCp := []string{}
+			for _, power := range(p.ActiveTribe.AdditionalPowers) {
+				additionalPowersCp = append(additionalPowersCp, string(power))
+			}
 			activeTribe = TribeCopy{
 				Owner:    p.ActiveTribe.Owner.Index,
 				Race:     string(p.ActiveTribe.Race),
 				Trait:    string(p.ActiveTribe.Trait),
 				IsActive: p.ActiveTribe.IsActive,
 				State:    p.ActiveTribe.State,
+				AdditionalPowers: additionalPowersCp,
 			}
 		}
 
 		passiveTribes := make([]TribeCopy, len(p.PassiveTribes))
 		for j, pt := range p.PassiveTribes {
+			additionalPowersCp := []string{}
+			for _, power := range(pt.AdditionalPowers) {
+				additionalPowersCp = append(additionalPowersCp, string(power))
+			}
 			passiveTribes[j] = TribeCopy{
 				Owner:    pt.Owner.Index,
 				Race:     string(pt.Race),
 				Trait:    string(pt.Trait),
 				IsActive: pt.IsActive,
 				State:    pt.State,
+				AdditionalPowers: additionalPowersCp,
 			}
 		}
 
@@ -246,19 +282,25 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 	for i, pc := range copyState.Players {
 		if pc.HasActiveTribe {
 			activeTribe, _ := gamestate.CreateTribe(gamestate.Race(pc.ActiveTribe.Race), gamestate.Trait(pc.ActiveTribe.Trait))
-			activeTribe.State = pc.ActiveTribe.State
 			activeTribe.Owner = players[i]
 			tribeMap[string(activeTribe.Race)] = activeTribe
 			players[i].ActiveTribe = activeTribe
+			for _, traitcp := range(pc.ActiveTribe.AdditionalPowers) {
+				players[i].ActiveTribe.GiveTrait(gamestate.Trait(traitcp))
+			}
+			activeTribe.State = pc.ActiveTribe.State
 		}
 
 		passiveTribes := make([]*gamestate.Tribe, len(pc.PassiveTribes))
 		for j, pt := range pc.PassiveTribes {
 			passiveTribes[j], _ = gamestate.CreateTribe(gamestate.Race(pt.Race), gamestate.Trait(pt.Trait))
-			passiveTribes[j].State = pt.State
 			passiveTribes[j].IsActive = false
 			passiveTribes[j].Owner = players[i]
 			tribeMap[string(passiveTribes[j].Race)] = passiveTribes[j]
+			for _, traitcp := range(pt.AdditionalPowers) {
+				passiveTribes[j].GiveTrait(gamestate.Trait(traitcp))
+			}
+			passiveTribes[j].State = pt.State
 		}
 		players[i].PassiveTribes = passiveTribes
 	}
@@ -308,7 +350,13 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 
 		ModifierAfterConquest := make(map[string]func(*gamestate.Tile, *gamestate.Tribe, *gamestate.GameState))
 		for _, key := range tc.ModifierAfterConquest {
-			ModifierAfterConquest[key] = gamestate.TileModifierAfterConquests[key]
+			if strings.HasSuffix(key, " Spawn") {
+				powerName := strings.TrimSuffix(key, " Spawn")
+				power := gamestate.PowerMap[powerName]()
+				ModifierAfterConquest[key] = power.Spawn
+			} else {
+				ModifierAfterConquest[key] = gamestate.TileModifierAfterConquests[key]
+			}
 		}
 
 		ModifierSpecialDefenses := make(map[string]func(*gamestate.Tile, *gamestate.GameState, *gamestate.Tribe, string) (bool, error))
@@ -330,6 +378,20 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			State:		 tc.State,
 		}
 		tileList[tc.Id] = tile
+	}
+
+	powerList := make(map[string]*gamestate.Power, len(copyState.Powers))
+	for _, pc := range(copyState.Powers) {
+		power := gamestate.PowerMap[pc.Name]()
+		power.Name = pc.Name
+		power.Owner = playerMap[pc.Owner]
+		power.State = pc.State
+		if pc.Tile == "" {
+			power.Tile = nil
+		} else {
+			power.Tile = tileList[pc.Tile]
+		}
+		powerList[pc.Name] = power
 	}
 
 	lostTribe := gamestate.CreateBaseTribe()
@@ -364,6 +426,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		Players:   players,
 		TribeList: tribeList,
 		TileList:  tileList,
+		Powers: powerList,
 		TurnInfo:  turnInfo,
 	}
 }

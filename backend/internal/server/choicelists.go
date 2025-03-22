@@ -26,8 +26,8 @@ var extensions = []ExtensionList {
 	},
 	{
 		Name: "Sky Islands",
-		Races : []string{"Drakons", "Khans", "Scarecrows", "Scavengers", "Wendigos", "Escargots"},
-		Traits: []string{"Goldsmith", "Haggling", "Zeppelined", "Gunner"},
+		Races : []string{"Drakons", "Khans", "Scarecrows", "Scavengers", "Wendigos", "Escargots", "Storm Giants"},
+		Traits: []string{"Goldsmith", "Haggling", "Zeppelined", "Gunner", "Racketeering"},
 	},
 	{
 		Name: "Be Not Afraid",
@@ -56,7 +56,7 @@ var extensions = []ExtensionList {
 	},
 	{
 		Name: "A Spider's Web",
-		Races : []string{"Ice Witches", "Skags"},
-		Traits: []string{"Lava"},
+		Races : []string{"Ice Witches", "Skags", "Slingmen"},
+		Traits: []string{"Lava", "Copycat", "Soul-touch"},
 	},
 }

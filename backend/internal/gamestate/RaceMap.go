@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 	"log"
+	"strings"
 )
 
 type RaceValue struct {
@@ -312,9 +313,9 @@ var RaceMap = map[Race]RaceValue {
 				}
 			}
 
+			tile.handleAfterConquest(gs, t)
 			tile.OwningTribe.handleReturn(tile, gs, 1)
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
-			tile.handleAfterConquest(gs, t)
 			tile.OwningTribe = t
 			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Staff", Amount: 1}})
 			return true, nil
@@ -371,8 +372,8 @@ var RaceMap = map[Race]RaceValue {
 				}
 			} 
 
+			tile.handleAfterConquest(gs, nil)
 			if tile.CheckPresence() != None {
-				tile.handleAfterConquest(gs, nil)
 				tile.OwningTribe.handleReturn(tile, gs, 1)
 			}
 			tile.OwningTribe = nil
@@ -425,6 +426,14 @@ var RaceMap = map[Race]RaceValue {
 		}, Count: 12},
 	"Kobolds": {Transform: func(t *Tribe) {
 		t.Minimum = 2
+		t.calculateRemainingAttackingStacksMap["Berserk"] = func(ps []PieceStack, diceUsed bool, ok bool, err error, tile *Tile, gs *GameState) ([]PieceStack, bool, bool, error) {
+			for _, stack := range(ps) {
+				if stack.Type == string(t.Race) && stack.Amount < t.Minimum {
+					return ps, diceUsed, false, fmt.Errorf("Kobolds need at least 2 stacks!")
+				}
+			}
+			return ps, diceUsed, ok, err
+		}
 		}, Count: 11},
 	"Leprechauns": {Transform: func(t *Tribe) {
 		t.giveInitialStacksMap["Leprechauns"] = func() []PieceStack {
@@ -860,6 +869,14 @@ var RaceMap = map[Race]RaceValue {
 				}
 			}
 		}
+		t.countRemovableAttackingStacksMap["Ice Witches"] = func(oldStacks []PieceStack, p *Player) []PieceStack {
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Winter" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
 		}, Count: 5},
 	"Gnomes": {Transform: func(t *Tribe) {
 		t.specialDefenseMap["Gnomes"] = func(gs *GameState, tile *Tile, attackingTribe *Tribe, attackingStackType string) (bool, error) {
@@ -930,6 +947,7 @@ var RaceMap = map[Race]RaceValue {
 		}
 		}, Count: 6},
 	"Escargots": {Transform: func(t *Tribe) {
+		t.State["pointsfromstart"] = 0
 		t.countPointsMap["Escargots"] = func(tile *Tile) int {
 			if t.IsActive {
 				return -1
@@ -952,8 +970,17 @@ var RaceMap = map[Race]RaceValue {
 				}
 
 				gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("The escargot just made %d Points for the start of their turn!", moneyCount)})
-				p.CoinPile += moneyCount
+				t.State["pointsfromstart"] = moneyCount
 			}
+		}
+		t.countExtrapointsMap["Escargots"] = func(gs *GameState) int {
+			if !t.IsActive {
+				return 0
+			}
+			points := t.State["pointsfromstart"].(int)
+			t.State["pointsfromstart"] = 0
+
+			return points
 		}
 		}, Count: 12},
 	"Skags": {Transform: func(t *Tribe) {
@@ -1089,4 +1116,96 @@ var RaceMap = map[Race]RaceValue {
 			return nil
 		}
 		}, Count: 6},
+	"Slingmen": {Transform: func(t *Tribe) {
+		t.State["conqueredfromaway"] = false
+		t.checkAdjacencyMap["Slingmen"] = func(tile *Tile, gs *GameState, err error) error {
+			if err == nil {
+				return nil
+			}
+			for _, tile2 := range(tile.AdjacentTiles) {
+				for _, tile3 := range(tile2.AdjacentTiles) {
+					found := false
+					for _, tileComp := range(tile.AdjacentTiles) {
+						if tileComp == tile3 {
+							found = true
+						}
+					}
+					if !found && tile3.CheckPresence() != None && tile3.OwningTribe.checkPresence(tile3, t.Race) {
+						t.State["conqueredfromaway"] = true
+						return nil
+					}
+				}
+			}
+			return err
+		}
+		t.postConquestMap["Slingmen"] = func(tile *Tile, gs *GameState) {
+			if t.State["conqueredfromaway"] == true {
+				t.State["conqueredfromaway"] = false
+				t.Owner.CoinPile += 1
+			}
+		}
+	},
+	Count: 5},
+	"Storm Giants": {Transform: func(t *Tribe) {
+		t.IsStackValidMap["Storm Giants"] = func(s string) bool {
+			return s == "Storm"
+		}
+		t.specialConquestMap["Storm Giants"] = func(gs *GameState, tile *Tile, stackType string) (bool, error) {
+			if stackType != "Storm" {
+				return false, nil
+			}
+
+			if tile.Biome != Mountain {
+				return true, fmt.Errorf("Storm can only be used on Mountain!")
+			}
+
+			_, mg, ld, _, _ := t.countAttack(tile, 0, string(t.Race))
+			t.Owner.CoinPile += mg
+			tile.handleAfterConquest(gs, t)
+			if tile.CheckPresence() != None {
+				_, gainDef, lossAttack, err := tile.OwningTribe.countDefense(tile, t.Owner, gs)
+				tile.OwningTribe.Owner.CoinPile += gainDef - ld
+				t.Owner.CoinPile += lossAttack
+				if err != nil {
+					return true, err
+				}
+				tile.OwningTribe.handleReturn(tile, gs, 1)
+			}
+			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}})
+			tile.OwningTribe = t
+			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Storm", Amount: 1}, {Type: string(t.Race), Amount: 1}})
+			return true, nil
+		}
+		t.checkAdjacencyMap["Storm Giants"] = func(t *Tile, gs *GameState, err error) error {
+			if err == nil {
+				return nil
+			}
+			if strings.HasSuffix(t.Id, "i") {
+				return nil
+			}
+			return err
+		}
+		t.getStacksForConquestTurnMap["Storm Giants"] = func(player *Player, gs *GameState) {
+			if !t.IsActive {
+				return
+			}
+			newstacks := []PieceStack{}
+			for _, stack := range(player.PieceStacks) {
+				if stack.Type != "Power" {
+					newstacks = append(newstacks, stack)
+				}
+			}
+			newstacks = append(newstacks, PieceStack{Type: "Storm", Amount: 2})
+			player.PieceStacks = newstacks
+		}
+		t.countRemovableAttackingStacksMap["Storm Giants"] = func(oldStacks []PieceStack, p *Player) []PieceStack {
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Storm" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+	},
+	Count: 6},
 }

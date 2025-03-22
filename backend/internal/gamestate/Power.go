@@ -26,7 +26,7 @@ var PowerMap = map[string]func()*Power {
             gs.Powers["Scepter of Avarice"] = power
             tribe.Owner.PieceStacks = append(tribe.Owner.PieceStacks, PieceStack{Type: "Scepter of Avarice", Amount: 1})
             power.Owner = tribe.Owner
-            delete(t.ModifierAfterConquest, "Scepter of Avarice")
+            delete(t.ModifierAfterConquest, "Scepter of Avarice Spawn")
         }
         power.GetStacksForConquest = func(gs *GameState) {
             for _, tile := range(gs.TileList) {
@@ -57,6 +57,7 @@ var PowerMap = map[string]func()*Power {
                 Name: "Froggy's Ring",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Froggy's Ring Spawn")
             gs.Powers["Froggy's Ring"] = power
             tribe.Owner.PieceStacks = append(tribe.Owner.PieceStacks, PieceStack{Type: "Froggy's Ring", Amount: 1})
             power.Owner = tribe.Owner
@@ -108,6 +109,7 @@ var PowerMap = map[string]func()*Power {
                 Name: "Shiny Orb",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Shiny Orb Spawn")
             gs.Powers["Shiny Orb"] = power
             tribe.Owner.PieceStacks = append(tribe.Owner.PieceStacks, PieceStack{Type: "Shiny Orb", Amount: 1})
             power.Owner = tribe.Owner
@@ -179,6 +181,7 @@ var PowerMap = map[string]func()*Power {
                 Name: "Sword of the Killer Rabbit",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Sword of the Killer Rabbit Spawn")
             gs.Powers["Sword of the Killer Rabbit"] = power
             tribe.Owner.PieceStacks = append(tribe.Owner.PieceStacks, PieceStack{Type: "Sword of the Killer Rabbit", Amount: 1})
             power.Owner = tribe.Owner
@@ -293,6 +296,7 @@ var PowerMap = map[string]func()*Power {
                 Name: "Stinky Troll's Socks",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Stinky Troll's Socks Spawn")
             gs.Powers["Stinky Troll's Socks"] = power
             tribe.Owner.PieceStacks = append(tribe.Owner.PieceStacks, PieceStack{Type: "Stinky Troll's Socks", Amount: 1})
             power.Owner = tribe.Owner
@@ -401,6 +405,7 @@ var PowerMap = map[string]func()*Power {
                 Name: "Flying Doormat",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Flying Doormat Spawn")
             gs.Powers["Flying Doormat"] = power
             tribe.Owner.PieceStacks = append(tribe.Owner.PieceStacks, PieceStack{Type: "Flying Doormat", Amount: 1})
             power.Owner = tribe.Owner
@@ -509,6 +514,7 @@ var PowerMap = map[string]func()*Power {
                 Name: "Diamond Fields",
         }
         diamondsFields.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Diamond Fields Spawn")
             gs.Powers["Diamond Fields"] = diamondsFields
             diamondsFields.Tile = t
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Diamond Fields", Amount: 1})
@@ -531,19 +537,14 @@ var PowerMap = map[string]func()*Power {
                 Name: "Great Brass Pipe",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Great Brass Pipe Spawn")
             gs.Powers["Great Brass Pipe"] = power
             power.Tile = t
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Great Brass Pipe", Amount: 1})
             t.ModifierAfterConquest["Great Brass Pipe"] = TileModifierAfterConquests["Great Brass Pipe"]
-            power.Owner = tribe.Owner
-            tribe.checkAdjacencyMap["Great Brass Pipe"] = func(t *Tile, gs *GameState, err error) error {
-                if err == nil {
-                    return nil
-                }
-                if t.Biome == power.Tile.Biome {
-                    return nil
-                }
-                return err
+            if tribe != nil {
+                power.Owner = tribe.Owner
+                tribe.GiveTrait(Trait("Great Brass Pipe"))
             }
         }
         return power
@@ -553,11 +554,14 @@ var PowerMap = map[string]func()*Power {
                 Name: "Fountain of Youth",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Fountain of Youth Spawn")
             gs.Powers["Fountain of Youth"] = power
             power.Tile = t
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Fountain of Youth", Amount: 1})
             t.ModifierAfterConquest["Fountain of Youth"] = TileModifierAfterConquests["Fountain of Youth"]
-            power.Owner = tribe.Owner
+            if tribe != nil {
+                power.Owner = tribe.Owner
+            }
         }
         power.GetStacksForConquest = func(*GameState) {
             owner := power.Tile.OwningTribe.Owner
@@ -572,13 +576,16 @@ var PowerMap = map[string]func()*Power {
                 Name: "Keep on the Motherland",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Keep on the Motherland Spawn")
             gs.Powers["Keep on the Motherland"] = power
             power.Tile = t
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Keep on the Motherland", Amount: 1})
             delete(t.ModifierAfterConquest, "Keep on the Motherland")
             t.ModifierPoints["Keep on the Motherland"] = TileModifierPoints["Keep on the Motherland"]
             t.ModifierDefenses["Keep on the Motherland"] = TileModifierDefenses["Keep on the Motherland"]
-            power.Owner = tribe.Owner
+            if tribe != nil {
+                power.Owner = tribe.Owner
+            }
         }
         return power
     },
@@ -587,12 +594,15 @@ var PowerMap = map[string]func()*Power {
                 Name: "Mine of the Lost Dwarf",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Mine of the Lost Dwarf Spawn")
             gs.Powers["Mine of the Lost Dwarf"] = power
             power.Tile = t
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Mine of the Lost Dwarf", Amount: 1})
             delete(t.ModifierAfterConquest, "Mine of the Lost Dwarf")
             t.ModifierPoints["Mine of the Lost Dwarf"] = TileModifierPoints["Mine of the Lost Dwarf"]
-            power.Owner = tribe.Owner
+            if tribe != nil {
+                power.Owner = tribe.Owner
+            }
         }
         return power
     },
@@ -602,6 +612,7 @@ var PowerMap = map[string]func()*Power {
                 State: make(map[string]interface{}),
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Stonehedge Spawn")
             gs.Powers["Stonehedge"] = power
             power.Tile = t
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Stonehedge", Amount: 1})
@@ -611,7 +622,7 @@ var PowerMap = map[string]func()*Power {
             trait := gs.TribeList[index].Trait
             if tribe != nil {
                 power.Owner = tribe.Owner
-                tribe.giveTrait(trait)
+                tribe.GiveTrait(trait)
             }
             power.State["trait"] = string(trait)
             gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Stonehedge spawned with the power: %s!", trait)})
@@ -625,6 +636,7 @@ var PowerMap = map[string]func()*Power {
                 Name: "Altar of Souls",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Altar of Souls Spawn")
             gs.Powers["Altar of Souls"] = power
             power.Tile = t
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Altar of Souls", Amount: 1})
@@ -664,6 +676,7 @@ var PowerMap = map[string]func()*Power {
                 Name: "Crypt of the Tomb-raider",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Crypt of the Tomb-raider Spawn")
             gs.Powers["Crypt of the Tomb-raider"] = power
             power.Tile = t
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Crypt of the Tomb-raider", Amount: 1})
@@ -705,6 +718,7 @@ var PowerMap = map[string]func()*Power {
                 State: make(map[string]interface{}),
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
+            delete(t.ModifierAfterConquest, "Wickedest Pentacle Spawn")
             gs.Powers["Wickedest Pentacle"] = power
             power.Tile = t
             t.PieceStacks = AddPieceStacks(t.PieceStacks, []PieceStack{{Type: "Wickedest Pentacle", Amount: 1}, {Type: "Balrog", Amount: 1}})

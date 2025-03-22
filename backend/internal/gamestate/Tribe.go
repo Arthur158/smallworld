@@ -2,7 +2,6 @@ package gamestate
 
 import (
 	"fmt"
-    "log"
 )
 
 type Race string;
@@ -14,6 +13,7 @@ type Tribe struct {
 	Trait Trait;
 	IsActive bool;
 	State map[string]interface{};
+	AdditionalPowers []Trait
 	Minimum int;
 
 	giveInitialStacksMap map[string]func() []PieceStack;
@@ -61,6 +61,7 @@ type Tribe struct {
 
 	// misc
 	handleOpponentActionMap map[string]func(string, *Player, *GameState) error;
+	handleEntryActionMap map[string]func(int, string, *GameState) error;
 
 	// end of turn
 	canEndTurnMap map[string]func(*GameState) error;
@@ -254,11 +255,7 @@ func (t *Tribe) calculateRemainingAttackingStacks(expanses []PieceStack, tile *T
 	found := false
 	// Search for a matching type in expanses
 	for _, reserve := range t.Owner.PieceStacks {
-	    log.Println("option")
-	    log.Println(reserve)
 	    if expanse.Type == reserve.Type {
-		log.Println("made it")
-		log.Println(reserve)
 		found = true
 		if reserve.Amount < expanse.Amount && expanse.Type != string(t.Race) {
 		    err = fmt.Errorf("Player did not have enough of %s", expanse.Type)
@@ -498,6 +495,17 @@ func (t *Tribe) handleOpponentAction(s string, p *Player, gs *GameState) error {
     }
     return fmt.Errorf("Invalid opponent action!")
 }
+
+func (t *Tribe) handleEntryAction(i int, s string, gs *GameState) error {
+    for _, f := range(t.handleEntryActionMap) {
+	err := f(i, s, gs)
+	if err == nil {
+	    return nil
+	}
+    }
+    return fmt.Errorf("Invalid opponent action!")
+}
+
 func (t *Tribe) canEndTurn(gs *GameState) error {
     for _, f := range(t.canEndTurnMap) {
 	err := f(gs)

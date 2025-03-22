@@ -2,7 +2,6 @@ package gamestate
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 )
@@ -59,6 +58,7 @@ func CreateBaseTribe() *Tribe {
         IsActive: true,
         Minimum: 1,
         State: make(map[string]interface{}),
+        AdditionalPowers: []Trait{},
     }
 
     tribe.checkPresenceMap = make(map[string]func(*Tile, Race) bool)
@@ -114,20 +114,26 @@ func CreateBaseTribe() *Tribe {
     tribe.getRedeploymentStackMap = make(map[string]func(string, []PieceStack) []PieceStack)
     tribe.canEndTurnMap = make(map[string]func(*GameState) error)
     tribe.handleOpponentActionMap = make(map[string]func(string, *Player, *GameState) error)
+    tribe.handleEntryActionMap = make(map[string]func(int, string, *GameState) error)
     tribe.handleMovementMap = make(map[string]func(string, *Tile, *Tile, *GameState) error)
     tribe.handleEndOfGameMap = make(map[string]func(*GameState))
 
     return &tribe
 }
 
-func (t *Tribe) deletePower(s string, gs *GameState) {
+func (t *Tribe) DeletePower(s string, gs *GameState) {
+    for i, trait := range(t.AdditionalPowers) {
+        if trait == Trait(s) {
+            t.AdditionalPowers = append(t.AdditionalPowers[:i], t.AdditionalPowers[i+1:]...)
+        }
+    }
     if t.countRemovableAttackingStacksMap[s] != nil {
         t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, t.countRemovableAttackingStacksMap[s](t.Owner.PieceStacks, t.Owner))
     }
     if t.countRemovablePiecesMap[s] != nil {
         for _, tile := range gs.TileList {
             if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
-                tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, t.countRemovablePieces(tile))
+                tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, t.countRemovablePiecesMap[s]([]PieceStack{}, tile))
             }
         }
     }
@@ -174,8 +180,8 @@ func (t *Tribe) deletePower(s string, gs *GameState) {
     delete(t.handleEndOfGameMap, s)
 }
 
-func (t *Tribe) giveTrait(trait Trait) {
-    log.Println(trait)
+func (t *Tribe) GiveTrait(trait Trait) {
+    t.AdditionalPowers = append(t.AdditionalPowers, trait)
     traitValue := TraitMap[trait]
     traitValue.Transform(t)
     if t.giveInitialStacksMap[string(trait)] != nil {

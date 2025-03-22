@@ -38,6 +38,37 @@ func (client *Client) handleTribePick (msg messages.Message) {
 	}
 }
 
+func (client *Client) handleEntryAction (msg messages.Message) {
+	var pickData struct {
+		PickIndex int `json:"pickIndex"`
+		Stack string `json:"stack"`
+	}
+	if err := json.Unmarshal([]byte(msg.Data), &pickData); err != nil {
+		client.sendError("Invalid choice data")
+		return
+	}
+
+	if client.Room == nil {
+		client.sendError("Client not in a room")
+		return
+	}
+	if !client.Room.InProgress {
+		client.sendError("Client's room's game has not started yet")
+		return
+	}
+
+	if client.IsSpectator {
+		client.sendError("Client's a spectator")
+		return
+	}
+
+	if err := client.Room.Gamestate.HandleEntryAction(client.Index, pickData.PickIndex, pickData.Stack); err != nil {
+		client.sendError(err.Error())
+	} else {
+		client.Room.sendBigUpdate()
+	}
+}
+
 func (client *Client) handleAbandonment (msg messages.Message) {
 	var abandonmentData struct {
 		TileID string `json:"tileId"`

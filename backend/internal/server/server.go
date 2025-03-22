@@ -1,12 +1,14 @@
 package server
 
 import (
+	"backend/internal/gamestate"
+	"backend/internal/messages"
 	"database/sql"
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
-	"encoding/json"
-	"backend/internal/messages"
+
 	"github.com/gorilla/websocket"
 	_ "modernc.org/sqlite" // SQLite driver
 )
@@ -55,6 +57,8 @@ func Start() {
 	// Create users table
 	CreateUsersTable()
 	CreateGameStatesTable()
+
+	gamestate.InitTraitMap()
 
 	// Start WebSocket server
 	http.HandleFunc("/ws", handleWebSocket)

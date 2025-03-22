@@ -6,9 +6,15 @@ import { sendMessageToBackend } from '../../services/backendService';
 
 export default function TribeList() {
   const tribes = useSelector((state: RootState) => state.application.availableTribes);
+  const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
+  const fromBank = useSelector((state: RootState) => state.application.isStackFromBank);
 
   const handleSelectTribe = (i: number) => {
-    sendMessageToBackend('tribepick', { pickIndex: i });
+    if (selectedStack != null && fromBank) {
+      sendMessageToBackend('entryaction', {pickIndex: i, stack: selectedStack})
+    } else {
+      sendMessageToBackend('tribepick', { pickIndex: i });
+    }
   };
 
   const getTraitImagePath = (trait?: string) =>

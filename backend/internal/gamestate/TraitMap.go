@@ -80,7 +80,10 @@ var TraitMap = map[Trait]TraitValue {
 		}
 		}, Count: 4},
 	"Wealthy": {Transform: func(t *Tribe) {
-		t.State["hasreceivedalready"] = false
+		_, ok := t.State["hasreceivedalready"].(bool)
+		if !ok {
+			t.State["hasreceivedalready"] = false
+		}
 		t.countExtrapointsMap["Wealthy"] = func(gs *GameState) int {
 			if hasReceivedAlready, ok := t.State["hasreceivedalready"].(bool); ok && !hasReceivedAlready {
 				t.State["hasreceivedalready"] = true
@@ -1399,7 +1402,6 @@ var TraitMap = map[Trait]TraitValue {
 								},
 								actionBefore: func(gs *GameState) {},
 							})
-
 						}
 					}
 				}
@@ -1479,4 +1481,150 @@ var TraitMap = map[Trait]TraitValue {
 			}
 		}
 		}, Count: 5},
+	"Great Brass Pipe": {Transform: func(t *Tribe) {
+		t.checkAdjacencyMap["Great Brass Pipe"] = func(tile *Tile, gs *GameState, err error) error {
+                if err == nil {
+                    return nil
+                }
+		var biome Biome
+		OuterLoop:
+		for _, tile2 := range(gs.TileList) {
+			if tile2.CheckPresence() != None && tile2.OwningTribe.checkPresence(tile2, t.Race) {
+				for _, stack := range(tile2.PieceStacks) {
+					if stack.Type == "Great Brass Pipe" {
+						biome = tile2.Biome
+						break OuterLoop
+					}	
+				}
+			}
+		}
+                if tile.Biome == biome {
+                    return nil
+                }
+                return err
+		}
+	}, Count: 0},
+	"Racketeering": {Transform: func(t *Tribe) {
+		t.getStacksForConquestTurnMap["Racketeering"] = func(p *Player, gs *GameState) {
+			if !t.IsActive {
+				return
+			}
+			gs.ModifierAfterPick["Racketeering"] = func(i int, te *TribeEntry) {
+				if gs.TurnInfo.PlayerIndex != t.Owner.Index {
+					t.Owner.CoinPile += i
+				}
+			}
+		}
+		t.goIntoDeclineMap["Racketeering"] = func(gs *GameState) {
+			gs.ModifierAfterPick["Racketeering"] = func(i int, te *TribeEntry) {
+				if gs.TurnInfo.PlayerIndex == t.Owner.Index {
+					t.Owner.CoinPile += i
+				}
+			}
+		}
+		}, Count: 5},
+}
+
+func InitTraitMap() {
+	TraitMap["Copycat"] = TraitValue{Transform: func(t *Tribe) {
+		t.State["additionalpower"] = ""
+		t.handleEntryActionMap["Copycat"] = func(i int, s string, gs *GameState) error {
+			if s != "Mirror" {
+				return fmt.Errorf("Not a mirror")
+			}
+			trait := gs.TribeList[i].Trait
+			t.State["additionalpower"] = string(trait)
+			t.GiveTrait(trait)
+			t.Owner.PieceStacks, _ = SubtractPieceStacks(t.Owner.PieceStacks, []PieceStack{{Type: "Mirror", Amount: 1}})
+			gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("The copycat %s chose to mirror the trait %s!", t.Race, trait)})
+			gs.ModifierAfterPick["Copycat"] = func(i int, te *TribeEntry) {
+				additionalPower := t.State["additionalpower"].(string)
+				if string(te.Trait) == additionalPower {
+					t.State["additionalpower"] = ""
+					t.DeletePower(additionalPower, gs)
+					t.Owner.PieceStacks = append(t.Owner.PieceStacks, PieceStack{Type: "Mirror", Amount: 1})
+					gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("The copycat %s had to stop mirroring the trait %s!", t.Race, trait)})
+				}
+			}
+			return nil
+		}
+		t.IsStackValidMap["Copycat"] = func(s string) bool {
+			return s == "Mirror"
+		}
+		t.giveInitialStacksMap["Copycat"] = func() []PieceStack {
+			return []PieceStack{{Type: "Mirror", Amount: 1}} 
+		}
+		t.getStacksForConquestTurnMap["Copycat"] = func(p *Player, gs *GameState) {
+			additionalPower := t.State["additionalpower"].(string)
+			if additionalPower != "" {
+				t.State["additionalpower"] = ""
+				t.DeletePower(additionalPower, gs)
+				t.Owner.PieceStacks = append(t.Owner.PieceStacks, PieceStack{Type: "Mirror", Amount: 1})
+			}
+		}
+		t.countRemovableAttackingStacksMap["Copycat"] = func(oldStacks []PieceStack, p *Player) []PieceStack {
+			for _, stack := range(p.PieceStacks) {
+				if stack.Type == "Mirror" {
+					oldStacks = append(oldStacks, stack)
+				}
+			}
+			return oldStacks
+		}
+	}, Count: 3}
+	TraitMap["Soul-touch"] = TraitValue{Transform: func(t *Tribe) {
+		t.alternativeDeclineMap["Soul-touch"] = func(gs *GameState) bool {
+			player := t.Owner
+
+
+			for _, tile := range gs.TileList {
+				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
+					tile.PieceStacks, _ = SubtractPieceStacks(tile.PieceStacks, tile.OwningTribe.countRemovablePieces(tile))
+				}
+			}
+
+			player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, player.ActiveTribe.countRemovableAttackingStacks(player))
+			t.IsActive = false
+
+			if (len(player.PassiveTribes) > 0) {
+				player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
+				player.ActiveTribe = player.PassiveTribes[len(player.PassiveTribes) - 2]
+				player.PassiveTribes = append(player.PassiveTribes[:len(player.PassiveTribes) - 2], player.PassiveTribes[len(player.PassiveTribes) - 1])
+				player.ActiveTribe.IsActive = true
+				tribe := player.ActiveTribe
+				total := 0
+				for _, tile := range gs.TileList {
+					if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, tribe.Race) {
+						for _, stack := range tile.PieceStacks {
+							if stack.Type == string(tribe.Race) {
+								total += stack.Amount
+							}
+						}
+					}
+				}
+				race := RaceMap[tribe.Race]
+				trait := TraitMap[tribe.Trait]
+				tribe.Owner.PieceStacks = AddPieceStacks(tribe.Owner.PieceStacks, []PieceStack{{Type: string(tribe.Race), Amount: race.Count + trait.Count - total}})
+				tribe.Owner.PieceStacks = AddPieceStacks(tribe.Owner.PieceStacks, tribe.Owner.ActiveTribe.giveInitialStacks())
+				gs.GetPieceStackForConquest(tribe.Owner)
+				gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
+					player: gs.TurnInfo.PlayerIndex,
+					TurnInfo: &TurnInfo{
+						TurnIndex: gs.TurnInfo.TurnIndex,
+						PlayerIndex: t.Owner.Index,
+						Phase: TileAbandonment,
+					},
+					actionBefore: func(gs *GameState) {},
+				})
+			} else {
+				player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
+				player.ActiveTribe = nil
+			}
+
+
+			for _, f := range(t.goIntoDeclineMap) {
+				f(gs)
+			}
+			return true
+		}
+	}, Count: 4}
 }

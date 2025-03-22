@@ -56,6 +56,8 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 	// -------------------------------------------------------------------------
 	case "tribepick":
 		client.handleTribePick(msg)
+	case "entryaction":
+		client.handleEntryAction(msg)
 	case "abandonment":
 		client.handleAbandonment(msg)
 	case "Conquest":
