@@ -458,7 +458,7 @@ func Map4(gs *GameState) map[string]*Tile {
     }
 
     tileMap["10"].AdjacentTiles = []*Tile{
-        tileMap["3"], tileMap["4"], tileMap["9"], 
+        tileMap["3"], tileMap["4"], tileMap["9"], tileMap["12"],
     }
 
     tileMap["11"].AdjacentTiles = []*Tile{
@@ -488,7 +488,7 @@ func Map4(gs *GameState) map[string]*Tile {
     }
 
     tileMap["17"].AdjacentTiles = []*Tile{
-        tileMap["7"], tileMap["8"], tileMap["24"], tileMap["23"],
+        tileMap["7"], tileMap["8"], tileMap["24"], tileMap["23"], tileMap["18"],
     }
 
     tileMap["18"].AdjacentTiles = []*Tile{

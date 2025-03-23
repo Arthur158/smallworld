@@ -1,7 +1,6 @@
 package gamestate;
 
 import "fmt"
-import "log"
 
 var TileModifierPoints = map[string]func(*Tile) int {
     "Winter" : func(tile *Tile) int {
@@ -176,7 +175,6 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
         }
     },
     "Great Brass Pipe" : func(tile *Tile, t *Tribe,  gs *GameState) {
-        log.Println(gs.Powers)
         power := gs.Powers["Great Brass Pipe"]
         if t != nil {
             power.Owner = t.Owner

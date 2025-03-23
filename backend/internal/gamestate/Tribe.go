@@ -190,14 +190,16 @@ func (t *Tribe) countAttack(tile *Tile, cost int, stackType string) ([]PieceStac
 	return []PieceStack{{Type: string(t.Race), Amount: max(t.Minimum, cost - t.computeDiscount( tile))}}, t.computeGainAttacker(tile), t.computeLossDefender(tile), t.computePawnKill(tile), nil
     }
 
+    err := fmt.Errorf("The piecestack was not recognized")
     for _, f := range(t.countAttackMap) {
-	stacks, a, b, c, err := f(tile, cost, stackType)
+	stacks, a, b, c, err2 := f(tile, cost, stackType)
+	err = err2
 	if err == nil {
 	    return stacks, a, b, c, nil
 	}
     }
 
-    return []PieceStack{}, 0, 0, 0, fmt.Errorf("The piecestack was not recognized")
+    return []PieceStack{}, 0, 0, 0, err
 }
 
 func (t *Tribe) computeDiscount(tile *Tile) int {

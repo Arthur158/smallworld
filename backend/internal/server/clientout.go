@@ -48,7 +48,6 @@ func readMessages(client *Client) {
 // -----------------------------------------------------------------------------
 
 func (client *Client) handleClientMessage(msg messages.Message) {
-	log.Println(client)
 	switch msg.Type {
 
 	// -------------------------------------------------------------------------
@@ -313,7 +312,6 @@ func (client *Client) handleClientMessage(msg messages.Message) {
 		if client.DisplayRoom == nil {
 			client.sendError("client not in a display room!")
 		}
-		log.Println(data.Name)
 		client.DisplayRoom.LoadMap(client, data.Name)
 		client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": ` + strconv.FormatInt(-1, 10) + `}`)))
 	case "leavedisplayroom":

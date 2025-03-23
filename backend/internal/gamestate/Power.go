@@ -35,6 +35,7 @@ var PowerMap = map[string]func()*Power {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
                         delete(tile.ModifierAfterConquest, "Scepter of Avarice")
+                        power.Tile = nil
                     }
                 }
             }
@@ -70,6 +71,7 @@ var PowerMap = map[string]func()*Power {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
                         delete(tile.ModifierAfterConquest, "Froggy's Ring")
+                        power.Tile = nil
                     }
                 }
             }
@@ -121,6 +123,9 @@ var PowerMap = map[string]func()*Power {
                     if stack.Type == "Shiny Orb" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
+                        delete(tile.ModifierAfterConquest, "Shiny Orb")
+                        power.Tile = nil
+
                     }
                 }
             }
@@ -193,6 +198,9 @@ var PowerMap = map[string]func()*Power {
                     if stack.Type == "Sword of the Killer Rabbit" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
+                        delete(tile.ModifierAfterConquest, "Sword of the Killer Rabbit")
+                        power.Tile = nil
+
                     }
                 }
             }
@@ -308,6 +316,8 @@ var PowerMap = map[string]func()*Power {
                     if stack.Type == "Stinky Troll's Socks" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
+                        delete(tile.ModifierAfterConquest, "Stinky Troll's Socks")
+                        power.Tile = nil
                     }
                 }
             }
@@ -417,6 +427,8 @@ var PowerMap = map[string]func()*Power {
                     if stack.Type == "Flying Doormat" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
+                        delete(tile.ModifierAfterConquest, "Flying Doormat")
+                        power.Tile = nil
                     }
                 }
             }
@@ -693,6 +705,12 @@ var PowerMap = map[string]func()*Power {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         delete(tile.ModifierDefenses, "Tomb-raider")
                     }
+                }
+            }
+            for i, stack := range(power.Owner.PieceStacks) {
+                if stack.Type == "Tomb-raider" {
+                    power.Owner.PieceStacks = append(power.Owner.PieceStacks[:i], power.Owner.PieceStacks[i+1:]...)
+                    break
                 }
             }
         }

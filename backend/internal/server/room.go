@@ -78,8 +78,6 @@ func createRoom(client *Client, roomName, username string) {
 	client.sendMessage("roomid", json.RawMessage([]byte(`{"roomid": "` + room.ID + `"}`)))
 
 	log.Println("creating room ...")
-	log.Println(room.Players)
-	log.Println(client)
 
 	room.sendMapChoices()
 	room.sendChoices()
@@ -130,7 +128,6 @@ func (room *Room) sendChoices() {
 			break
 		}
 	}
-	log.Println(host.Username)
 
 	message := map[string]interface{}{
 		"extensionChoices": room.ExtensionChoices,

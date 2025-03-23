@@ -81,7 +81,7 @@ export default function GamePage() {
                 onClick={() => setShowTurnInfo(!showTurnInfo)}
                 className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white font-bold py-1 px-2 rounded mt-2 mb-2"
               >
-                {showTurnInfo ? "Show Tribe List" : "Show Turn Info"}
+                {showTurnInfo ? "Show Tribes" : "Show Opponents"}
               </button>
               <div className="flex-1 overflow-auto min-h-0">
                 {showTurnInfo ? <OpponentsList /> : <TribeList />}

@@ -100,7 +100,7 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 		tileIDMap[tile] = id
 	}
 
-	powers := make([]PowerCopy, len(state.Powers))
+	powers := []PowerCopy{}
 	for _, p := range state.Powers {
 		tileId := ""
 		if p.Tile == nil {
@@ -261,6 +261,7 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 		TribeList: tribeList,
 		TileList:  tiles,
 		TurnInfo:  turnInfo,
+		Powers: powers,
 	}
 }
 
@@ -421,6 +422,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		PlayerIndex: copyState.TurnInfo.PlayerIndex,
 		Phase:       parsePhase(copyState.TurnInfo.Phase),
 	}
+	
 
 	return &gamestate.GameState{
 		Players:   players,
@@ -428,6 +430,9 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		TileList:  tileList,
 		Powers: powerList,
 		TurnInfo:  turnInfo,
+		ModifierPoints: make(map[string]func(int, *gamestate.Player) int),
+		ModifierTurnsAfter: []gamestate.TurninfoEntry{},
+		ModifierAfterPick: make(map[string]func(int, *gamestate.TribeEntry)),
 	}
 }
 

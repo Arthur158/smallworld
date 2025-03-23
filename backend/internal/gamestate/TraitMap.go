@@ -791,6 +791,9 @@ var TraitMap = map[Trait]TraitValue {
 		}, Count: 5},
 	"Imperial": {Transform: func(t *Tribe) {
 		t.countExtrapointsMap["Imperial"] = func(gs *GameState) int {
+			if !t.IsActive {
+				return 0
+			}
 			amount := 0
 			for _, tile := range(gs.TileList) {
 				if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
@@ -806,7 +809,11 @@ var TraitMap = map[Trait]TraitValue {
 		}
 		t.countAttackMap["Mercenary"] = func(tile *Tile, cost int, stackType string) ([]PieceStack, int, int, int, error) {
 			if stackType == "Mercenary" {
-				return []PieceStack{{Type: string(t.Race), Amount: max(t.Minimum, cost - 2 - t.computeDiscount(tile))}}, t.computeGainAttacker(tile), t.computeLossDefender(tile), t.computePawnKill(tile), nil
+				if t.Owner.CoinPile == 0 {
+					return []PieceStack{}, 0, 0, 0, fmt.Errorf("Player does not have any coins")
+
+				}
+				return []PieceStack{{Type: string(t.Race), Amount: max(t.Minimum, cost - 2 - t.computeDiscount(tile))}}, t.computeGainAttacker(tile) - 1, t.computeLossDefender(tile), t.computePawnKill(tile), nil
 			}
 			return []PieceStack{}, 0, 0, 0, fmt.Errorf("The piecestack was not recognized")
 		}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
-	"log"
 )
 
 type GameState struct {
@@ -69,11 +68,10 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 
 		for _, tile := range gs.TileList {
 		    if tile.CheckPresence() != None && len(powerKeys) > 0 {
-			log.Println(powerKeys[0])
 			power := PowerMap[powerKeys[0]]()
 			powerKeys = powerKeys[1:]
 
-			randomBool := rand.Intn(1) < 1
+			randomBool := rand.Intn(2) < 2
 			if randomBool {
 			    tile.ModifierAfterConquest[power.Name+" Spawn"] = power.Spawn
 			}
@@ -308,7 +306,8 @@ func (gs *GameState) HandleConquest(tileId string, attackerIndex int, attackingS
 	// attacker.PointsEachTurn[len(attacker.PointsEachTurn) - 1] += moneyGainDefender - moneyLossDefender
 	tile.OwningTribe = attackingTribe
 
-	if hasDiceBeenUsed {
+
+	if hasDiceBeenUsed  || len(attacker.PieceStacks) == 0 {
 		return gs.HandleStartRedeployment(attackerIndex)
 	} else {
 		gs.TurnInfo.Phase = Conquest

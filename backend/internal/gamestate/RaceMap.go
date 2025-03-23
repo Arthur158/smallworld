@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
-	"log"
 	"strings"
 )
 
@@ -214,7 +213,6 @@ var RaceMap = map[Race]RaceValue {
 			case int:
 			    killcount = v
 			}
-			log.Println(killcount)
 			t.State["killcount"] = 0
 			return []PieceStack{{Type: string(t.Race), Amount: killcount / 2}}
 		}
@@ -327,6 +325,22 @@ var RaceMap = map[Race]RaceValue {
 				}
 			}
 			return oldStacks
+		}
+		t.giveInitialStacksMap["Sorcerers"] = func() []PieceStack {
+			return []PieceStack{{Type: "Staff", Amount: 1}}
+		}
+		t.getStacksForConquestTurnMap["Sorcerers"] = func(player *Player, gs *GameState) {
+			if !t.IsActive {
+				return
+			}
+			newstacks := []PieceStack{}
+			for _, stack := range(player.PieceStacks) {
+				if stack.Type != "Staff" {
+					newstacks = append(newstacks, stack)
+				}
+			}
+			newstacks = append(newstacks, PieceStack{Type: "Staf", Amount: 1})
+			player.PieceStacks = newstacks
 		}
 		}, Count: 5},
 	"Wendigos": {Transform: func(t *Tribe) {
@@ -636,8 +650,6 @@ var RaceMap = map[Race]RaceValue {
 		}
 		t.goIntoDeclineMap["Ghouls"] = func(gs *GameState) {
 			pawns, _ := t.State["deploy"].(map[string]int)
-			log.Println("we here zombies")
-			log.Println(pawns)
 			for id, amount := range(pawns) {
 				movingStack := []PieceStack{{Type: string(t.Race), Amount: amount}}
 				tile := gs.TileList[id]
