@@ -459,7 +459,7 @@ func (t *Tribe) handleDeploymentIn(tile *Tile, stackType string, i int, gs *Game
 	}
     }
 
-    if tile.CheckPresence() == None || tile.OwningTribe.checkPresence(tile, t.Race) {
+    if tile.CheckPresence() == None || !tile.OwningTribe.checkPresence(tile, t.Race) {
 	return fmt.Errorf("This tile does not belong to you")
     }
 
