@@ -339,7 +339,7 @@ var RaceMap = map[Race]RaceValue {
 					newstacks = append(newstacks, stack)
 				}
 			}
-			newstacks = append(newstacks, PieceStack{Type: "Staf", Amount: 1})
+			newstacks = append(newstacks, PieceStack{Type: "Staff", Amount: 1})
 			player.PieceStacks = newstacks
 		}
 		}, Count: 5},
@@ -701,6 +701,7 @@ var RaceMap = map[Race]RaceValue {
 			for i := range tile.PieceStacks {
 			    tile.PieceStacks[i].Tribe = tile.OwningTribe
 			}
+			tile.handleAfterConquest(gs, t)
 			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, newTileStacks)
 			attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, stacks)
 			attacker.CoinPile += moneyGainAttacker - moneyLossAttacker
@@ -766,6 +767,25 @@ var RaceMap = map[Race]RaceValue {
 				}
 			}
 			return oldStacks 
+		}
+		t.countDefenseMap["Scavengers"] = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
+			a := 0
+			b := 0
+			c := 0
+			minus, _, _, _ := tile.countDefense(gs)
+			for _, stack := range(tile.PieceStacks) {
+				if stack.Tribe != nil && stack.Tribe != t {
+					a2, b2, c2, err := stack.Tribe.countDefense(tile, p, gs)
+					if err != nil {
+						return a, b, c, err
+					}
+					a += a2 - minus
+					b += b2
+					c += c2
+				}
+			}
+			return a, b, c, nil
+
 		}
 		}, Count: 6},
 	"Priestesses": {Transform: func(t *Tribe) {

@@ -414,7 +414,7 @@ func (t *Tribe) canBeRedeployedOut(tile *Tile, s string) bool {
 }
 
 func (t *Tribe) canBeRedeployedIn(tile *Tile, s string, gs *GameState) bool {
-    res := s == string(t.Race)
+    res := s == string(t.Race) && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) 
     for _, f := range(t.canBeRedeployedInMap) {
 	res = f(res, tile, s, gs)
     }
@@ -457,6 +457,10 @@ func (t *Tribe) handleDeploymentIn(tile *Tile, stackType string, i int, gs *Game
 	if err == nil {
 	    return nil
 	}
+    }
+
+    if tile.CheckPresence() == None || tile.OwningTribe.checkPresence(tile, t.Race) {
+	return fmt.Errorf("This tile does not belong to you")
     }
 
     if !t.canBeRedeployedIn(tile, stackType, gs) {

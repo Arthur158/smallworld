@@ -17,6 +17,32 @@ type Power struct {
     HandleConquest func(gs *GameState, tile *Tile, s string) (bool, error)
 }
 
+func (gs *GameState) InitializePowers(powerKeys []string) {
+    rand.Seed(time.Now().UnixNano())
+    rand.Shuffle(len(powerKeys), func(i, j int) {
+        powerKeys[i], powerKeys[j] = powerKeys[j], powerKeys[i]
+    })
+
+    tileKeys := make([]string, len(gs.TileList))
+    i := 0
+    for key := range(gs.TileList) {
+            tileKeys[i] = key
+            i += 1
+    }
+    rand.Shuffle(len(tileKeys), func(i, j int) {
+        tileKeys[i], tileKeys[j] = tileKeys[j], tileKeys[i]
+    })
+
+    for _, key := range tileKeys {
+        tile := gs.TileList[key]
+        if tile.CheckPresence() != None && len(powerKeys) > 0 {
+            power := PowerMap[powerKeys[0]]()
+            powerKeys = powerKeys[1:]
+            tile.ModifierAfterConquest[power.Name+" Spawn"] = power.Spawn
+        }
+    }
+}
+
 var PowerMap = map[string]func()*Power {
     "Scepter of Avarice": func() *Power {
         power := &Power{

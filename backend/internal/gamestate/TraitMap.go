@@ -70,7 +70,7 @@ var TraitMap = map[Trait]TraitValue {
 			} 
 			return -1
 		}
-		}, Count: 4},
+		}, Count: 3},
 	"Swamp": {Transform: func(t *Tribe) {
 		t.countPointsMap["Swamp"] = func(tile *Tile) int {
 			if t.IsActive && tile.Biome == Swamp {

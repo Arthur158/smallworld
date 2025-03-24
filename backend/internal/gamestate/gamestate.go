@@ -2,8 +2,6 @@ package gamestate
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
 )
 
 type GameState struct {
@@ -61,32 +59,12 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
 	// Testing Powers
 	testingPowers := true
 	if testingPowers {
-		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(powerKeys), func(i, j int) {
-		    powerKeys[i], powerKeys[j] = powerKeys[j], powerKeys[i]
-		})
-
-		for _, tile := range gs.TileList {
-		    if tile.CheckPresence() != None && len(powerKeys) > 0 {
-			power := PowerMap[powerKeys[0]]()
-			powerKeys = powerKeys[1:]
-
-			randomBool := rand.Intn(2) < 2
-			if randomBool {
-			    tile.ModifierAfterConquest[power.Name+" Spawn"] = power.Spawn
-			}
-		    }
+		if len(playerNames) + 1 < len(powerKeys) {
+			powerKeys = powerKeys[:len(playerNames) + 1] // Adjust number of powers according to the number of players
 		}
+		gs.InitializePowers(powerKeys)
 	}
 
-
-	// power := "Great Brass Pipe"
-	// dmdfields := PowerMap[power]()
-	// for _, tile := range(gs.TileList) {
-	// 	if tile.CheckPresence() != None {
-	// 		tile.ModifierAfterConquest[power + " Spawn"] = dmdfields.Spawn
-	// 	}
-	// }
 
         if err != nil {
             return nil, fmt.Errorf("failed to create list of tribe entries", err)
@@ -540,7 +518,7 @@ func (gs *GameState) handleNextPlayerTurn() {
 	}
 
 	if gs.TurnInfo.PlayerIndex == len(gs.Players) - 1 {
-		if gs.TurnInfo.TurnIndex == 10 {
+		if gs.TurnInfo.TurnIndex == 9 {
 			for _, player := range(gs.Players) {
 				player.ActiveTribe.handleEndOfGame(gs)
 				for _, tribe := range(player.PassiveTribes) {
