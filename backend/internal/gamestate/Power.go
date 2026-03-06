@@ -103,7 +103,7 @@ var PowerMap = map[string]func()*Power {
             }
         }
         power.HandleRedeploymentIn = func(tile *Tile, s string, gs *GameState) error {
-            if tile.OwningTribe.Owner != power.Owner {
+            if tile.CheckPresence() != None && tile.OwningTribe.Owner != power.Owner {
                 return fmt.Errorf("This tile does not belong to you!")
             }
             tile.PieceStacks = append(tile.PieceStacks, PieceStack{Type: "Froggy's Ring", Amount: 1})

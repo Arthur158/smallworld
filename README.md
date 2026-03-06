@@ -12,3 +12,8 @@ To run the frontend, go to `/frontend` and run `npm install` and then `npm start
 
 One has to manually set the address of the backend on the frontend by going to `/frontend/src/services/backendServices.ts`, and changing the "socket" variable.
 One connect to the UI in the browser, by default on localhost:3000
+
+## Some images
+
+![Screenshot](images/3players.png)
+
