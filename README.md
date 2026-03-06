@@ -15,13 +15,16 @@ One connect to the UI in the browser, by default on localhost:3000
 
 ## Some images
 
-![Screenshot](images/3players.png)
 A game with 3 players
-![Screenshot](images/lobbyout.png)
+![Screenshot](images/3players.png)
+
 Inside the lobby
-![Screenshot](images/lobbyin.png)
+![Screenshot](images/lobbyout.png)
+
 Inside the lobby, waiting for people to join the game
-![Screenshot](images/displayroom.png)
+![Screenshot](images/lobbyin.png)
+
 In the display room, looking at a saved game.
+![Screenshot](images/displayroom.png)
 
 
