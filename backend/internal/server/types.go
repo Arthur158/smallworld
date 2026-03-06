@@ -11,4 +11,3 @@ type TileData struct {
     Polygon TilePolygon `json:"polygon"`
     // ...
 }
-

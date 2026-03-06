@@ -1,29 +1,28 @@
-package gamestate;
+package gamestate
 
 import (
-	"fmt"
-	"math/rand"
+    "fmt"
+    "log"
+    "math/rand"
 )
-
 
 func DoesPlayerHaveStack(stackType string, player *Player) bool {
     for _, playerStack := range player.PieceStacks {
-		if playerStack.Type == stackType {
-			return true;
-		}
-	}
-    return false;
+        if playerStack.Type == stackType {
+            return true
+        }
+    }
+    return false
 }
 
 func (player *Player) getTribe(stackType string) (*Tribe, error) {
     if player.ActiveTribe != nil && player.ActiveTribe.IsStackValid(stackType) {
-	return player.ActiveTribe, nil;
+        return player.ActiveTribe, nil
     }
-    // Thinking of zombie-like tribes here
-    for _, tribe := range player.PassiveTribes{
-	if tribe.IsStackValid(stackType) {
-	    return tribe, nil;
-	}
+    for _, tribe := range player.PassiveTribes {
+        if tribe.IsStackValid(stackType) {
+            return tribe, nil
+        }
     }
 
     return nil, fmt.Errorf("Player did not have valid tribe for piecestack")
@@ -31,17 +30,17 @@ func (player *Player) getTribe(stackType string) (*Tribe, error) {
 
 func (player *Player) StartRedeployment(gs *GameState) {
 
-	player.PieceStacks = AddPieceStacks(player.PieceStacks, player.ActiveTribe.startRedeployment(gs))
+    player.PieceStacks = AddPieceStacks(player.PieceStacks, player.ActiveTribe.startRedeployment(gs))
 
-	for _, tribe := range(player.PassiveTribes) {
-		player.PieceStacks = AddPieceStacks(player.PieceStacks, tribe.startRedeployment(gs))
-	}
+    for _, tribe := range player.PassiveTribes {
+        player.PieceStacks = AddPieceStacks(player.PieceStacks, tribe.startRedeployment(gs))
+    }
 
-	for _, power := range(gs.Powers) {
-		if power.Owner == player && power.StartRedeployment != nil {
-			player.PieceStacks = AddPieceStacks(player.PieceStacks, power.StartRedeployment(gs))
-		}
-	}
+    for _, power := range gs.Powers {
+        if power.Owner == player && power.StartRedeployment != nil {
+            player.PieceStacks = AddPieceStacks(player.PieceStacks, power.StartRedeployment(gs))
+        }
+    }
 }
 
 func AddPieceStacks(first, second []PieceStack) []PieceStack {
@@ -66,59 +65,61 @@ func AddPieceStacks(first, second []PieceStack) []PieceStack {
 }
 
 func SubtractPieceStacks(reserves, expanses []PieceStack) ([]PieceStack, bool) {
-	result := []PieceStack{} // Start with an empty list
+    result := []PieceStack{} // Start with an empty list
 
-	for _, stack1 := range reserves {
-		subtracted := false
+    for _, stack1 := range reserves {
+        subtracted := false
 
-		// Search for a matching type in expanses
-		for _, stack2 := range expanses {
-			if stack1.Type == stack2.Type {
-				if stack1.Amount < stack2.Amount {
-					// Not enough quantity to subtract
-					return nil, false
-				}
-				// Subtract the amount
-				remainingAmount := stack1.Amount - stack2.Amount
-				if remainingAmount > 0 {
-					// Only add to result if the remaining amount is greater than 0
-					result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount, Tribe: stack1.Tribe})
-				}
-				subtracted = true
-				break
-			}
-		}
+        // Search for a matching type in expanses
+        for _, stack2 := range expanses {
+            if stack1.Type == stack2.Type {
+                if stack1.Amount < stack2.Amount {
+                    // Not enough quantity to subtract
+                    log.Println(fmt.Sprintf("There was not enough of the stack %s", stack1.Type))
+                    return nil, false
+                }
+                // Subtract the amount
+                remainingAmount := stack1.Amount - stack2.Amount
+                if remainingAmount > 0 {
+                    // Only add to result if the remaining amount is greater than 0
+                    result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount, Tribe: stack1.Tribe})
+                }
+                subtracted = true
+                break
+            }
+        }
 
-		// If no match was found in expanses, add the stack1 element unchanged
-		if !subtracted {
-			result = append(result, stack1)
-		}
-	}
+        // If no match was found in expanses, add the stack1 element unchanged
+        if !subtracted {
+            result = append(result, stack1)
+        }
+    }
 
-	// Verify no types in expanses are missing from reserves
-	for _, stack2 := range expanses {
-		found := false
-		for _, stack1 := range reserves {
-			if stack1.Type == stack2.Type {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, false
-		}
-	}
+    // Verify no types in expanses are missing from reserves
+    for _, stack2 := range expanses {
+        found := false
+        for _, stack1 := range reserves {
+            if stack1.Type == stack2.Type {
+                found = true
+                break
+            }
+        }
+        if !found {
+            log.Println(fmt.Sprintf("This stack was not found: %s", stack2.Type))
+            return nil, false
+        }
+    }
 
-	return result, true
+    return result, true
 }
 
 // rollCustomDiceWithLocalRNG returns a random number from a dice with faces 0, 0, 0, 1, 2, 3 using a local RNG
 func RollDice() int {
-	// Define the dice faces
-	faces := []int{0, 0, 0, 1, 2, 3}
+    // Define the dice faces
+    faces := []int{0, 0, 0, 1, 2, 3}
 
-	// Return a random face
-	result := faces[rand.Intn(len(faces))] 
-	println(result)
-	return result
+    // Return a random face
+    result := faces[rand.Intn(len(faces))]
+    println(result)
+    return result
 }

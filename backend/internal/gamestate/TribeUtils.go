@@ -1,9 +1,9 @@
 package gamestate
 
 import (
-	"fmt"
-	"math/rand"
-	"time"
+    "fmt"
+    "math/rand"
+    "time"
 )
 
 func CreateTribe(race Race, trait Trait) (*Tribe, error) {
@@ -37,13 +37,13 @@ func createTribeList(raceKeys []string, traitKeys []string) ([]*TribeEntry, erro
     r.Shuffle(len(traitKeys), func(i, j int) { traitKeys[i], traitKeys[j] = traitKeys[j], traitKeys[i] })
 
     tribeEntries := []*TribeEntry{}
-    pairCount := min(len(raceKeys), len(traitKeys)) 
+    pairCount := min(len(raceKeys), len(traitKeys))
 
     for i := 0; i < pairCount; i++ {
         tribeEntries = append(tribeEntries, &TribeEntry{
-            Race: Race(raceKeys[i]),
-            Trait: Trait(traitKeys[i]),
-            CoinPile: 0,
+            Race:      Race(raceKeys[i]),
+            Trait:     Trait(traitKeys[i]),
+            CoinPile:  0,
             PiecePile: RaceMap[Race(raceKeys[i])].Count + TraitMap[Trait(traitKeys[i])].Count,
         })
     }
@@ -53,11 +53,11 @@ func createTribeList(raceKeys []string, traitKeys []string) ([]*TribeEntry, erro
 
 func CreateBaseTribe() *Tribe {
     tribe := Tribe{
-        Race: "Unknown",
-        Trait: "Unknown",
-        IsActive: true,
-        Minimum: 1,
-        State: make(map[string]interface{}),
+        Race:             "Unknown",
+        Trait:            "Unknown",
+        IsActive:         true,
+        Minimum:          1,
+        State:            make(map[string]interface{}),
         AdditionalPowers: []Trait{},
     }
 
@@ -95,7 +95,7 @@ func CreateBaseTribe() *Tribe {
     tribe.countRemovablePiecesMap = make(map[string]func([]PieceStack, *Tile) []PieceStack)
 
     tribe.specialConquestMap = make(map[string]func(*GameState, *Tile, string) (bool, error))
-    
+
     tribe.specialDefenseMap = make(map[string]func(*GameState, *Tile, *Tribe, string) (bool, error))
 
     tribe.getStacksForConquestTurnMap = make(map[string]func(*Player, *GameState))
@@ -109,7 +109,7 @@ func CreateBaseTribe() *Tribe {
     tribe.countExtrapointsMap = make(map[string]func(*GameState) int)
     tribe.calculateRemainingAttackingStacksMap = make(map[string]func([]PieceStack, bool, bool, error, *Tile, *GameState) ([]PieceStack, bool, bool, error))
     tribe.postConquestMap = make(map[string]func(*Tile, *GameState))
-    tribe.canBeRedeployedInMap = make(map[string]func(bool, *Tile, string, *GameState) bool)    
+    tribe.canBeRedeployedInMap = make(map[string]func(bool, *Tile, string, *GameState) bool)
     tribe.canBeRedeployedOutMap = make(map[string]func(bool, *Tile, string) bool)
     tribe.getRedeploymentStackMap = make(map[string]func(string, []PieceStack) []PieceStack)
     tribe.canEndTurnMap = make(map[string]func(*GameState) error)
@@ -117,12 +117,13 @@ func CreateBaseTribe() *Tribe {
     tribe.handleEntryActionMap = make(map[string]func(int, string, *GameState) error)
     tribe.handleMovementMap = make(map[string]func(string, *Tile, *Tile, *GameState) error)
     tribe.handleEndOfGameMap = make(map[string]func(*GameState))
+    tribe.startRedeploymentTileMap = make(map[string]func(*Tile, *GameState))
 
     return &tribe
 }
 
 func (t *Tribe) DeletePower(s string, gs *GameState) {
-    for i, trait := range(t.AdditionalPowers) {
+    for i, trait := range t.AdditionalPowers {
         if trait == Trait(s) {
             t.AdditionalPowers = append(t.AdditionalPowers[:i], t.AdditionalPowers[i+1:]...)
         }

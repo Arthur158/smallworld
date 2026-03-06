@@ -27,4 +27,7 @@ Inside the lobby, waiting for people to join the game
 In the display room, looking at a saved game.
 ![Screenshot](images/displayroom.png)
 
+Trying the Underground extension
+![Screenshot](images/underground.png)
+
 

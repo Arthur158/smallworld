@@ -1,21 +1,21 @@
-package gamestate;
+package gamestate
 
 import "fmt"
 
-var TileModifierPoints = map[string]func(*Tile) int {
-    "Winter" : func(tile *Tile) int {
-            return -1
+var TileModifierPoints = map[string]func(*Tile) int{
+    "Winter": func(tile *Tile) int {
+        return -1
     },
-    "Keep on the Motherland" : func(tile *Tile) (int) {
+    "Keep on the Motherland": func(tile *Tile) int {
         return 1
     },
-    "Mine of the Lost Dwarf" : func(tile *Tile) (int) {
+    "Mine of the Lost Dwarf": func(tile *Tile) int {
         return 2
     },
 }
 
-var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
-    "Loot" : func(tile *Tile, t *Tribe, gs *GameState) {
+var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState){
+    "Loot": func(tile *Tile, t *Tribe, gs *GameState) {
         if t == nil {
             return
         }
@@ -35,7 +35,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
         delete(tile.ModifierDefenses, "Loot")
         delete(tile.ModifierSpecialDefenses, "Loot")
         delete(tile.ModifierAfterConquest, "Loot")
-        for i := range(tile.PieceStacks) {
+        for i := range tile.PieceStacks {
             if tile.PieceStacks[i].Type == "Loot" {
                 tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                 break
@@ -44,7 +44,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
         gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("The loot was: %d", loot)})
         gs.Players[gs.TurnInfo.PlayerIndex].CoinPile += loot
     },
-    "Diamond Fields" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Diamond Fields": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Diamond Fields"]
         if t != nil {
             power.Owner = t.Owner
@@ -52,7 +52,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             power.Owner = nil
         }
     },
-    "Froggy's Ring" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Froggy's Ring": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Froggy's Ring"]
         if t != nil {
             power.Owner = t.Owner
@@ -63,9 +63,9 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
         } else {
             power.Owner = nil
         }
-        
+
     },
-    "Scepter of Avarice" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Scepter of Avarice": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Scepter of Avarice"]
         if t != nil {
             power.Owner = t.Owner
@@ -76,9 +76,9 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
         } else {
             power.Owner = nil
         }
-        
+
     },
-    "Flying Doormat" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Flying Doormat": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Flying Doormat"]
         if t != nil {
             power.Owner = t.Owner
@@ -90,7 +90,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             power.Owner = nil
         }
     },
-    "Stinky Troll's Socks" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Stinky Troll's Socks": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Stinky Troll's Socks"]
         if t != nil {
             power.Owner = t.Owner
@@ -102,7 +102,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             power.Owner = nil
         }
     },
-    "Sword of the Killer Rabbit" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Sword of the Killer Rabbit": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Sword of the Killer Rabbit"]
         if t != nil {
             power.Owner = t.Owner
@@ -114,7 +114,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             power.Owner = nil
         }
     },
-    "Shiny Orb" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Shiny Orb": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Shiny Orb"]
         if t != nil {
             power.Owner = t.Owner
@@ -126,7 +126,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             power.Owner = nil
         }
     },
-    "Wickedest Pentacle" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Wickedest Pentacle": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Wickedest Pentacle"]
         if t != nil {
             power.Owner = t.Owner
@@ -134,15 +134,15 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             power.Owner = nil
         }
     },
-    "Crypt of the Tomb-raider" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Crypt of the Tomb-raider": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Crypt of the Tomb-raider"]
         if t != nil {
             power.Owner = t.Owner
         } else {
             power.Owner = nil
         }
-        for _, tile := range(gs.TileList) {
-            for i, stack := range(tile.PieceStacks) {
+        for _, tile := range gs.TileList {
+            for i, stack := range tile.PieceStacks {
                 if stack.Type == "Tomb-raider" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     delete(tile.ModifierDefenses, "Tomb-raider")
@@ -150,7 +150,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             }
         }
         if tile.OwningTribe != nil {
-            for i, stack := range(tile.OwningTribe.Owner.PieceStacks) {
+            for i, stack := range tile.OwningTribe.Owner.PieceStacks {
                 if stack.Type == "Tomb-raider" {
                     tile.OwningTribe.Owner.PieceStacks = append(tile.OwningTribe.Owner.PieceStacks[:i], tile.OwningTribe.Owner.PieceStacks[i+1:]...)
                     break
@@ -158,7 +158,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             }
         }
     },
-    "Altar of Souls" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Altar of Souls": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Altar of Souls"]
         if t != nil {
             power.Owner = t.Owner
@@ -166,7 +166,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             power.Owner = nil
         }
         if tile.OwningTribe != nil {
-            for i, stack := range(tile.OwningTribe.Owner.PieceStacks) {
+            for i, stack := range tile.OwningTribe.Owner.PieceStacks {
                 if stack.Type == "Altar of Souls" {
                     tile.OwningTribe.Owner.PieceStacks = append(tile.OwningTribe.Owner.PieceStacks[:i], tile.OwningTribe.Owner.PieceStacks[i+1:]...)
                     break
@@ -174,7 +174,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             }
         }
     },
-    "Great Brass Pipe" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Great Brass Pipe": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Great Brass Pipe"]
         if t != nil {
             power.Owner = t.Owner
@@ -196,7 +196,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             }
         }
     },
-    "Fountain of Youth" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Fountain of Youth": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Fountain of Youth"]
         if t != nil {
             power.Owner = t.Owner
@@ -204,7 +204,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
             power.Owner = nil
         }
     },
-    "Stonehedge" : func(tile *Tile, t *Tribe,  gs *GameState) {
+    "Stonehedge": func(tile *Tile, t *Tribe, gs *GameState) {
         power := gs.Powers["Stonehedge"]
         trait := power.State["trait"].(string)
         if t != nil {
@@ -219,32 +219,32 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState) {
     },
 }
 
-var TileModifierDefenses = map[string]func(*Tile, *GameState) (int, int, int, error) {
-    "Lava" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+var TileModifierDefenses = map[string]func(*Tile, *GameState) (int, int, int, error){
+    "Lava": func(tile *Tile, gs *GameState) (int, int, int, error) {
         return 0, 0, 0, fmt.Errorf("Cannot conquer zone with lava!")
     },
-    "Balrog" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+    "Balrog": func(tile *Tile, gs *GameState) (int, int, int, error) {
         return 0, 0, 0, fmt.Errorf("Cannot conquer zone with the balrog!")
     },
-    "Tomb-raider" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+    "Tomb-raider": func(tile *Tile, gs *GameState) (int, int, int, error) {
         return 0, 0, 0, fmt.Errorf("Cannot conquer zone with tomb-raider!")
     },
-    "Skag Attack" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+    "Skag Attack": func(tile *Tile, gs *GameState) (int, int, int, error) {
         return 0, 0, 0, fmt.Errorf("Skags are attacking here!")
     },
-    "Burning Zeppelin" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+    "Burning Zeppelin": func(tile *Tile, gs *GameState) (int, int, int, error) {
         return 0, 0, 0, fmt.Errorf("Cannot conquer zone with burning zeppelin!")
     },
-    "Keep on the Motherland" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+    "Keep on the Motherland": func(tile *Tile, gs *GameState) (int, int, int, error) {
         return 1, 0, 0, nil
     },
-    "Winter" : func(tile *Tile, gs *GameState) (int, int, int, error) {
+    "Winter": func(tile *Tile, gs *GameState) (int, int, int, error) {
         return 1, 0, 0, nil
     },
 }
 
-var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, string) (bool, error) {
-    "Loot" : func(tile *Tile, gs *GameState, tribe *Tribe, stackType string) (bool, error) {
+var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, string) (bool, error){
+    "Loot": func(tile *Tile, gs *GameState, tribe *Tribe, stackType string) (bool, error) {
 
         if tribe.Race == "Skags" {
             return false, nil
@@ -261,7 +261,7 @@ var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, str
         }
         if loot == -1 {
 
-            for i := range(tribe.Owner.PieceStacks) {
+            for i := range tribe.Owner.PieceStacks {
                 if tribe.Owner.PieceStacks[i].Type == string(tribe.Race) {
                     tribe.Owner.PieceStacks[i].Amount -= 1
                 }
@@ -270,7 +270,7 @@ var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, str
             delete(tile.ModifierSpecialDefenses, "Loot")
             delete(tile.ModifierDefenses, "Loot")
             tile.ModifierDefenses["Skag Attack"] = TileModifierDefenses["Skag Attack"]
-            for i := range(tile.PieceStacks) {
+            for i := range tile.PieceStacks {
                 if tile.PieceStacks[i].Type == "Loot" {
                     tile.PieceStacks[i].Type = "Skag Attack"
                 }
@@ -278,17 +278,17 @@ var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, str
 
             gs.Messages = append(gs.Messages, Message{Content: "Skag attack!"})
             gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
-                    player: gs.TurnInfo.PlayerIndex,
-                    TurnInfo: nil,
-                    actionBefore: func(gs *GameState) {
+                player:   gs.TurnInfo.PlayerIndex,
+                TurnInfo: nil,
+                actionBefore: func(gs *GameState) {
                     delete(tile.ModifierDefenses, "Skag Attack")
-                    for i := range(tile.PieceStacks) {
+                    for i := range tile.PieceStacks {
                         if tile.PieceStacks[i].Type == "Skag Attack" {
                             tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                             break
                         }
                     }
-                    },
+                },
             })
 
             return true, nil

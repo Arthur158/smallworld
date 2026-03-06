@@ -1,20 +1,22 @@
 package gamestate
+
 import "math/rand"
 import "time"
 import "fmt"
+import "strings"
 
 type Power struct {
-    Name string
-    State map[string]interface{};
-    Owner *Player
-    Tile *Tile
-    Spawn func(*Tile, *Tribe, *GameState)
-    CountPoints func(*GameState) int;
+    Name                 string
+    State                map[string]interface{}
+    Owner                *Player
+    Tile                 *Tile
+    Spawn                func(*Tile, *Tribe, *GameState)
+    CountPoints          func(*GameState) int
     GetStacksForConquest func(gs *GameState)
-    StartRedeployment func(*GameState) []PieceStack
+    StartRedeployment    func(*GameState) []PieceStack
     HandleRedeploymentIn func(*Tile, string, *GameState) error
-    HandleMovement func(string, *Tile, *Tile, *GameState) error
-    HandleConquest func(gs *GameState, tile *Tile, s string) (bool, error)
+    HandleMovement       func(string, *Tile, *Tile, *GameState) error
+    HandleConquest       func(gs *GameState, tile *Tile, s string) (bool, error)
 }
 
 func (gs *GameState) InitializePowers(powerKeys []string) {
@@ -25,9 +27,9 @@ func (gs *GameState) InitializePowers(powerKeys []string) {
 
     tileKeys := make([]string, len(gs.TileList))
     i := 0
-    for key := range(gs.TileList) {
-            tileKeys[i] = key
-            i += 1
+    for key := range gs.TileList {
+        tileKeys[i] = key
+        i += 1
     }
     rand.Shuffle(len(tileKeys), func(i, j int) {
         tileKeys[i], tileKeys[j] = tileKeys[j], tileKeys[i]
@@ -36,17 +38,34 @@ func (gs *GameState) InitializePowers(powerKeys []string) {
     for _, key := range tileKeys {
         tile := gs.TileList[key]
         if tile.CheckPresence() != None && len(powerKeys) > 0 {
-            power := PowerMap[powerKeys[0]]()
-            powerKeys = powerKeys[1:]
-            tile.ModifierAfterConquest[power.Name+" Spawn"] = power.Spawn
+            for _, stack := range tile.PieceStacks {
+                if strings.HasPrefix(stack.Type, "Monster") {
+                    power := PowerMap[powerKeys[0]]()
+                    powerKeys = powerKeys[1:]
+                    tile.ModifierAfterConquest[power.Name+" Spawn"] = power.Spawn
+                }
+            }
+        }
+    }
+
+    for _, key := range tileKeys {
+        tile := gs.TileList[key]
+        if tile.CheckPresence() != None && len(powerKeys) > 0 {
+            for _, stack := range tile.PieceStacks {
+                if stack.Type == "Lost Tribe" {
+                    power := PowerMap[powerKeys[0]]()
+                    powerKeys = powerKeys[1:]
+                    tile.ModifierAfterConquest[power.Name+" Spawn"] = power.Spawn
+                }
+            }
         }
     }
 }
 
-var PowerMap = map[string]func()*Power {
+var PowerMap = map[string]func() *Power{
     "Scepter of Avarice": func() *Power {
         power := &Power{
-                Name: "Scepter of Avarice",
+            Name: "Scepter of Avarice",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             gs.Powers["Scepter of Avarice"] = power
@@ -55,8 +74,8 @@ var PowerMap = map[string]func()*Power {
             delete(t.ModifierAfterConquest, "Scepter of Avarice Spawn")
         }
         power.GetStacksForConquest = func(gs *GameState) {
-            for _, tile := range(gs.TileList) {
-                for i, stack := range(tile.PieceStacks) {
+            for _, tile := range gs.TileList {
+                for i, stack := range tile.PieceStacks {
                     if stack.Type == "Scepter of Avarice" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
@@ -81,7 +100,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Froggy's Ring": func() *Power {
         power := &Power{
-                Name: "Froggy's Ring",
+            Name: "Froggy's Ring",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Froggy's Ring Spawn")
@@ -91,8 +110,8 @@ var PowerMap = map[string]func()*Power {
             delete(t.ModifierAfterConquest, "Froggy's Ring")
         }
         power.GetStacksForConquest = func(gs *GameState) {
-            for _, tile := range(gs.TileList) {
-                for i, stack := range(tile.PieceStacks) {
+            for _, tile := range gs.TileList {
+                for i, stack := range tile.PieceStacks {
                     if stack.Type == "Froggy's Ring" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
@@ -111,13 +130,13 @@ var PowerMap = map[string]func()*Power {
             power.Tile = tile
             power.Owner.PieceStacks, _ = SubtractPieceStacks(power.Owner.PieceStacks, []PieceStack{{Type: "Froggy's Ring", Amount: 1}})
             indices := []int{}
-            for _, tile2 := range(tile.AdjacentTiles) {
+            for _, tile2 := range tile.AdjacentTiles {
                 if tile2.CheckPresence() != Active {
                     continue
                 }
                 index := tile2.OwningTribe.Owner.Index
                 found := false
-                for _, i := range(indices) {
+                for _, i := range indices {
                     if index == i {
                         found = true
                     }
@@ -134,7 +153,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Shiny Orb": func() *Power {
         power := &Power{
-                Name: "Shiny Orb",
+            Name: "Shiny Orb",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Shiny Orb Spawn")
@@ -144,8 +163,8 @@ var PowerMap = map[string]func()*Power {
             delete(t.ModifierAfterConquest, "Shiny Orb")
         }
         power.GetStacksForConquest = func(gs *GameState) {
-            for _, tile := range(gs.TileList) {
-                for i, stack := range(tile.PieceStacks) {
+            for _, tile := range gs.TileList {
+                for i, stack := range tile.PieceStacks {
                     if stack.Type == "Shiny Orb" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
@@ -157,59 +176,59 @@ var PowerMap = map[string]func()*Power {
             }
         }
         power.HandleConquest = func(gs *GameState, tile *Tile, attackingStackType string) (bool, error) {
-			if attackingStackType != "Shiny Orb" {
-				return false, nil
-			}
-                        if power.Owner.ActiveTribe == nil {
-                            return true, fmt.Errorf("The player does not have an active tribe")
-                        }
-                        attacker := power.Owner
-                        t := attacker.ActiveTribe
+            if attackingStackType != "Shiny Orb" {
+                return false, nil
+            }
+            if power.Owner.ActiveTribe == nil {
+                return true, fmt.Errorf("The player does not have an active tribe")
+            }
+            attacker := power.Owner
+            t := attacker.ActiveTribe
 
-			if tile.CheckPresence() != Active {
-				return true, fmt.Errorf("tribe needs to be active")
-			}
+            if tile.CheckPresence() != Active {
+                return true, fmt.Errorf("tribe needs to be active")
+            }
 
-			if err := t.checkZoneAccess(tile); err != nil {
-				return true, err
-			}
-			if err := t.checkAdjacency(tile, gs); err != nil {
-				return true, err
-			}
+            if err := t.checkZoneAccess(tile); err != nil {
+                return true, err
+            }
+            if err := t.checkAdjacency(tile, gs); err != nil {
+                return true, err
+            }
 
-			if !gs.IsTribePresentOnTheBoard(t.Race) {
-				return true, fmt.Errorf("you need to be already present on the board")
-			}
+            if !gs.IsTribePresentOnTheBoard(t.Race) {
+                return true, fmt.Errorf("you need to be already present on the board")
+            }
 
-			if tile.CheckPresence() == Active {
-				// Maybe do something with those, in case this is actually considered a conquest
-				_, _, _, err := tile.OwningTribe.countDefense(tile, t.Owner, gs)
-				if err != nil {
-					return true, err
-				}
-			} else {
-				return true, fmt.Errorf("This tile does not contain an active tribe")
-			}
+            if tile.CheckPresence() == Active {
+                // Maybe do something with those, in case this is actually considered a conquest
+                _, _, _, err := tile.OwningTribe.countDefense(tile, t.Owner, gs)
+                if err != nil {
+                    return true, err
+                }
+            } else {
+                return true, fmt.Errorf("This tile does not contain an active tribe")
+            }
 
-			for _, stack := range(tile.PieceStacks) {
-				if stack.Type == string(tile.OwningTribe.Race) && stack.Amount > 1 {
-					return true, fmt.Errorf("This tile contains more than one active pawn!")
-				}
-			}
+            for _, stack := range tile.PieceStacks {
+                if stack.Type == string(tile.OwningTribe.Race) && stack.Amount > 1 {
+                    return true, fmt.Errorf("This tile contains more than one active pawn!")
+                }
+            }
 
-			tile.OwningTribe.handleReturn(tile, gs, 1)
-			tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Shiny Orb", Amount: 1}})
-			tile.handleAfterConquest(gs, t)
-                        tile.ModifierAfterConquest["Shiny Orb"] = TileModifierAfterConquests["Shiny Orb"]
-                        attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Shiny Orb", Amount: 1}})
-			tile.OwningTribe = t
-			return true, nil
+            tile.OwningTribe.handleReturn(tile, gs, 1)
+            tile.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{{Type: string(t.Race), Amount: 1}, {Type: "Shiny Orb", Amount: 1}})
+            tile.handleAfterConquest(gs, t)
+            tile.ModifierAfterConquest["Shiny Orb"] = TileModifierAfterConquests["Shiny Orb"]
+            attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, []PieceStack{{Type: "Shiny Orb", Amount: 1}})
+            tile.OwningTribe = t
+            return true, nil
         }
         return power
     },
     "Sword of the Killer Rabbit": func() *Power {
         power := &Power{
-                Name: "Sword of the Killer Rabbit",
+            Name: "Sword of the Killer Rabbit",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Sword of the Killer Rabbit Spawn")
@@ -219,8 +238,8 @@ var PowerMap = map[string]func()*Power {
             delete(t.ModifierAfterConquest, "Sword of the Killer Rabbit")
         }
         power.GetStacksForConquest = func(gs *GameState) {
-            for _, tile := range(gs.TileList) {
-                for i, stack := range(tile.PieceStacks) {
+            for _, tile := range gs.TileList {
+                for i, stack := range tile.PieceStacks {
                     if stack.Type == "Sword of the Killer Rabbit" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
@@ -240,9 +259,9 @@ var PowerMap = map[string]func()*Power {
             }
             attacker := power.Owner
             attackingTribe := attacker.ActiveTribe
-            
+
             if ok, err := tile.specialDefense(gs, attackingTribe, attackingStackType); ok {
-                    return true, err
+                return true, err
             }
 
             if tile.CheckPresence() != None {
@@ -254,49 +273,49 @@ var PowerMap = map[string]func()*Power {
 
             ok, err := attackingTribe.specialConquest(gs, tile, attackingStackType)
             if ok {
-                    return true, err
+                return true, err
             }
 
             if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
-                    return true, fmt.Errorf("This tile already belongs to the tribe!")
+                return true, fmt.Errorf("This tile already belongs to the tribe!")
             }
 
             if err := attackingTribe.checkZoneAccess(tile); err != nil {
-                    return true, err
+                return true, err
             }
             if err := attackingTribe.checkAdjacency(tile, gs); err != nil {
-                    return true, err
+                return true, err
             }
 
             tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
             if tile.CheckPresence() != None {
-                    tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker, gs)
+                tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker, gs)
             } else {
-                    tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
+                tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
             }
 
             if err != nil {
-                    return true, err
+                return true, err
             }
 
             // counts the cost for the attacker
             attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill, err := attackingTribe.countAttack(tile, tileCost, string(attackingTribe.Race))
             if err != nil {
-                    return true, err
+                return true, err
             }
             attackCostStacks = AddPieceStacks(attackCostStacks, []PieceStack{{Type: "Sword of the Killer Rabbit", Amount: 1}})
-            for i, stack := range(attackCostStacks) {
+            for i, stack := range attackCostStacks {
                 if stack.Type == string(attackingTribe.Race) {
-                    attackCostStacks[i].Amount = max(1, stack.Amount - 2)
+                    attackCostStacks[i].Amount = max(1, stack.Amount-2)
                 }
             }
 
             newStacks, hasDiceBeenUsed, ok, err := attackingTribe.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
             if err != nil {
-                    return true, err
+                return true, err
             }
             if !ok {
-                    return true, gs.HandleStartRedeployment(attacker.Index)
+                return true, gs.HandleStartRedeployment(attacker.Index)
             }
 
             // Enact changes
@@ -305,8 +324,8 @@ var PowerMap = map[string]func()*Power {
             power.Tile = tile
             tile.ModifierAfterConquest["Sword of the Killer Rabbit"] = TileModifierAfterConquests["Sword of the Killer Rabbit"]
             if tile.CheckPresence() != None {
-                    tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
-                    tile.OwningTribe.handleReturn(tile, gs, pawnKill)
+                tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
+                tile.OwningTribe.handleReturn(tile, gs, pawnKill)
             }
 
             attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
@@ -316,9 +335,9 @@ var PowerMap = map[string]func()*Power {
             tile.OwningTribe = attackingTribe
 
             if hasDiceBeenUsed {
-                    return true, gs.HandleStartRedeployment(attacker.Index)
+                return true, gs.HandleStartRedeployment(attacker.Index)
             } else {
-                    gs.TurnInfo.Phase = Conquest
+                gs.TurnInfo.Phase = Conquest
             }
 
             return true, nil
@@ -327,7 +346,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Stinky Troll's Socks": func() *Power {
         power := &Power{
-                Name: "Stinky Troll's Socks",
+            Name: "Stinky Troll's Socks",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Stinky Troll's Socks Spawn")
@@ -337,8 +356,8 @@ var PowerMap = map[string]func()*Power {
             delete(t.ModifierAfterConquest, "Stinky Troll's Socks")
         }
         power.GetStacksForConquest = func(gs *GameState) {
-            for _, tile := range(gs.TileList) {
-                for i, stack := range(tile.PieceStacks) {
+            for _, tile := range gs.TileList {
+                for i, stack := range tile.PieceStacks {
                     if stack.Type == "Stinky Troll's Socks" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
@@ -357,9 +376,9 @@ var PowerMap = map[string]func()*Power {
             }
             attacker := power.Owner
             attackingTribe := attacker.ActiveTribe
-            
+
             if ok, err := tile.specialDefense(gs, attackingTribe, attackingStackType); ok {
-                    return true, err
+                return true, err
             }
 
             if tile.CheckPresence() != None {
@@ -371,43 +390,43 @@ var PowerMap = map[string]func()*Power {
 
             ok, err := attackingTribe.specialConquest(gs, tile, attackingStackType)
             if ok {
-                    return true, err
+                return true, err
             }
 
             if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
-                    return true, fmt.Errorf("This tile already belongs to the tribe!")
+                return true, fmt.Errorf("This tile already belongs to the tribe!")
             }
 
             if err := attackingTribe.checkZoneAccess(tile); err != nil {
-                    return true, err
+                return true, err
             }
             if err := attackingTribe.checkAdjacency(tile, gs); err != nil {
-                    return true, err
+                return true, err
             }
 
             // stinky socks magic, i dont know if the modifier defenses should come into play on that one.
             dummyTile := Tile{
-                Biome: tile.Biome,
+                Biome:      tile.Biome,
                 Attributes: tile.Attributes,
             }
             tileCost, moneyGainDefender, moneyLossAttacker, err := dummyTile.countDefense(gs)
             if err != nil {
-                    return true, err
+                return true, err
             }
 
             // counts the cost for the attacker
             attackCostStacks, moneyGainAttacker, moneyLossDefender, _, err := attackingTribe.countAttack(tile, tileCost, string(attackingTribe.Race))
             if err != nil {
-                    return true, err
+                return true, err
             }
             attackCostStacks = AddPieceStacks(attackCostStacks, []PieceStack{{Type: "Stinky Troll's Socks", Amount: 1}})
 
             newStacks, hasDiceBeenUsed, ok, err := attackingTribe.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
             if err != nil {
-                    return true, err
+                return true, err
             }
             if !ok {
-                    return true, gs.HandleStartRedeployment(attacker.Index)
+                return true, gs.HandleStartRedeployment(attacker.Index)
             }
 
             // Enact changes
@@ -416,8 +435,8 @@ var PowerMap = map[string]func()*Power {
             power.Tile = tile
             tile.ModifierAfterConquest["Stinky Troll's Socks"] = TileModifierAfterConquests["Stinky Troll's Socks"]
             if tile.CheckPresence() != None {
-                    tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
-                    tile.OwningTribe.handleReturn(tile, gs, 0)
+                tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
+                tile.OwningTribe.handleReturn(tile, gs, 0)
             }
 
             attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
@@ -427,9 +446,9 @@ var PowerMap = map[string]func()*Power {
             tile.OwningTribe = attackingTribe
 
             if hasDiceBeenUsed {
-                    return true, gs.HandleStartRedeployment(attacker.Index)
+                return true, gs.HandleStartRedeployment(attacker.Index)
             } else {
-                    gs.TurnInfo.Phase = Conquest
+                gs.TurnInfo.Phase = Conquest
             }
 
             return true, nil
@@ -438,7 +457,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Flying Doormat": func() *Power {
         power := &Power{
-                Name: "Flying Doormat",
+            Name: "Flying Doormat",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Flying Doormat Spawn")
@@ -448,8 +467,8 @@ var PowerMap = map[string]func()*Power {
             delete(t.ModifierAfterConquest, "Flying Doormat")
         }
         power.GetStacksForConquest = func(gs *GameState) {
-            for _, tile := range(gs.TileList) {
-                for i, stack := range(tile.PieceStacks) {
+            for _, tile := range gs.TileList {
+                for i, stack := range tile.PieceStacks {
                     if stack.Type == "Flying Doormat" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         power.Owner.PieceStacks = AddPieceStacks(power.Owner.PieceStacks, []PieceStack{stack})
@@ -468,9 +487,9 @@ var PowerMap = map[string]func()*Power {
             }
             attacker := power.Owner
             attackingTribe := attacker.ActiveTribe
-            
+
             if ok, err := tile.specialDefense(gs, attackingTribe, attackingStackType); ok {
-                    return true, err
+                return true, err
             }
 
             if tile.CheckPresence() != None {
@@ -482,42 +501,42 @@ var PowerMap = map[string]func()*Power {
 
             ok, err := attackingTribe.specialConquest(gs, tile, attackingStackType)
             if ok {
-                    return true, err
+                return true, err
             }
 
             if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, attackingTribe.Race) {
-                    return true, fmt.Errorf("This tile already belongs to the tribe!")
+                return true, fmt.Errorf("This tile already belongs to the tribe!")
             }
 
             if err := attackingTribe.checkZoneAccess(tile); err != nil {
-                    return true, err
+                return true, err
             }
             // No check for adjacency
 
             tileCost, moneyGainDefender, moneyLossAttacker := 0, 0, 0
             if tile.CheckPresence() != None {
-                    tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker, gs)
+                tileCost, moneyGainDefender, moneyLossAttacker, err = tile.OwningTribe.countDefense(tile, attacker, gs)
             } else {
-                    tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
+                tileCost, moneyGainDefender, moneyLossAttacker, err = tile.countDefense(gs)
             }
-            
+
             if err != nil {
-                    return true, err
+                return true, err
             }
 
             // counts the cost for the attacker
             attackCostStacks, moneyGainAttacker, moneyLossDefender, pawnKill, err := attackingTribe.countAttack(tile, tileCost, string(attackingTribe.Race))
             if err != nil {
-                    return true, err
+                return true, err
             }
             attackCostStacks = AddPieceStacks(attackCostStacks, []PieceStack{{Type: "Flying Doormat", Amount: 1}})
 
             newStacks, hasDiceBeenUsed, ok, err := attackingTribe.calculateRemainingAttackingStacks(attackCostStacks, tile, gs)
             if err != nil {
-                    return true, err
+                return true, err
             }
             if !ok {
-                    return true, gs.HandleStartRedeployment(attacker.Index)
+                return true, gs.HandleStartRedeployment(attacker.Index)
             }
 
             // Enact changes
@@ -526,8 +545,8 @@ var PowerMap = map[string]func()*Power {
             power.Tile = tile
             tile.ModifierAfterConquest["Flying Doormat"] = TileModifierAfterConquests["Flying Doormat"]
             if tile.CheckPresence() != None {
-                    tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
-                    tile.OwningTribe.handleReturn(tile, gs, pawnKill)
+                tile.OwningTribe.Owner.CoinPile += moneyGainDefender - moneyLossDefender
+                tile.OwningTribe.handleReturn(tile, gs, pawnKill)
             }
 
             attacker.PieceStacks, _ = SubtractPieceStacks(attacker.PieceStacks, newStacks)
@@ -538,9 +557,9 @@ var PowerMap = map[string]func()*Power {
             tile.OwningTribe = attackingTribe
 
             if hasDiceBeenUsed {
-                    return true, gs.HandleStartRedeployment(attacker.Index)
+                return true, gs.HandleStartRedeployment(attacker.Index)
             } else {
-                    gs.TurnInfo.Phase = Conquest
+                gs.TurnInfo.Phase = Conquest
             }
 
             return true, nil
@@ -549,7 +568,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Diamond Fields": func() *Power {
         diamondsFields := &Power{
-                Name: "Diamond Fields",
+            Name: "Diamond Fields",
         }
         diamondsFields.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Diamond Fields Spawn")
@@ -561,7 +580,7 @@ var PowerMap = map[string]func()*Power {
         }
         diamondsFields.CountPoints = func(gs *GameState) int {
             total := 0
-            for _, tile := range(gs.TileList) {
+            for _, tile := range gs.TileList {
                 if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, diamondsFields.Tile.OwningTribe.Race) && tile.Biome == diamondsFields.Tile.Biome {
                     total += 1
                 }
@@ -572,7 +591,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Great Brass Pipe": func() *Power {
         power := &Power{
-                Name: "Great Brass Pipe",
+            Name: "Great Brass Pipe",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Great Brass Pipe Spawn")
@@ -589,7 +608,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Fountain of Youth": func() *Power {
         power := &Power{
-                Name: "Fountain of Youth",
+            Name: "Fountain of Youth",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Fountain of Youth Spawn")
@@ -611,7 +630,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Keep on the Motherland": func() *Power {
         power := &Power{
-                Name: "Keep on the Motherland",
+            Name: "Keep on the Motherland",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Keep on the Motherland Spawn")
@@ -629,7 +648,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Mine of the Lost Dwarf": func() *Power {
         power := &Power{
-                Name: "Mine of the Lost Dwarf",
+            Name: "Mine of the Lost Dwarf",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Mine of the Lost Dwarf Spawn")
@@ -646,8 +665,8 @@ var PowerMap = map[string]func()*Power {
     },
     "Stonehedge": func() *Power {
         power := &Power{
-                Name: "Stonehedge",
-                State: make(map[string]interface{}),
+            Name:  "Stonehedge",
+            State: make(map[string]interface{}),
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Stonehedge Spawn")
@@ -656,7 +675,7 @@ var PowerMap = map[string]func()*Power {
             t.PieceStacks = append(t.PieceStacks, PieceStack{Type: "Stonehedge", Amount: 1})
             delete(t.ModifierAfterConquest, "Stonehedge")
             rand.Seed(time.Now().UnixNano())
-            index := rand.Intn(len(gs.TribeList) - 5) + 5
+            index := rand.Intn(len(gs.TribeList)-5) + 5
             trait := gs.TribeList[index].Trait
             if tribe != nil {
                 power.Owner = tribe.Owner
@@ -671,7 +690,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Altar of Souls": func() *Power {
         power := &Power{
-                Name: "Altar of Souls",
+            Name: "Altar of Souls",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Altar of Souls Spawn")
@@ -685,7 +704,7 @@ var PowerMap = map[string]func()*Power {
             return []PieceStack{{Type: "Altar of Souls", Amount: 1}}
         }
         power.GetStacksForConquest = func(gs *GameState) {
-            for i, stack := range(power.Owner.PieceStacks) {
+            for i, stack := range power.Owner.PieceStacks {
                 if stack.Type == "Altar of Souls" {
                     power.Owner.PieceStacks = append(power.Owner.PieceStacks[:i], power.Owner.PieceStacks[i+1:]...)
                 }
@@ -711,7 +730,7 @@ var PowerMap = map[string]func()*Power {
     },
     "Crypt of the Tomb-raider": func() *Power {
         power := &Power{
-                Name: "Crypt of the Tomb-raider",
+            Name: "Crypt of the Tomb-raider",
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Crypt of the Tomb-raider Spawn")
@@ -725,15 +744,15 @@ var PowerMap = map[string]func()*Power {
             return []PieceStack{{Type: "Tomb-raider", Amount: 1}}
         }
         power.GetStacksForConquest = func(gs *GameState) {
-            for _, tile := range(gs.TileList) {
-                for i, stack := range(tile.PieceStacks) {
+            for _, tile := range gs.TileList {
+                for i, stack := range tile.PieceStacks {
                     if stack.Type == "Tomb-raider" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         delete(tile.ModifierDefenses, "Tomb-raider")
                     }
                 }
             }
-            for i, stack := range(power.Owner.PieceStacks) {
+            for i, stack := range power.Owner.PieceStacks {
                 if stack.Type == "Tomb-raider" {
                     power.Owner.PieceStacks = append(power.Owner.PieceStacks[:i], power.Owner.PieceStacks[i+1:]...)
                     break
@@ -744,7 +763,7 @@ var PowerMap = map[string]func()*Power {
             if tile.OwningTribe.Owner != power.Owner {
                 return fmt.Errorf("This tile does not belong to you!")
             }
-            for _, stack := range(tile.PieceStacks) {
+            for _, stack := range tile.PieceStacks {
                 if stack.Type == "Crypt of the Tomb-raider" {
                     return fmt.Errorf("Cannot put the Tomb-raider in its own crypt!")
                 }
@@ -758,8 +777,8 @@ var PowerMap = map[string]func()*Power {
     },
     "Wickedest Pentacle": func() *Power {
         power := &Power{
-                Name: "Wickedest Pentacle",
-                State: make(map[string]interface{}),
+            Name:  "Wickedest Pentacle",
+            State: make(map[string]interface{}),
         }
         power.Spawn = func(t *Tile, tribe *Tribe, gs *GameState) {
             delete(t.ModifierAfterConquest, "Wickedest Pentacle Spawn")
@@ -774,8 +793,17 @@ var PowerMap = map[string]func()*Power {
             if power.State["hasMoved"].(bool) {
                 return fmt.Errorf("The balrog has already moved!")
             }
+            isAdjacent := false
+            for _, neighbour := range(t1.AdjacentTiles) {
+                if neighbour == t2 {
+                    isAdjacent = true
+                }
+            }
+            if !isAdjacent {
+                return fmt.Errorf("not adjacent")
+            }
+            
             delete(t1.ModifierDefenses, "Balrog")
-            t2.ModifierDefenses["Balrog"] = TileModifierDefenses["Balrog"]
             movingStack := []PieceStack{{Type: "Balrog", Amount: 1}}
             if t2.CheckPresence() != None {
                 _, _, _, err := t2.OwningTribe.countDefense(t2, t2.OwningTribe.Owner, gs)
@@ -786,6 +814,7 @@ var PowerMap = map[string]func()*Power {
             }
             t1.PieceStacks, _ = SubtractPieceStacks(t1.PieceStacks, movingStack)
             t2.PieceStacks = AddPieceStacks(t2.PieceStacks, movingStack)
+            t2.ModifierDefenses["Balrog"] = TileModifierDefenses["Balrog"]
             power.State["hasMoved"] = true
             return nil
         }

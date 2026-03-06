@@ -1,11 +1,10 @@
 package gamestate
 
 import (
-	"fmt"
-	"math/rand"
-	"time"
+    "fmt"
+    "math/rand"
+    "time"
 )
-
 
 func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
     for _, tile := range gs.TileList {
@@ -18,22 +17,22 @@ func (gs *GameState) IsTribePresentOnTheBoard(race Race) bool {
 
 func (gs *GameState) GetPieceStackForConquest(player *Player) {
     if player.ActiveTribe != nil {
-	player.ActiveTribe.getStacksForConquestTurn(player, gs)
+        player.ActiveTribe.getStacksForConquestTurn(player, gs)
     }
-    for _, tribe := range(player.PassiveTribes) {
+    for _, tribe := range player.PassiveTribes {
         tribe.getStacksForConquestTurn(player, gs)
     }
-    for _, power := range(gs.Powers) {
-	if power.Owner == player && power.GetStacksForConquest != nil {
-	    power.GetStacksForConquest(gs)
-	}
+    for _, power := range gs.Powers {
+        if power.Owner == player && power.GetStacksForConquest != nil {
+            power.GetStacksForConquest(gs)
+        }
     }
     for _, tile := range gs.TileList {
         if tile.CheckPresence() != None {
             if player.ActiveTribe != nil && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
                 player.ActiveTribe.getStacksForConquest(tile, player)
             }
-            for _, tribe := range(player.PassiveTribes) {
+            for _, tribe := range player.PassiveTribes {
                 if tile.OwningTribe.checkPresence(tile, tribe.Race) {
                     tribe.getStacksForConquest(tile, player)
                 }
@@ -43,10 +42,10 @@ func (gs *GameState) GetPieceStackForConquest(player *Player) {
 }
 
 func (gs *GameState) CheckJump(tile *Tile, otherTile *Tile) bool {
-    for _, neighbor := range(tile.AdjacentTiles) {
-        for _, neighbor2 := range(neighbor.AdjacentTiles) {
+    for _, neighbor := range tile.AdjacentTiles {
+        for _, neighbor2 := range neighbor.AdjacentTiles {
             adjacent := false
-            for _, neighbor1bis := range(tile.AdjacentTiles) {
+            for _, neighbor1bis := range tile.AdjacentTiles {
                 adjacent = adjacent || neighbor1bis == neighbor2
             }
             if neighbor2 != tile && !adjacent && neighbor2 == otherTile {
@@ -56,55 +55,56 @@ func (gs *GameState) CheckJump(tile *Tile, otherTile *Tile) bool {
     }
     return false
 }
+
 // pickTwoRandom selects two distinct strings from a given slice.
 func pickTwoRandom(strings []string) (string, string, error) {
-	if len(strings) < 2 {
-		return "", "", fmt.Errorf("not enough elements to pick two")
-	}
+    if len(strings) < 2 {
+        return "", "", fmt.Errorf("not enough elements to pick two")
+    }
 
-	rand.Seed(time.Now().UnixNano())
+    rand.Seed(time.Now().UnixNano())
 
-	// Pick first random index
-	i := rand.Intn(len(strings))
+    // Pick first random index
+    i := rand.Intn(len(strings))
 
-	// Pick second random index, ensuring it's different from the first
-	j := rand.Intn(len(strings) - 1)
-	if j >= i {
-		j++
-	}
+    // Pick second random index, ensuring it's different from the first
+    j := rand.Intn(len(strings) - 1)
+    if j >= i {
+        j++
+    }
 
-	return strings[i], strings[j], nil
+    return strings[i], strings[j], nil
 }
 
 func (gs *GameState) countPoints(player *Player) int {
-	total := 0
-	for _, tile := range gs.TileList {
-		if tile.CheckPresence() != None {
-			if player.ActiveTribe != nil && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
-				total += player.ActiveTribe.countPoints(tile)
-			}
-			for _, tribe := range(player.PassiveTribes) {
-			    if tile.OwningTribe.checkPresence(tile, tribe.Race) {
-				total += tribe.countPoints(tile)
-			    }
-			}
-		}
-	}
-	if player.ActiveTribe != nil {
-		total += player.ActiveTribe.countExtrapoints(gs)
-	}
-	for _, passiveTribe := range player.PassiveTribes {
-		total += passiveTribe.countExtrapoints(gs)
-	}
-	for _, power := range gs.Powers {
-	    if power.Owner == player && power.CountPoints != nil {
-	    total += power.CountPoints(gs)
-	    }
-	}
-
-        for _, modifier := range(gs.ModifierPoints) {
-            total = modifier(total, player)
+    total := 0
+    for _, tile := range gs.TileList {
+        if tile.CheckPresence() != None {
+            if player.ActiveTribe != nil && tile.OwningTribe.checkPresence(tile, player.ActiveTribe.Race) {
+                total += player.ActiveTribe.countPoints(tile)
+            }
+            for _, tribe := range player.PassiveTribes {
+                if tile.OwningTribe.checkPresence(tile, tribe.Race) {
+                    total += tribe.countPoints(tile)
+                }
+            }
         }
+    }
+    if player.ActiveTribe != nil {
+        total += player.ActiveTribe.countExtrapoints(gs)
+    }
+    for _, passiveTribe := range player.PassiveTribes {
+        total += passiveTribe.countExtrapoints(gs)
+    }
+    for _, power := range gs.Powers {
+        if power.Owner == player && power.CountPoints != nil {
+            total += power.CountPoints(gs)
+        }
+    }
 
-	return total
+    for _, modifier := range gs.ModifierPoints {
+        total = modifier(total, player)
+    }
+
+    return total
 }

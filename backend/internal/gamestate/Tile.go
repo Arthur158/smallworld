@@ -1,25 +1,25 @@
 package gamestate
 
 type Tile struct {
-	Id string;
-	AdjacentTiles []*Tile;
-	PieceStacks []PieceStack;
-	OwningTribe *Tribe;
-	Biome Biome;
-	Attributes []Attribute;
-	IsEdge bool;
+    Id            string
+    AdjacentTiles []*Tile
+    PieceStacks   []PieceStack
+    OwningTribe   *Tribe
+    Biome         Biome
+    Attributes    []Attribute
+    IsEdge        bool
 
-	State map[string]interface{};
-	ModifierPoints map[string]func(*Tile) int;
-	ModifierDefenses map[string]func(*Tile, *GameState) (int, int, int, error);
-	ModifierAfterConquest map[string]func(*Tile, *Tribe, *GameState);
-	ModifierSpecialDefenses map[string]func(*Tile, *GameState, *Tribe, string) (bool, error);
+    State                   map[string]interface{}
+    ModifierPoints          map[string]func(*Tile) int
+    ModifierDefenses        map[string]func(*Tile, *GameState) (int, int, int, error)
+    ModifierAfterConquest   map[string]func(*Tile, *Tribe, *GameState)
+    ModifierSpecialDefenses map[string]func(*Tile, *GameState, *Tribe, string) (bool, error)
 }
 
 func (tile *Tile) countPoints() int {
     value := 1
-    for _, modifier := range(tile.ModifierPoints) {
-	value += modifier(tile)
+    for _, modifier := range tile.ModifierPoints {
+        value += modifier(tile)
     }
     return value
 }
@@ -32,114 +32,128 @@ func (tile *Tile) countDefense(gs *GameState) (int, int, int, error) {
     if tile.Biome == Mountain {
         a += 1
     }
-    for _, modifier := range(tile.ModifierDefenses) {
-	x, y, z, err := modifier(tile, gs)
-	if err != nil {
-	    return a, b, c, err
-	}
-	a += x
-	b += y
-	c += z
+    if tile.Biome == River {
+        a -= 1
+    }
+    for _, modifier := range tile.ModifierDefenses {
+        x, y, z, err := modifier(tile, gs)
+        if err != nil {
+            return a, b, c, err
+        }
+        a += x
+        b += y
+        c += z
     }
     return a, b, c, err
 }
 
 func (tile *Tile) specialDefense(gs *GameState, attackingTribe *Tribe, attackingStackType string) (bool, error) {
-	for _, modifier := range(tile.ModifierSpecialDefenses) {
-		ok, err := modifier(tile, gs, attackingTribe, attackingStackType)
-		if ok {
-			return ok, err
-		}
-	}
-	return false, nil
+    for _, modifier := range tile.ModifierSpecialDefenses {
+        ok, err := modifier(tile, gs, attackingTribe, attackingStackType)
+        if ok {
+            return ok, err
+        }
+    }
+    return false, nil
 }
 
 func (tile *Tile) handleAfterConquest(gs *GameState, tribe *Tribe) {
-	for _, modifier := range(tile.ModifierAfterConquest) {
-		modifier(tile, tribe, gs)
-	}
+    for _, modifier := range tile.ModifierAfterConquest {
+        modifier(tile, tribe, gs)
+    }
 }
 
 type Biome int
 
 // Enum values for Biome
 const (
-	Forest Biome = iota
-	Hill
-	Field
-	Swamp
-	Water
-	Mountain
+    Forest Biome = iota
+    Hill
+    Field
+    Swamp
+    Water
+    River
+    Mountain
+    MineArea
+    CrystalArea
+    AbyssalChasm
 )
 
 func (b Biome) String() string {
-	switch b {
-	case Forest:
-		return "Forest"
-	case Hill:
-		return "Hill"
-	case Field:
-		return "Field"
-	case Swamp:
-		return "Swamp"
-	case Water:
-		return "Water"
-	case Mountain:
-		return "Mountain"
-	default:
-		return "Unknown"
-	}
+    switch b {
+    case Forest:
+        return "Forest"
+    case Hill:
+        return "Hill"
+    case Field:
+        return "Field"
+    case Swamp:
+        return "Swamp"
+    case Water:
+        return "Water"
+    case River:
+        return "River"
+    case Mountain:
+        return "Mountain"
+    case MineArea:
+        return "MineArea"
+    case CrystalArea:
+        return "CrystalArea"
+    case AbyssalChasm:
+        return "AbyssalChasm"
+    default:
+        return "Unknown"
+    }
 }
 
-type Attribute int;
+type Attribute int
 
 const (
-	Magic Attribute = iota
-	Mine
-	Cave
+    Magic Attribute = iota
+    Mine
+    Cave
 )
 
 func (b Attribute) String() string {
-	switch b {
-	case Magic:
-		return "Magic"
-	case Mine:
-		return "Mine"
-	case Cave:
-		return "Cave"
-	default:
-		return "Unknown"
-	}
+    switch b {
+    case Magic:
+        return "Magic"
+    case Mine:
+        return "Mine"
+    case Cave:
+        return "Cave"
+    default:
+        return "Unknown"
+    }
 }
 
 func (tile *Tile) CheckPresence() Presence {
-	if tile.OwningTribe == nil {
-		return None
-	} else if tile.OwningTribe.IsActive {
-		return Active
-	} else {
-		return Passive
-	}
+    if tile.OwningTribe == nil {
+        return None
+    } else if tile.OwningTribe.IsActive {
+        return Active
+    } else {
+        return Passive
+    }
 }
 
-type Presence int;
+type Presence int
 
 const (
-	None Presence = iota
-	Active
-	Passive
+    None Presence = iota
+    Active
+    Passive
 )
 
 func (b Presence) String() string {
-	switch b {
-	case None:
-		return "None"
-	case Active:
-		return "Active"
-	case Passive:
-		return "Passive"
-	default:
-		return "Unknown"
-	}
+    switch b {
+    case None:
+        return "None"
+    case Active:
+        return "Active"
+    case Passive:
+        return "Passive"
+    default:
+        return "Unknown"
+    }
 }
-
