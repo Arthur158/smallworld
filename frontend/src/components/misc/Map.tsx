@@ -39,6 +39,7 @@ function ImageOrBlueSquare({
 
 export default function Map() {
   const dispatch = useDispatch();
+  const mapImageUrl = useSelector((state: RootState) => state.application.mapImageUrl);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -53,6 +54,9 @@ export default function Map() {
   const offsetStacks = useSelector((state: RootState) => state.application.offsetStacks);
   const Xmult = useSelector((state: RootState) => state.application.Xmult);
   const Ymult = useSelector((state: RootState) => state.application.Ymult);
+
+  const mapSrc = mapImageUrl ?? (mapName ? `/maps/${mapName}.png` : '');
+
 
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number }>({
     width: 0,
@@ -86,17 +90,31 @@ export default function Map() {
   }, []);
 
   // Load the map image so we know its natural dimensions
+  // useEffect(() => {
+  //   if (!mapName) return;
+  //   const image = new Image();
+  //   image.src = `/maps/${mapName}.png`;
+  //   image.onload = () => {
+  //     setImageDimensions({ width: image.width, height: image.height });
+  //   };
+  //   image.onerror = () => {
+  //     console.error(`Failed to load map image: /maps/${mapName}.png`);
+  //   };
+  // }, [mapName]);
   useEffect(() => {
-    if (!mapName) return;
+    if (!mapSrc) return;
+
     const image = new Image();
-    image.src = `/maps/${mapName}.png`;
+    image.src = mapSrc;
+
     image.onload = () => {
       setImageDimensions({ width: image.width, height: image.height });
     };
+
     image.onerror = () => {
-      console.error(`Failed to load map image: /maps/${mapName}.png`);
+      console.error(`Failed to load map image: ${mapSrc}`);
     };
-  }, [mapName]);
+  }, [mapSrc]);
 
   // Once we know the image size and the container size, we can figure out the minScale
   // so that the image is entirely contained, and also center it.
@@ -382,7 +400,7 @@ export default function Map() {
             y={0}
             width={imageDimensions.width * offsetMapTiles}
             height={imageDimensions.height * offsetMapTiles}
-            href={`/maps/${mapName}.png`}
+            href={mapSrc}
           />
 
           {/* Invisible polygons for tile click detection */}

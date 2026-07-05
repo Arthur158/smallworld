@@ -442,6 +442,7 @@ func (client *Client) handleLogin(userName string, password string) {
         if room.InProgress {
             room.sendToRoomPlayers(messages.Message{Type: "gamestarted"})
             room.sendSmallMapUpdate()
+            room.sendGeneratedMapVisualsToClient(client)
             room.sendBigUpdate()
         }
         client.Room.sendMapChoices()

@@ -51,12 +51,18 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
     }
 
     gs.ModifierPoints = make(map[string]func(int, *Player) int)
-    function, ok := MapRegistry[mapName]
-    if !ok {
-        return nil, fmt.Errorf("map not found")
-    }
 
-    gs.TileList = function(gs)
+    function, ok := MapRegistry[mapName]
+    if ok {
+        gs.TileList = function(gs)
+    } else {
+        runtimeMap, ok := BuildRuntimeMap(mapName, gs)
+        if !ok {
+            return nil, fmt.Errorf("map not found")
+        }
+
+        gs.TileList = runtimeMap
+    }
 
     // Testing Powers
     testingPowers := true

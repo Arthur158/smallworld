@@ -1,0 +1,3 @@
+[submodule "smallworld-map-generator"]
+	path = smallworld-map-generator
+	url = git@github.com:Arthur158/smallworld-map-generator.git

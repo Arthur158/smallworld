@@ -4,6 +4,40 @@ import { Language } from '../../types/misc';
 import { Player, TribeEntry, Room, Tile, SaveGameInfo } from '../../types/Board';
 import { mapDatabase, MapData } from '../../data/mapData'; // <-- Import your local map data
 
+function base64PngToObjectUrl(base64: string): string {
+  const byteString = atob(base64);
+  const array = new Uint8Array(byteString.length);
+
+  for (let i = 0; i < byteString.length; i++) {
+    array[i] = byteString.charCodeAt(i);
+  }
+
+  const imageBlob = new Blob([array], { type: 'image/png' });
+  return URL.createObjectURL(imageBlob);
+}
+
+function applyMapDataToState(state: any, mapName: string, mapData: MapData) {
+  state.mapName = mapName;
+  state.offsetStacks = mapData.OffsetStacks;
+  state.Xmult = mapData.Xmult;
+  state.Ymult = mapData.Ymult;
+
+  const newTiles: Record<string, Tile> = {};
+
+  mapData.Tiles.forEach((tileDef) => {
+    newTiles[String(tileDef.ID)] = {
+      id: String(tileDef.ID),
+      polygon: {
+        coords: tileDef.Polygon.Coords,
+        stackX: tileDef.Polygon.StackX,
+        stackY: tileDef.Polygon.StackY,
+      },
+      pieceStack: [],
+    };
+  });
+
+  state.tiles = newTiles;
+}
 
 const initialState: ApplicationState = {
   language: Language.NL,
@@ -232,33 +266,73 @@ const applicationSlice = createSlice({
           state.globalToggle = parsedData.globalToggle
           break;
         }
+        // case 'smallmapupdate': {
+        //   state.offsetMapTiles = parsedData.offset;
+        //   state.mapName = parsedData.MapName;
+        //
+        //
+        //   // Load tile definitions from your local map data
+        //   const mapKey = state.mapName || '';
+        //   const tileDataArray = mapDatabase[mapKey] || [];
+        //
+        //   state.offsetStacks = tileDataArray.OffsetStacks
+        //   state.Xmult = tileDataArray.Xmult
+        //   state.Ymult = tileDataArray.Ymult
+        //
+        //   const newTiles: Record<string, Tile> = {};
+        //   tileDataArray.Tiles.forEach((tileDef) => {
+        //     newTiles[String(tileDef.ID)] = {
+        //       id: String(tileDef.ID),
+        //       polygon: {
+        //         coords: tileDef.Polygon.Coords,
+        //         stackX: tileDef.Polygon.StackX,
+        //         stackY: tileDef.Polygon.StackY,
+        //       },
+        //       pieceStack: [],
+        //     };
+        //   });
+        //
+        //   state.tiles = newTiles;
+        //   break;
+        // }
         case 'smallmapupdate': {
           state.offsetMapTiles = parsedData.offset;
-          state.mapName = parsedData.MapName;
+          state.mapName = parsedData.mapName ?? parsedData.MapName;
 
-
-          // Load tile definitions from your local map data
           const mapKey = state.mapName || '';
-          const tileDataArray = mapDatabase[mapKey] || [];
+          const mapData = mapDatabase[mapKey];
 
-          state.offsetStacks = tileDataArray.OffsetStacks
-          state.Xmult = tileDataArray.Xmult
-          state.Ymult = tileDataArray.Ymult
+          if (!mapData) {
+            // This is expected for runtime generated maps.
+            // The generatedmapvisuals message will arrive next and register the map.
+            state.tiles = {};
+            break;
+          }
 
-          const newTiles: Record<string, Tile> = {};
-          tileDataArray.Tiles.forEach((tileDef) => {
-            newTiles[String(tileDef.ID)] = {
-              id: String(tileDef.ID),
-              polygon: {
-                coords: tileDef.Polygon.Coords,
-                stackX: tileDef.Polygon.StackX,
-                stackY: tileDef.Polygon.StackY,
-              },
-              pieceStack: [],
-            };
-          });
+          // Builtin maps use static files from /maps.
+          state.mapImageUrl = null;
 
-          state.tiles = newTiles;
+          applyMapDataToState(state, mapKey, mapData);
+          break;
+        }
+        case 'generatedmapvisuals': {
+          const mapName = parsedData.mapName;
+          const graphics = parsedData.graphics as MapData;
+
+          // Register this generated map exactly like a builtin map.
+          mapDatabase[mapName] = graphics;
+
+          // Store the generated PNG as an object URL.
+          state.mapImageUrl = base64PngToObjectUrl(parsedData.imageBase64);
+
+          // Generated maps should always use the backend-provided offset.
+          state.offsetMapTiles = parsedData.offset ?? 0.808;
+
+          applyMapDataToState(state, mapName, graphics);
+
+          console.log('Registered generated map:', mapName);
+          console.log('Generated server tile metadata:', parsedData.serverTiles);
+
           break;
         }
         case 'playerupdate': {

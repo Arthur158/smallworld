@@ -26,6 +26,13 @@ func getMapImageAsBase64(path string) (string, error) {
     return base64.StdEncoding.EncodeToString(imgBytes), nil
 }
 
+var GeneratedMap = Map{
+    Name: "generatedmap",
+    Offset:   0.808,
+    FontSize: 60,
+    Capacity: 6,
+}
+
 var Map2 = Map{
     Name:     "map2players",
     Offset:   0.728,
@@ -113,7 +120,12 @@ var Underground2 = Map{
     Capacity: 2,
 }
 
+func IsGeneratedMapChoice(mapName string) bool {
+	return mapName == "generatedmap"
+}
+
 var mapMap = map[string]Map{
+    "generatedmap":        GeneratedMap,
     "map2players":         Map2,
     "map3players":         Map3,
     "map4players":         Map4,

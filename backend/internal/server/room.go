@@ -356,6 +356,8 @@ func spectateRoom(client *Client, roomID string) {
     if client.Room.InProgress {
         client.sendMessage("spectate", json.RawMessage([]byte(`{"index": "`+strconv.Itoa(1)+`"}`)))
         client.Room.sendSmallMapUpdate()
+        client.Room.sendGeneratedMapVisuals()
+
         client.Room.sendBigUpdate()
     }
     client.IsSpectator = true
@@ -476,26 +478,46 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
     roomsMu.Lock()
     defer roomsMu.Unlock()
 
-    for _, player := range room.Players {
-        if player == nil {
-            log.Println("The room is not full")
-            client.sendError("The room is not full")
-            return
-        }
-    }
-
     room, exists := rooms[roomID]
     if !exists {
         client.sendError("That room does not exist.")
         return
     }
+
     if room.HostUsername != client.Username {
         client.sendError("Only the room host can start the game.")
         return
     }
-    if len(room.Players) < 2 {
-        client.sendError("Need at least 2 players to start the game.")
-        return
+
+    if IsGeneratedMapChoice(room.Map.Name) {
+        nonNilPlayers := []*Client{}
+
+        for _, player := range room.Players {
+            if player != nil {
+                nonNilPlayers = append(nonNilPlayers, player)
+            }
+        }
+
+        if len(nonNilPlayers) < 2 {
+            client.sendError("Need at least 2 players to start the game.")
+            return
+        }
+
+        room.Players = nonNilPlayers
+        room.Map.Capacity = len(nonNilPlayers)
+    } else {
+        for _, player := range room.Players {
+            if player == nil {
+                log.Println("The room is not full")
+                client.sendError("The room is not full")
+                return
+            }
+        }
+
+        if len(room.Players) < 2 {
+            client.sendError("Need at least 2 players to start the game.")
+            return
+        }
     }
 
     playerNames := make([]string, len(room.Players))
@@ -507,6 +529,17 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
     }
 
     if room.saveId == -1 {
+        if IsGeneratedMapChoice(client.Room.Map.Name) {
+            generatedMap, err := GenerateRuntimeMapForPlayerCount(len(playerNames))
+            if err != nil {
+                log.Println("Error generating runtime map:", err)
+                client.sendError("Could not generate map: " + err.Error())
+                return
+            }
+
+            mapMap[generatedMap.Name] = generatedMap
+            client.Room.Map = generatedMap
+        }
         raceKeys := []string{}
         traitKeys := []string{}
         powerKeys := []string{}
@@ -599,6 +632,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
     }()
 
     room.sendSmallMapUpdate()
+    room.sendGeneratedMapVisuals()
 
     for i, client := range room.Players {
         client.sendMessage("index", json.RawMessage([]byte(`{"index": "`+strconv.Itoa(i)+`"}`)))
@@ -1087,6 +1121,24 @@ func (room *Room) SendCoinUpdate() {
     }
 }
 
+func (room *Room) sendGeneratedMapVisuals() {
+	visuals, ok := GetGeneratedMapVisuals(room.Map.Name)
+	if !ok {
+		return
+	}
+
+	jsonData, err := json.Marshal(visuals)
+	if err != nil {
+		log.Println("failed to marshal generated map visuals:", err)
+		return
+	}
+
+	room.sendToRoomPlayers(messages.Message{
+		Type: "generatedmapvisuals",
+		Data: jsonData,
+	})
+}
+
 func (room *Room) AutoSave() {
     if !room.InProgress {
         log.Println("game not started")
@@ -1135,4 +1187,28 @@ func (room *Room) RollBack(client *Client) {
     }
     room.Gamestate = *state
     room.sendMegaUpdate()
+}
+
+func (room *Room) sendGeneratedMapVisualsToClient(client *Client) {
+	visuals, ok := GetGeneratedMapVisuals(room.Map.Name)
+	if !ok {
+		return
+	}
+
+	jsonData, err := json.Marshal(visuals)
+	if err != nil {
+		log.Println("failed to marshal generated map visuals:", err)
+		return
+	}
+
+	room.mu.Lock()
+	err = client.Conn.WriteJSON(messages.Message{
+		Type: "generatedmapvisuals",
+		Data: jsonData,
+	})
+	room.mu.Unlock()
+
+	if err != nil {
+		log.Println("error sending generated map visuals:", err)
+	}
 }
