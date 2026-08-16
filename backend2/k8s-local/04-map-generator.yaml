@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: map-generator
+  namespace: game
+
+spec:
+  selector:
+    app: map-generator
+
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: map-generator
+  namespace: game
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: map-generator
+
+  template:
+    metadata:
+      labels:
+        app: map-generator
+
+    spec:
+      containers:
+        - name: map-generator
+          image: smallworld-map-generator:dev
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 3001
+
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "3001"
+            - name: NODE_ENV
+              value: "production"
+
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi

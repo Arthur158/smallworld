@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: room-worker
+spec:
+  clusterIP: None
+  selector:
+    app: room-worker
+  ports:
+    - name: health
+      port: 8081
+      targetPort: health
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: room-worker
+spec:
+  serviceName: room-worker
+  replicas: 4
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: room-worker
+  template:
+    metadata:
+      labels:
+        app: room-worker
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: room-worker
+          image: YOUR_REGISTRY/YOUR_GAME_ROOMWORKER:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: health
+              containerPort: 8081
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            # IMPORTANT: keep this equal to StatefulSet.spec.replicas.
+            # With the current hash(roomID) % workerCount routing scheme,
+            # changing this value remaps rooms.
+            - name: ROOM_WORKER_COUNT
+              value: "4"
+            - name: REDIS_ADDR
+              value: redis:6379
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: game-database
+                  key: url
+            - name: HEALTH_ADDR
+              value: ":8081"
+            # Normal room snapshots have no expiry by default. "0" means
+            # persist until the room is explicitly deleted.
+            - name: ROOM_SNAPSHOT_TTL
+              value: "0"
+            - name: DISPLAY_ROOM_TTL
+              value: "2h"
+            # Change this to the Service name used by your map generator.
+            - name: MAP_GENERATOR_URL
+              value: http://map-generator:3001
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3

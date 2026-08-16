@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: game
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: game-database
+  namespace: game
+
+type: Opaque
+
+stringData:
+  POSTGRES_USER: game
+  POSTGRES_PASSWORD: game
+  POSTGRES_DB: game
+
+  url: postgres://game:game@postgres:5432/game?sslmode=disable

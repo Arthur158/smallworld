@@ -75,3 +75,5 @@ temp/
 coverage/
 *.coverage
 *.lcov
+*.kind-data
+kubectl

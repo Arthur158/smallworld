@@ -1,13 +1,14 @@
-package server
+package roomworker
 
 import (
-	"bytes"
 	"backend/internal/gamestate"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -38,342 +39,341 @@ func generatedMapSettingsForPlayerCount(playerCount int) MapGeneratorSettings {
 	settingsByPlayerCount := map[int]MapGeneratorSettings{
 		2: map[string]any{
 			"tileCount": 22,
-			"width": 1400,
-			"height": 900,
+			"width":     1400,
+			"height":    900,
 			"shapeMode": "mainland",
 
 			"wobble": 34,
 			"spread": 0,
 
 			"tileShapeSettings": map[string]any{
-			  "chonkiness": 80,
-			  "repulsionSteps": 12,
+				"chonkiness":     80,
+				"repulsionSteps": 12,
 			},
 
 			"randomizeSeaCorners": false,
-			"centerLake": true,
+			"centerLake":          true,
 
 			"seaCorners": map[string]any{
-			  "NW": true,
-			  "NE": false,
-			  "SW": false,
-			  "SE": true,
+				"NW": true,
+				"NE": false,
+				"SW": false,
+				"SE": true,
 			},
 
 			"waterSettings": map[string]any{
-			  "centerLakeSize": 140,
-			  "seaSize": 160,
+				"centerLakeSize": 140,
+				"seaSize":        160,
 			},
 			"scenerySettings": map[string]any{
-			  "forestTreeSize": 95,
-			  "mountainObjectSize": 260,
+				"forestTreeSize":     95,
+				"mountainObjectSize": 260,
 			},
 
-
 			"biomeWeights": map[string]any{
-			  "field": 100,
-			  "grass": 100,
-			  "forest": 100,
-			  "mountain": 100,
-			  "swamp": 100,
+				"field":    100,
+				"grass":    100,
+				"forest":   100,
+				"mountain": 100,
+				"swamp":    100,
 			},
 
 			"biomeTextureZooms": map[string]any{
-			  "field": 60,
-			  "grass": 60,
-			  "forest": 40,
-			  "mountain": 60,
-			  "swamp": 60,
-			  "sea": 60,
+				"field":    60,
+				"grass":    60,
+				"forest":   40,
+				"mountain": 60,
+				"swamp":    60,
+				"sea":      60,
 			},
 
 			"buildingSettings": map[string]any{
-			  "averagePerTile": 0.28,
-			  "maxPerTile": 1,
-			  "sizeMultiplier": 4,
+				"averagePerTile": 0.28,
+				"maxPerTile":     1,
+				"sizeMultiplier": 4,
 			},
 
 			"featureSettings": map[string]any{
-			  "magic": map[string]any{
-				"count": 3,
-				"spread": 0,
-			  },
-			  "mine": map[string]any{
-				"count": 3,
-				"spread": 0,
-			  },
-			  "cave": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
+				"magic": map[string]any{
+					"count":  3,
+					"spread": 0,
+				},
+				"mine": map[string]any{
+					"count":  3,
+					"spread": 0,
+				},
+				"cave": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
 			},
 		},
 		3: map[string]any{
 			"tileCount": 29,
-			"width": 1400,
-			"height": 900,
+			"width":     1400,
+			"height":    900,
 			"shapeMode": "mainland",
 
 			"wobble": 34,
 			"spread": 0,
 
 			"tileShapeSettings": map[string]any{
-			  "chonkiness": 80,
-			  "repulsionSteps": 12,
+				"chonkiness":     80,
+				"repulsionSteps": 12,
 			},
 
 			"randomizeSeaCorners": false,
-			"centerLake": true,
+			"centerLake":          true,
 
 			"seaCorners": map[string]any{
-			  "NW": true,
-			  "NE": false,
-			  "SW": false,
-			  "SE": true,
+				"NW": true,
+				"NE": false,
+				"SW": false,
+				"SE": true,
 			},
 
 			"waterSettings": map[string]any{
-			  "centerLakeSize": 140,
-			  "seaSize": 120,
+				"centerLakeSize": 140,
+				"seaSize":        120,
 			},
 
 			"biomeWeights": map[string]any{
-			  "field": 100,
-			  "grass": 100,
-			  "forest": 100,
-			  "mountain": 100,
-			  "swamp": 100,
+				"field":    100,
+				"grass":    100,
+				"forest":   100,
+				"mountain": 100,
+				"swamp":    100,
 			},
 
 			"biomeTextureZooms": map[string]any{
-			  "field": 60,
-			  "grass": 60,
-			  "forest": 40,
-			  "mountain": 60,
-			  "swamp": 60,
-			  "sea": 60,
+				"field":    60,
+				"grass":    60,
+				"forest":   40,
+				"mountain": 60,
+				"swamp":    60,
+				"sea":      60,
 			},
 
 			"buildingSettings": map[string]any{
-			  "averagePerTile": 0.28,
-			  "maxPerTile": 1,
-			  "sizeMultiplier": 2,
+				"averagePerTile": 0.28,
+				"maxPerTile":     1,
+				"sizeMultiplier": 2,
 			},
 
 			"featureSettings": map[string]any{
-			  "magic": map[string]any{
-				"count": 5,
-				"spread": 0,
-			  },
-			  "mine": map[string]any{
-				"count": 5,
-				"spread": 0,
-			  },
-			  "cave": map[string]any{
-				"count": 5,
-				"spread": 0,
-			  },
+				"magic": map[string]any{
+					"count":  5,
+					"spread": 0,
+				},
+				"mine": map[string]any{
+					"count":  5,
+					"spread": 0,
+				},
+				"cave": map[string]any{
+					"count":  5,
+					"spread": 0,
+				},
 			},
 		},
 		4: map[string]any{
 			"tileCount": 38,
-			"width": 1400,
-			"height": 900,
+			"width":     1400,
+			"height":    900,
 			"shapeMode": "mainland",
 
 			"wobble": 34,
 			"spread": 0,
 
 			"tileShapeSettings": map[string]any{
-			  "chonkiness": 80,
-			  "repulsionSteps": 12,
+				"chonkiness":     80,
+				"repulsionSteps": 12,
 			},
 
 			"randomizeSeaCorners": false,
-			"centerLake": true,
+			"centerLake":          true,
 
 			"seaCorners": map[string]any{
-			  "NW": true,
-			  "NE": false,
-			  "SW": false,
-			  "SE": true,
+				"NW": true,
+				"NE": false,
+				"SW": false,
+				"SE": true,
 			},
 
 			"waterSettings": map[string]any{
-			  "centerLakeSize": 140,
-			  "seaSize": 120,
+				"centerLakeSize": 140,
+				"seaSize":        120,
 			},
 
 			"biomeWeights": map[string]any{
-			  "field": 100,
-			  "grass": 100,
-			  "forest": 100,
-			  "mountain": 100,
-			  "swamp": 100,
+				"field":    100,
+				"grass":    100,
+				"forest":   100,
+				"mountain": 100,
+				"swamp":    100,
 			},
 
 			"biomeTextureZooms": map[string]any{
-			  "field": 60,
-			  "grass": 60,
-			  "forest": 40,
-			  "mountain": 60,
-			  "swamp": 60,
-			  "sea": 60,
+				"field":    60,
+				"grass":    60,
+				"forest":   40,
+				"mountain": 60,
+				"swamp":    60,
+				"sea":      60,
 			},
 
 			"buildingSettings": map[string]any{
-			  "averagePerTile": 0.28,
-			  "maxPerTile": 1,
-			  "sizeMultiplier": 2,
+				"averagePerTile": 0.28,
+				"maxPerTile":     1,
+				"sizeMultiplier": 2,
 			},
 
 			"featureSettings": map[string]any{
-			  "magic": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
-			  "mine": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
-			  "cave": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
+				"magic": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
+				"mine": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
+				"cave": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
 			},
 		},
 		5: map[string]any{
 			"tileCount": 47,
-			"width": 1400,
-			"height": 900,
+			"width":     1400,
+			"height":    900,
 			"shapeMode": "mainland",
 
 			"wobble": 34,
 			"spread": 0,
 
 			"tileShapeSettings": map[string]any{
-			  "chonkiness": 80,
-			  "repulsionSteps": 12,
+				"chonkiness":     80,
+				"repulsionSteps": 12,
 			},
 
 			"randomizeSeaCorners": false,
-			"centerLake": true,
+			"centerLake":          true,
 
 			"seaCorners": map[string]any{
-			  "NW": true,
-			  "NE": false,
-			  "SW": false,
-			  "SE": true,
+				"NW": true,
+				"NE": false,
+				"SW": false,
+				"SE": true,
 			},
 
 			"waterSettings": map[string]any{
-			  "centerLakeSize": 140,
-			  "seaSize": 120,
+				"centerLakeSize": 140,
+				"seaSize":        120,
 			},
 
 			"biomeWeights": map[string]any{
-			  "field": 100,
-			  "grass": 100,
-			  "forest": 100,
-			  "mountain": 100,
-			  "swamp": 100,
+				"field":    100,
+				"grass":    100,
+				"forest":   100,
+				"mountain": 100,
+				"swamp":    100,
 			},
 
 			"biomeTextureZooms": map[string]any{
-			  "field": 60,
-			  "grass": 60,
-			  "forest": 40,
-			  "mountain": 60,
-			  "swamp": 60,
-			  "sea": 60,
+				"field":    60,
+				"grass":    60,
+				"forest":   40,
+				"mountain": 60,
+				"swamp":    60,
+				"sea":      60,
 			},
 
 			"buildingSettings": map[string]any{
-			  "averagePerTile": 0.28,
-			  "maxPerTile": 1,
-			  "sizeMultiplier": 2,
+				"averagePerTile": 0.28,
+				"maxPerTile":     1,
+				"sizeMultiplier": 2,
 			},
 
 			"featureSettings": map[string]any{
-			  "magic": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
-			  "mine": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
-			  "cave": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
+				"magic": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
+				"mine": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
+				"cave": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
 			},
 		},
 		6: map[string]any{
 			"tileCount": 56,
-			"width": 1400,
-			"height": 900,
+			"width":     1400,
+			"height":    900,
 			"shapeMode": "mainland",
 
 			"wobble": 34,
 			"spread": 0,
 
 			"tileShapeSettings": map[string]any{
-			  "chonkiness": 80,
-			  "repulsionSteps": 12,
+				"chonkiness":     80,
+				"repulsionSteps": 12,
 			},
 
 			"randomizeSeaCorners": false,
-			"centerLake": true,
+			"centerLake":          true,
 
 			"seaCorners": map[string]any{
-			  "NW": true,
-			  "NE": false,
-			  "SW": false,
-			  "SE": true,
+				"NW": true,
+				"NE": false,
+				"SW": false,
+				"SE": true,
 			},
 
 			"waterSettings": map[string]any{
-			  "centerLakeSize": 140,
-			  "seaSize": 120,
+				"centerLakeSize": 140,
+				"seaSize":        120,
 			},
 
 			"biomeWeights": map[string]any{
-			  "field": 100,
-			  "grass": 100,
-			  "forest": 100,
-			  "mountain": 100,
-			  "swamp": 100,
+				"field":    100,
+				"grass":    100,
+				"forest":   100,
+				"mountain": 100,
+				"swamp":    100,
 			},
 
 			"biomeTextureZooms": map[string]any{
-			  "field": 60,
-			  "grass": 60,
-			  "forest": 40,
-			  "mountain": 60,
-			  "swamp": 60,
-			  "sea": 60,
+				"field":    60,
+				"grass":    60,
+				"forest":   40,
+				"mountain": 60,
+				"swamp":    60,
+				"sea":      60,
 			},
 
 			"buildingSettings": map[string]any{
-			  "averagePerTile": 0.28,
-			  "maxPerTile": 1,
-			  "sizeMultiplier": 2,
+				"averagePerTile": 0.28,
+				"maxPerTile":     1,
+				"sizeMultiplier": 2,
 			},
 
 			"featureSettings": map[string]any{
-			  "magic": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
-			  "mine": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
-			  "cave": map[string]any{
-				"count": 4,
-				"spread": 0,
-			  },
+				"magic": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
+				"mine": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
+				"cave": map[string]any{
+					"count":  4,
+					"spread": 0,
+				},
 			},
 		},
 	}
@@ -399,7 +399,8 @@ func requestGeneratedMap(settings MapGeneratorSettings) (*mapGeneratorResponse, 
 
 	url := mapGeneratorURL() + "/api/generate"
 
-	resp, err := http.Post(url, "application/json", bytes.NewReader(body))
+	httpClient := &http.Client{Timeout: 60 * time.Second}
+	resp, err := httpClient.Post(url, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to contact map generator at %s: %w", url, err)
 	}
@@ -485,8 +486,8 @@ func convertGeneratedTiles(resp *mapGeneratorResponse) ([]gamestate.RuntimeTileS
 
 		specs = append(specs, gamestate.RuntimeTileSpec{
 			ID:          tile.ID.String(),
-			Biome:      biome,
-			Attributes: attributes,
+			Biome:       biome,
+			Attributes:  attributes,
 			IsEdge:      tile.IsEdge,
 			AdjacentIDs: generatedIDsToStrings(tile.AdjacentIDs),
 		})

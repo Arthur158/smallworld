@@ -326,8 +326,8 @@ export default function LobbyPage() {
                       >
                         <span className="font-semibold">
                           {idx + 1}: {p}
-                          {playerStatuses[idx] && playerStatuses[idx].trim() !== '' && (
-                            <span className="text-sm font-normal"> | {playerStatuses[idx]}</span>
+                          {(playerStatuses?.[idx] ?? "") && playerStatuses[idx].trim() !== '' && (
+                            <span className="text-sm font-normal"> | {playerStatuses?.[idx] ?? ""}</span>
                           )}
                         </span>
                         {currentRoom?.creator === username && (

@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: room-worker
+  namespace: game
+
+spec:
+  clusterIP: None
+
+  selector:
+    app: room-worker
+
+  ports:
+    - name: health
+      port: 8081
+      targetPort: health
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: room-worker
+  namespace: game
+
+spec:
+  serviceName: room-worker
+
+  # VERY IMPORTANT:
+  # This must equal ROOM_WORKER_COUNT below.
+  replicas: 2
+
+  podManagementPolicy: Parallel
+
+  selector:
+    matchLabels:
+      app: room-worker
+
+  template:
+    metadata:
+      labels:
+        app: room-worker
+
+    spec:
+      terminationGracePeriodSeconds: 30
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - room-worker
+                topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: room-worker
+
+          image: smallworld-roomworker:dev
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: health
+              containerPort: 8081
+
+          env:
+            # Produces names such as:
+            # room-worker-0
+            # room-worker-1
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+            - name: ROOM_WORKER_COUNT
+              value: "2"
+
+            - name: REDIS_ADDR
+              value: redis:6379
+
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: game-database
+                  key: url
+
+            - name: HEALTH_ADDR
+              value: ":8081"
+
+            - name: ROOM_SNAPSHOT_TTL
+              value: "0"
+
+            - name: DISPLAY_ROOM_TTL
+              value: "2h"
+
+            # Your map generator is a separate service.
+            # See the note later in this tutorial.
+            - name: MAP_GENERATOR_URL
+              value: http://map-generator:3001
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 2
+
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: health
+
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2

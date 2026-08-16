@@ -1,0 +1,4 @@
+tmp
+cmd/server/tmp
+*.log
+.git
