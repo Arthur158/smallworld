@@ -30,4 +30,7 @@ In the display room, looking at a saved game.
 Trying the Underground extension
 ![Screenshot](images/underground.png)
 
-
+Generating random maps for 3 players
+![Screenshot](images/generatedmap.png)
+Or for 2 players
+![Screenshot](images/generatedmap2.png)
