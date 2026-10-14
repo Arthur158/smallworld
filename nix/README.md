@@ -60,6 +60,42 @@ security.acme = {
 See `example-configuration.nix` for the same configuration in a complete
 module fragment.
 
+## Module options
+
+All options are under `services.smallworld`:
+
+| Option | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `enable` | boolean | `false` | Enable the complete Smallworld stack. |
+| `backendPackage` | package | the flake's `backend` package | Gateway and room-worker binaries. Override this to deploy a custom backend derivation. |
+| `frontendPackage` | package | the flake's `frontend` package | Static frontend served by nginx. Override this to deploy a custom frontend derivation. |
+| `mapGeneratorPackage` | package | the flake's `map-generator` package | Map-generator server package. Override this to deploy a custom map generator derivation. |
+| `hostName` | null or string | `null` | Public hostname used by nginx. `null` creates a catch-all default virtual host. Required when `enableACME = true`. |
+| `listenAddress` | string | `"0.0.0.0"` | Address on which nginx accepts public connections. Use `"127.0.0.1"` when another local reverse proxy is in front. |
+| `port` | TCP port | `3000` | Public HTTP or HTTPS port exposed by nginx. |
+| `openFirewall` | boolean | `true` | Add `port` to `networking.firewall.allowedTCPPorts`. |
+| `enableACME` | boolean | `false` | Obtain an ACME certificate for `hostName`, enable TLS, and redirect HTTP to HTTPS. The host must also configure `security.acme.acceptTerms` and an ACME email address. |
+| `workerCount` | positive integer | `2` | Number of room-worker systemd services and the shared `ROOM_WORKER_COUNT`. Do not change it while rooms are active because it changes room-to-worker assignment. |
+| `workerHealthPortBase` | TCP port | `8100` | First loopback health port for workers. Worker `N` listens on `workerHealthPortBase + N`; the complete range must not exceed `65535`. |
+| `mapGeneratorPort` | TCP port | `3001` | Loopback port for the map-generator API. |
+| `allowedOrigins` | list of strings | `[ "*" ]` | WebSocket origins accepted by the gateway. For a public deployment, set this to the exact frontend origin. |
+| `environmentFile` | null or path | `null` | Optional systemd environment file applied to the gateway, workers, and map generator. Use it for secrets and external-service overrides rather than putting credentials in the Nix store. |
+| `database.createLocally` | boolean | `true` | Provision a local PostgreSQL database and `smallworld` role using peer authentication. |
+| `database.url` | string | `""` | External `DATABASE_URL` used when `database.createLocally = false`. It or `environmentFile` must be set in that case. |
+| `redis.createLocally` | boolean | `true` | Provision a persistent Redis instance bound only to loopback. |
+| `redis.address` | string | `""` | External `REDIS_ADDR` used when `redis.createLocally = false`. It or `environmentFile` must be set in that case. |
+| `redis.port` | TCP port | `6379` | Port of the locally provisioned Redis instance. Ignored when `redis.createLocally = false`. |
+
+For example, a small single-machine deployment with one room worker is:
+
+```nix
+services.smallworld = {
+  enable = true;
+  workerCount = 1;
+  allowedOrigins = [ "http://smallworld.lan:3000" ];
+};
+```
+
 ## Operations
 
 ```console
