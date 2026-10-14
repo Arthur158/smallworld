@@ -1,17 +1,18 @@
-FROM node:18
+FROM node:18 AS build
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
 RUN npm run build
 
-RUN npm install -g serve
+FROM nginx:1.27-alpine
 
-EXPOSE 3000
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/build /usr/share/nginx/html
 
-CMD ["serve", "-s", "build"]
+EXPOSE 80

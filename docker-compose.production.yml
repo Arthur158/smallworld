@@ -1,0 +1,142 @@
+name: smallworld-production
+
+x-backend-environment: &backend-environment
+  REDIS_ADDR: redis:6379
+  DATABASE_URL: postgres://smallworld:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/smallworld?sslmode=disable
+  ROOM_WORKER_COUNT: "2"
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smallworld
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: smallworld
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smallworld -d smallworld"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  map-generator:
+    build:
+      context: ./smallworld-map-generator
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  worker-0:
+    build:
+      context: ./backend2
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    environment:
+      <<: *backend-environment
+      WORKER_ID: "0"
+      HEALTH_ADDR: :8081
+      MAP_GENERATOR_URL: http://map-generator:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      map-generator:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  worker-1:
+    build:
+      context: ./backend2
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    environment:
+      <<: *backend-environment
+      WORKER_ID: "1"
+      HEALTH_ADDR: :8081
+      MAP_GENERATOR_URL: http://map-generator:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      map-generator:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  gateway:
+    build:
+      context: ./backend2
+      dockerfile: Dockerfile.gateway
+    restart: unless-stopped
+    environment:
+      <<: *backend-environment
+      LISTEN_ADDR: :8080
+      GATEWAY_ID: compose-gateway
+      WS_ALLOWED_ORIGINS: ${SMALLWORLD_ORIGIN:-*}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${SMALLWORLD_PORT:-3000}:80"
+    depends_on:
+      gateway:
+        condition: service_healthy
+      map-generator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:
+  redis-data:

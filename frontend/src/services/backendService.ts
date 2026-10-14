@@ -5,12 +5,8 @@ let socket: WebSocket | null = null;
 
 // Connect WebSocket
 export const connectWebSocket = () => {
-  socket = new WebSocket('ws://localhost:8080/ws');
-   //wss://recommendation-conjunction-regulation-attention.trycloudflare.com/ws
-   wss://60cd-2a02-2788-11ca-f01-f686-5fff-fe1c-ff6f.ngrok-free.app/ws
-  // 'https://397a-2a02-2788-11ca-f01-2e0-4cff-fe68-ed.ngrok-free.app/' 
-  // -> 'wss://397a-2a02-2788-11ca-f01-2e0-4cff-fe68-ed.ngrok-free.app/ws'
-  // ws://localhost:8080/ws
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
   socket.onopen = () => {
     console.log('WebSocket connected');

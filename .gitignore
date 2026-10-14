@@ -77,3 +77,8 @@ coverage/
 *.lcov
 *.kind-data
 kubectl
+
+# Local Nix outputs
+/result
+/result-*
+.direnv/

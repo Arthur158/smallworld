@@ -29,6 +29,10 @@ services:
     depends_on:
       map-generator:
         condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - gateway
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
       interval: 5s

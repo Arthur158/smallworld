@@ -8,23 +8,18 @@ nodes:
 
     # localhost:8080 on Fedora
     #       ↓
-    # NodePort 30080 inside Kubernetes.
+    # Frontend NodePort 30080 inside Kubernetes.
     extraPortMappings:
       - containerPort: 30080
         hostPort: 8080
         listenAddress: "127.0.0.1"
         protocol: TCP
 
-  # Worker node where Redis/Postgres persistent storage lives.
+  # Worker node where Redis/Postgres storage lives inside the kind node.
   - role: worker
 
     labels:
       game-storage: "true"
-
-    extraMounts:
-      - hostPath: "/home/arthurj/github/smallworld/backend2/.kind-data"
-        containerPath: /var/local/game-data
-        selinuxRelabel: true
 
   # Second Kubernetes worker node.
   - role: worker
