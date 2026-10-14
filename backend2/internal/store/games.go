@@ -11,6 +11,7 @@ import (
 )
 
 type GameStateCopy struct {
+	RNGState  uint64 `json:",omitempty"`
 	Players   []PlayerCopy
 	TribeList []TribeEntryCopy
 	TileList  []TileCopy
@@ -239,6 +240,7 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 	}
 
 	return GameStateCopy{
+		RNGState:  state.RNGState,
 		Players:   players,
 		TribeList: tribeList,
 		TileList:  tiles,
@@ -413,6 +415,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 	}
 
 	return &gamestate.GameState{
+		RNGState:           copyState.RNGState,
 		Players:            players,
 		TribeList:          tribeList,
 		TileList:           tileList,

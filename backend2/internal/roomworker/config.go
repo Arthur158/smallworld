@@ -9,6 +9,8 @@ import (
 )
 
 type Config struct {
+	BotModelDir    string
+	BotMoveDelay   time.Duration
 	HealthAddr     string
 	WorkerID       uint32
 	WorkerCount    uint32
@@ -24,6 +26,8 @@ type Config struct {
 
 func LoadConfig() (Config, error) {
 	cfg := Config{
+		BotModelDir:  os.Getenv("BOT_MODEL_DIR"),
+		BotMoveDelay: 350 * time.Millisecond,
 		HealthAddr:   envOr("HEALTH_ADDR", ":8081"),
 		RedisAddr:    envOr("REDIS_ADDR", "localhost:6379"),
 		RedisURL:     os.Getenv("REDIS_URL"),
@@ -87,6 +91,13 @@ func LoadConfig() (Config, error) {
 		cfg.DisplayRoomTTL = d
 	}
 
+	if value := os.Getenv("BOT_MOVE_DELAY"); value != "" {
+		d, err := time.ParseDuration(value)
+		if err != nil || d < 100*time.Millisecond || d > 10*time.Second {
+			return Config{}, fmt.Errorf("BOT_MOVE_DELAY must be between 100ms and 10s")
+		}
+		cfg.BotMoveDelay = d
+	}
 	return cfg, nil
 }
 

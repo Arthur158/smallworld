@@ -2,8 +2,6 @@ package gamestate
 
 import (
     "fmt"
-    "math/rand"
-    "time"
 )
 
 func CreateTribe(race Race, trait Trait) (*Tribe, error) {
@@ -29,13 +27,14 @@ func CreateTribe(race Race, trait Trait) (*Tribe, error) {
     return tribe, nil
 }
 
-func createTribeList(raceKeys []string, traitKeys []string) ([]*TribeEntry, error) {
+func (gs *GameState) createTribeList(raceKeys []string, traitKeys []string) ([]*TribeEntry, error) {
 
-    r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-    r.Shuffle(len(raceKeys), func(i, j int) { raceKeys[i], raceKeys[j] = raceKeys[j], raceKeys[i] })
-    r.Shuffle(len(traitKeys), func(i, j int) { traitKeys[i], traitKeys[j] = traitKeys[j], traitKeys[i] })
+    gs.shuffle(len(raceKeys), func(i, j int) { raceKeys[i], raceKeys[j] = raceKeys[j], raceKeys[i] })
+    gs.shuffle(len(traitKeys), func(i, j int) { traitKeys[i], traitKeys[j] = traitKeys[j], traitKeys[i] })
 
+    for _, key := range raceKeys { if _, ok := RaceMap[Race(key)]; !ok { return nil, fmt.Errorf("unknown race %q", key) } }
+    for _, key := range traitKeys { if _, ok := TraitMap[Trait(key)]; !ok { return nil, fmt.Errorf("unknown trait %q", key) } }
     tribeEntries := []*TribeEntry{}
     pairCount := min(len(raceKeys), len(traitKeys))
 

@@ -7,6 +7,7 @@ import (
 )
 
 type GameState struct {
+    RNGState           uint64 // Per-game random stream; persisted with snapshots.
     Players            []*Player
     TribeList          []*TribeEntry
     TileList           map[string]*Tile
@@ -20,8 +21,17 @@ type GameState struct {
 }
 
 func New(playerNames []string, mapName string, raceKeys []string, traitKeys []string, powerKeys []string) (*GameState, error) {
-    // Create a list of initialized players
-    gs := &GameState{}
+    return NewSeeded(playerNames, mapName, raceKeys, traitKeys, powerKeys, uint64(time.Now().UnixNano()))
+}
+
+// NewSeeded creates an independent random stream for reproducible bot matches.
+func NewSeeded(playerNames []string, mapName string, raceKeys []string, traitKeys []string, powerKeys []string, seed uint64) (*GameState, error) {
+    // Constructors must not shuffle caller-owned configuration slices.
+    raceKeys = append([]string(nil), raceKeys...)
+    traitKeys = append([]string(nil), traitKeys...)
+    powerKeys = append([]string(nil), powerKeys...)
+    gs := &GameState{RNGState: seed}
+    if gs.RNGState == 0 { gs.RNGState = 1 }
     gs.Players = make([]*Player, len(playerNames))
     for i, name := range playerNames {
         gs.Players[i] = &Player{
@@ -45,7 +55,7 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
     gs.ModifierAfterPick = make(map[string]func(int, *TribeEntry))
 
     var err error
-    gs.TribeList, err = createTribeList(raceKeys, traitKeys)
+    gs.TribeList, err = gs.createTribeList(raceKeys, traitKeys)
     if err != nil {
         return nil, err
     }
@@ -78,7 +88,7 @@ func New(playerNames []string, mapName string, raceKeys []string, traitKeys []st
     }
 
     if err != nil {
-        return nil, fmt.Errorf("failed to create list of tribe entries", err)
+        return nil, fmt.Errorf("failed to create list of tribe entries: %w", err)
     }
 
     gs.Powers = make(map[string]*Power)
@@ -113,7 +123,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
     tempActiveTribe, err := CreateTribe(entry.Race, entry.Trait)
     if err != nil {
-        return fmt.Errorf("Could not create tribe:", err)
+        return fmt.Errorf("could not create tribe: %w", err)
     }
     chooser.ActiveTribe = tempActiveTribe
     chooser.ActiveTribe.Owner = chooser
@@ -390,7 +400,7 @@ func (gs *GameState) HandleFinishTurn(playerIndex int) error {
 
     if gs.TurnInfo.Phase != Redeployment {
         if err := gs.HandleStartRedeployment(playerIndex); err != nil {
-            return fmt.Errorf("Error in redeployment phase:", err)
+            return fmt.Errorf("error in redeployment phase: %w", err)
         }
     }
 
@@ -479,6 +489,13 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
         return fmt.Errorf("The tribe cannot go in decline at this moment")
     }
 
+    // Reserve the remaining market entries for players already needing a tribe.
+    waiting := 0
+    for _, p := range gs.Players { if p.ActiveTribe == nil { waiting++ } }
+    if len(gs.TribeList) <= waiting {
+        return fmt.Errorf("no spare tribe remains for a new decline")
+    }
+
     player.ActiveTribe.goIntoDecline(gs)
 
     gs.handleNextPlayerTurn()
@@ -528,7 +545,7 @@ func (gs *GameState) handleNextPlayerTurn() {
     if gs.TurnInfo.PlayerIndex == len(gs.Players)-1 {
         if gs.TurnInfo.TurnIndex == 9 {
             for _, player := range gs.Players {
-                player.ActiveTribe.handleEndOfGame(gs)
+                if player.ActiveTribe != nil { player.ActiveTribe.handleEndOfGame(gs) }
                 for _, tribe := range player.PassiveTribes {
                     tribe.handleEndOfGame(gs)
                 }

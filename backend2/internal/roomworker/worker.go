@@ -1,6 +1,7 @@
 package roomworker
 
 import (
+	"backend/internal/bot"
 	"backend/internal/gamestate"
 	"backend/internal/messages"
 	"backend/internal/protocol"
@@ -24,6 +25,7 @@ var (
 )
 
 type Worker struct {
+	bots  *bot.Registry
 	cfg   Config
 	redis *redis.Client
 	store *store.Store
@@ -37,6 +39,10 @@ type Worker struct {
 }
 
 func New(cfg Config) (*Worker, error) {
+	registry, err := bot.NewRegistry(cfg.BotModelDir)
+	if err != nil {
+		return nil, err
+	}
 	rdb, err := newRedisClient(cfg)
 	if err != nil {
 		return nil, err
@@ -59,6 +65,7 @@ func New(cfg Config) (*Worker, error) {
 	gamestate.InitRaceMap()
 
 	w := &Worker{
+		bots:           registry,
 		cfg:            cfg,
 		redis:          rdb,
 		store:          dbStore,
@@ -133,12 +140,17 @@ func (w *Worker) Run(ctx context.Context) error {
 			return nil
 		}
 
+		// All game mutations stay on this command-consumer goroutine.
+		block := w.cfg.CommandBlock
+		if w.advanceBots(ctx) && (block == 0 || block > 100*time.Millisecond) {
+			block = 100 * time.Millisecond
+		}
 		results, err := w.redis.XReadGroup(ctx, &redis.XReadGroupArgs{
 			Group:    w.cfg.ConsumerGroup,
 			Consumer: w.cfg.ConsumerName,
 			Streams:  []string{stream, ">"},
 			Count:    32,
-			Block:    w.cfg.CommandBlock,
+			Block:    block,
 		}).Result()
 		if errors.Is(err, redis.Nil) {
 			continue

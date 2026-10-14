@@ -145,6 +145,18 @@ curl --fail http://127.0.0.1:3000/
 - The map generator is a Git submodule. After changing it, commit and push the
   submodule first, then commit the updated submodule pointer in this repository.
 
+## Bots and AI training
+
+The backend2 lobby lets the room host add random, greedy, or trained bots and
+choose each bot's model. Bot matches use an explicit supported rules preset.
+Train offline with the same Go engine and PyTorch, including NVIDIA CUDA
+validation, then export a model for CPU inference in the room worker.
+Training uses fresh generated maps by default, with separate evaluation seeds
+and a policy that does not depend on fixed region IDs or board sizes.
+
+See [the bot and training guide](ai/README.md) for setup on a separate training
+computer, training/resume commands, evaluation, supported rules and deployment.
+
 ## Screenshots
 
 A game with three players:

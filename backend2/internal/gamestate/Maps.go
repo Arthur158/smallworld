@@ -2,8 +2,6 @@ package gamestate
 
 import (
     "fmt"
-    "math/rand"
-    "time"
 )
 
 func mergeMaps(map1, map2 map[string]*Tile) map[string]*Tile {
@@ -439,8 +437,7 @@ func Underground2(gs *GameState) map[string]*Tile {
     }
 
     monsters := []string{"Monster1", "Monster2", "Monster3", "Monster4", "Monster5", "Monster6", "Monster7"}
-    rand.Seed(time.Now().UnixNano())
-    rand.Shuffle(len(monsters), func(i, j int) {
+    gs.shuffle(len(monsters), func(i, j int) {
         monsters[i], monsters[j] = monsters[j], monsters[i]
     })
 
@@ -1090,7 +1087,7 @@ func Map4Isles2(gs *GameState) map[string]*Tile {
     result := mergeMaps(Map3(gs), MapIsles2(gs))
     potentialPositions := []string{"1", "2", "3", "4", "25", "5", "21", "20", "16", "15", "0"}
     AncientBuilders := CreateBaseTribe()
-    a, b, _ := pickTwoRandom(potentialPositions)
+    a, b, _ := gs.pickTwoRandom(potentialPositions)
     result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
     result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
     result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["0i"])
@@ -1104,7 +1101,7 @@ func Map4Isles3(gs *GameState) map[string]*Tile {
     result := mergeMaps(Map3(gs), MapIsles3(gs))
     potentialPositions := []string{"1", "2", "3", "4", "25", "5", "21", "20", "16", "15", "0"}
     AncientBuilders := CreateBaseTribe()
-    a, b, _ := pickTwoRandom(potentialPositions)
+    a, b, _ := gs.pickTwoRandom(potentialPositions)
     result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
     result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
     result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["8i"])
@@ -1118,7 +1115,7 @@ func Map3Isles2(gs *GameState) map[string]*Tile {
     result := mergeMaps(Map2(gs), MapIsles2(gs))
     potentialPositions := []string{"7", "8", "9", "13", "15", "16"}
     AncientBuilders := CreateBaseTribe()
-    a, b, _ := pickTwoRandom(potentialPositions)
+    a, b, _ := gs.pickTwoRandom(potentialPositions)
     result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
     result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
     result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["0i"])
@@ -1131,7 +1128,7 @@ func Map3Isles3(gs *GameState) map[string]*Tile {
     result := mergeMaps(Map2(gs), MapIsles3(gs))
     potentialPositions := []string{"7", "8", "9", "13", "15", "16"}
     AncientBuilders := CreateBaseTribe()
-    a, b, _ := pickTwoRandom(potentialPositions)
+    a, b, _ := gs.pickTwoRandom(potentialPositions)
     result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
     result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
     result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["8i"])
@@ -1145,7 +1142,7 @@ func Map5Isles2(gs *GameState) map[string]*Tile {
     result := mergeMaps(Map4(gs), MapIsles2(gs))
     potentialPositions := []string{"8", "9", "10", "11", "12", "13", "14", "18", "19", "21", "25", "26", "27", "32", "33"}
     AncientBuilders := CreateBaseTribe()
-    a, b, _ := pickTwoRandom(potentialPositions)
+    a, b, _ := gs.pickTwoRandom(potentialPositions)
     result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
     result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
     result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["0i"])
@@ -1158,7 +1155,7 @@ func Map5Isles3(gs *GameState) map[string]*Tile {
     result := mergeMaps(Map4(gs), MapIsles3(gs))
     potentialPositions := []string{"8", "9", "10", "11", "12", "13", "14", "18", "19", "21", "25", "26", "27", "32", "33"}
     AncientBuilders := CreateBaseTribe()
-    a, b, _ := pickTwoRandom(potentialPositions)
+    a, b, _ := gs.pickTwoRandom(potentialPositions)
     result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
     result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
     result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["8i"])
@@ -1172,7 +1169,7 @@ func Map6Isles2(gs *GameState) map[string]*Tile {
     result := mergeMaps(Map5(gs), MapIsles2(gs))
     potentialPositions := []string{"8", "9", "10", "11", "18", "12", "19", "20", "25", "31", "36", "35", "41", "40", "34", "39", "33", "29", "30", "24", "16"}
     AncientBuilders := CreateBaseTribe()
-    a, b, _ := pickTwoRandom(potentialPositions)
+    a, b, _ := gs.pickTwoRandom(potentialPositions)
     result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
     result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
     result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["0i"])
@@ -1186,7 +1183,7 @@ func Map6Isles3(gs *GameState) map[string]*Tile {
     result := mergeMaps(Map5(gs), MapIsles3(gs))
     potentialPositions := []string{"8", "9", "10", "11", "18", "12", "19", "20", "25", "31", "36", "35", "41", "40", "34", "39", "33", "29", "30", "24", "16"}
     AncientBuilders := CreateBaseTribe()
-    a, b, _ := pickTwoRandom(potentialPositions)
+    a, b, _ := gs.pickTwoRandom(potentialPositions)
     result[a].PieceStacks = AddPieceStacks(result[a].PieceStacks, []PieceStack{{Type: "Great Beanstalk", Amount: 1, Tribe: AncientBuilders}})
     result[b].PieceStacks = AddPieceStacks(result[b].PieceStacks, []PieceStack{{Type: "Great Stairs", Amount: 1, Tribe: AncientBuilders}})
     result[a].AdjacentTiles = append(result[a].AdjacentTiles, result["8i"])

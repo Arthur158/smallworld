@@ -12,6 +12,8 @@ import (
 // contains no websocket connection. GatewayID + ConnectionID are only routing
 // information for targeted responses.
 type Client struct {
+	BotModel      string // Empty for authenticated humans; bots have no gateway route.
+	BotName       string
 	Username      string
 	GatewayID     string
 	ConnectionID  string

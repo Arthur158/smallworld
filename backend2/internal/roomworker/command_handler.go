@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"log"
+	"strconv"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -27,6 +27,11 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 		}
 	}
 
+	if room := rooms[cmd.RoomID]; room != nil {
+		if i := roomPlayerIndex(room, cmd.Username); i >= 0 && room.Players[i].BotModel != "" {
+			return errors.New("bot seats cannot authenticate")
+		}
+	}
 	client := w.logicalClient(cmd)
 	if room := rooms[cmd.RoomID]; room != nil {
 		if cmd.Scope == protocol.ScopeDisplay {
@@ -38,6 +43,30 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 	}
 
 	switch cmd.Message.Type {
+	case "addBot", "setBotModel", "useBotRules":
+		room, err := requireHost(client)
+		if err != nil {
+			return err
+		}
+		if cmd.Message.Type == "useBotRules" {
+			room.useBotRules()
+			return nil
+		}
+		var data struct {
+			ModelID  string `json:"modelId"`
+			Username string `json:"username"`
+		}
+		if err := json.Unmarshal(cmd.Message.Data, &data); err != nil {
+			return errors.New("invalid bot data")
+		}
+		if !w.bots.Has(data.ModelID) {
+			return errors.New("unknown bot model")
+		}
+		if cmd.Message.Type == "addBot" {
+			return room.addBot(w, data.ModelID)
+		}
+		return room.setBotModel(w, data.Username, data.ModelID)
+
 	case "createRoom":
 		if err := w.requireNoOtherRoom(ctx, cmd.Username, cmd.RoomID); err != nil {
 			return err
@@ -114,7 +143,7 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 		return nil
 
 	case "startGame":
-		room, err := requireNormalRoom(client)
+		room, err := requireHost(client)
 		if err != nil {
 			return err
 		}
@@ -264,7 +293,7 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 		return nil
 
 	case "loadgame":
-		room, err := requireNormalRoom(client)
+		room, err := requireHost(client)
 		if err != nil {
 			return err
 		}
@@ -395,6 +424,10 @@ func (w *Worker) handleReconnect(ctx context.Context, client *Client, cmd protoc
 	room.sendGeneratedMapVisualsToClient(client)
 	room.sendMegaUpdateToClient(client)
 	room.sendPlayerStatusesToClient(client)
+	if room.HostUsername == client.Username {
+		room.sendMapChoices()
+		room.sendChoices()
+	}
 	return nil
 }
 
@@ -472,19 +505,19 @@ func roomPlayerIndex(room *Room, username string) int {
 // after a new gateway subscription and should not blast a full update to every
 // other player just because one socket came back.
 func (room *Room) sendPlayerStatusesToClient(c *Client) {
-    statuses := room.playerStatuses
+	statuses := room.playerStatuses
 
-    if statuses == nil {
-        statuses = []string{}
-    }
+	if statuses == nil {
+		statuses = []string{}
+	}
 
-    raw, err := json.Marshal(statuses)
-    if err != nil {
-        log.Printf("marshal player statuses: %v", err)
-        return
-    }
+	raw, err := json.Marshal(statuses)
+	if err != nil {
+		log.Printf("marshal player statuses: %v", err)
+		return
+	}
 
-    c.sendMessage("playerStatuses", raw)
+	c.sendMessage("playerStatuses", raw)
 }
 
 func (room *Room) sendSmallMapUpdateToClient(c *Client) {

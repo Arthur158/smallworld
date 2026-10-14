@@ -1,0 +1,15 @@
+# Optional trained-model overlay. Random and greedy bots work without this file.
+# Use with: docker compose -f docker-compose.production.yml -f docker-compose.bots.yml up --build -d
+services:
+  worker-0:
+    environment:
+      BOT_MODEL_DIR: /app/bot-models
+      BOT_MOVE_DELAY: 350ms
+    volumes:
+      - ./ai/models:/app/bot-models:ro
+  worker-1:
+    environment:
+      BOT_MODEL_DIR: /app/bot-models
+      BOT_MOVE_DELAY: 350ms
+    volumes:
+      - ./ai/models:/app/bot-models:ro

@@ -18,6 +18,7 @@ rec {
     subPackages = [
       "cmd/gateway"
       "cmd/roomworker"
+      "cmd/botenv"
     ];
 
     doCheck = true;

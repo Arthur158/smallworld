@@ -29,7 +29,6 @@ func (w *Worker) syncLobbyMetadata(ctx context.Context) error {
 			continue
 		}
 
-
 		players := make([]string, len(room.Players))
 		for i, player := range room.Players {
 			if player != nil {
@@ -37,6 +36,8 @@ func (w *Worker) syncLobbyMetadata(ctx context.Context) error {
 			}
 		}
 		local[id] = protocol.RoomMetadata{
+			Bots:       room.botSeats(),
+			BotModels:  w.bots.Catalog(),
 			ID:         room.ID,
 			Name:       room.Name,
 			Players:    players,

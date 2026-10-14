@@ -8,11 +8,16 @@ import (
 	"log"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 type Room struct {
+	botNextMove         time.Time
+	botDirty            bool
+	botTurnEnded        bool
+	botError            string
 	ID                  string
 	Name                string
 	HostUsername        string
@@ -117,22 +122,22 @@ func createRoom(client *Client, roomName, username string) {
 }
 
 func (room *Room) sendPlayerStatuses() {
-    statuses := room.playerStatuses
+	statuses := room.playerStatuses
 
-    if statuses == nil {
-        statuses = []string{}
-    }
+	if statuses == nil {
+		statuses = []string{}
+	}
 
-    playerStatusesJSON, err := json.Marshal(statuses)
-    if err != nil {
-        log.Println("Error marshalling playerStatuses:", err)
-        return
-    }
+	playerStatusesJSON, err := json.Marshal(statuses)
+	if err != nil {
+		log.Println("Error marshalling playerStatuses:", err)
+		return
+	}
 
-    room.sendToRoomPlayers(messages.Message{
-        Type: "playerStatuses",
-        Data: json.RawMessage(playerStatusesJSON),
-    })
+	room.sendToRoomPlayers(messages.Message{
+		Type: "playerStatuses",
+		Data: json.RawMessage(playerStatusesJSON),
+	})
 }
 
 func (room *Room) sendMapChoices() {
@@ -253,6 +258,15 @@ func (room *Room) ChangeMap(newMap string) bool {
 		return false
 	}
 
+	occupied := 0
+	for _, p := range room.Players {
+		if p != nil {
+			occupied++
+		}
+	}
+	if !room.IsDisplayRoom && occupied > gameMap.Capacity {
+		return false
+	}
 	room.Map = gameMap
 
 	newSize := gameMap.Capacity
@@ -282,7 +296,7 @@ func (room *Room) ChangeMap(newMap string) bool {
 	// Ensure there is still a valid host
 	if len(room.Players) > 0 && room.HostUsername == "" {
 		for _, player := range room.Players {
-			if player != nil {
+			if player != nil && player.BotModel == "" {
 				room.HostUsername = player.Username
 				break
 			}
@@ -464,8 +478,9 @@ func (room *Room) removePlayer(username string) {
 		return
 	}
 	if room.HostUsername == client.Username && len(room.Players) != 0 {
+		room.HostUsername = ""
 		for _, player := range room.Players {
-			if player != nil {
+			if player != nil && player.BotModel == "" {
 				room.HostUsername = player.Username
 			}
 		}
@@ -479,15 +494,26 @@ func (room *Room) removePlayer(username string) {
 	// If all players left, remove the room or handle as you wish
 	count := 0
 	for _, player := range room.Players {
-		if player != nil {
+		if player != nil && player.BotModel == "" {
 			count += 1
 		}
 	}
 	if count == 0 {
 		delete(rooms, room.ID)
+		for _, spectator := range room.Spectators {
+			if spectator != nil {
+				_ = spectator.clearRoom(messages.Message{Type: "lobby"})
+			}
+		}
 	}
 
-	_ = client.clearRoom(messages.Message{Type: "lobby", Data: nil})
+	if client.BotModel == "" {
+		_ = client.clearRoom(messages.Message{Type: "lobby", Data: nil})
+	} else {
+		client.Room = nil
+	}
+	room.sendMapChoices()
+	room.sendChoices()
 	sendRoomsUpdateToAll()
 }
 
@@ -575,7 +601,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 	playerNames := make([]string, len(room.Players))
 	for i, client := range room.Players {
-		playerNames[i] = client.Username
+		playerNames[i] = client.displayName()
 	}
 
 	if room.saveId == -1 {
@@ -620,6 +646,16 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 			}
 		}
 
+		if room.hasBots() {
+			if err := gamestate.ValidateBotChoices(raceKeys, traitKeys, powerKeys); err != nil {
+				client.sendError(err.Error() + ". Click Use bot rules in the lobby.")
+				return
+			}
+			if min(len(raceKeys), len(traitKeys)) < len(playerNames) {
+				client.sendError("Bots need at least one tribe per player")
+				return
+			}
+		}
 		newstate, err := gamestate.New(playerNames, room.Map.Name, raceKeys, traitKeys, powerKeys)
 		if err != nil {
 			log.Println(err)
@@ -640,11 +676,19 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		for i := range playerNames {
 			newstate.Players[i].Name = playerNames[i]
 		}
+		if room.hasBots() {
+			if err := newstate.ValidateBotState(); err != nil {
+				client.sendError("Saved game is incompatible with bots: " + err.Error())
+				return
+			}
+		}
 		room.Gamestate = *newstate
 	}
 
 	// Mark the room as in-progress
 	room.InProgress = true
+	room.botError = ""
+	room.botNextMove = time.Now().Add(350 * time.Millisecond)
 
 	id, err := SaveGameState(&room.Gamestate, 0, room.Map.Name)
 	if err != nil {
@@ -656,7 +700,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 
 	if id > 0 {
 		for _, player := range room.Players {
-			if player == nil {
+			if player == nil || player.BotModel != "" {
 				continue
 			}
 			if err := AddGameIDToUser(player.Username, id); err != nil {
@@ -777,7 +821,7 @@ func (room *Room) sendPlayerUpdate() {
 		if p == nil {
 			continue
 		}
-		playerData.Name = room.Players[i].Username
+		playerData.Name = room.Players[i].displayName()
 		if p.ActiveTribe != nil {
 			playerData.ActiveTribe = Tribe{
 				Race:  string(p.ActiveTribe.Race),
@@ -1175,7 +1219,7 @@ func (room *Room) sendGeneratedMapVisuals() {
 }
 
 func (room *Room) AutoSave() {
-	if !room.InProgress {
+	if !room.InProgress && (room.Gamestate.TurnInfo == nil || room.Gamestate.TurnInfo.Phase != gamestate.GameFinished) {
 		return
 	}
 	id, err := SaveGameState(&room.Gamestate, 0, room.Map.Name)
@@ -1186,7 +1230,7 @@ func (room *Room) AutoSave() {
 	oldID := room.autoSaveId
 	room.autoSaveId = id
 	for _, player := range room.Players {
-		if player == nil {
+		if player == nil || player.BotModel != "" {
 			continue
 		}
 		if oldID > 0 {
@@ -1213,7 +1257,7 @@ func (room *Room) RollBack(client *Client) {
 	}
 	playerNames := make([]string, len(room.Players))
 	for i, client := range room.Players {
-		playerNames[i] = client.Username
+		playerNames[i] = client.displayName()
 	}
 	for i := range playerNames {
 		state.Players[i].Name = playerNames[i]

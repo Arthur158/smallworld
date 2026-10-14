@@ -47,7 +47,13 @@ export interface Player {
   pieceStacks: PieceStack[]
 }
 
+export interface BotModel { id: string; name: string; description: string; }
+export interface BotSeat { modelId: string; name: string; }
+
 export interface Room {
+  bots?: Record<string, BotSeat>;
+  botModels?: BotModel[];
+  inProgress?: boolean;
   id: string;
   name: string;
   creator: string;

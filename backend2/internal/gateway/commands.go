@@ -15,6 +15,9 @@ import (
 )
 
 var workerMessageTypes = map[string]struct{}{
+	"addBot":            {},
+	"setBotModel":       {},
+	"useBotRules":       {},
 	"tribepick":         {},
 	"entryaction":       {},
 	"abandonment":       {},

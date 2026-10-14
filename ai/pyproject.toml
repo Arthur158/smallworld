@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smallworld-ai"
+version = "0.1.0"
+description = "Offline Smallworld reinforcement learning and model export"
+requires-python = ">=3.10,<3.14"
+dependencies = ["torch==2.8.0", "numpy==2.2.6"]
+
+[project.scripts]
+smallworld-train = "smallworld_ai.train:main"
+smallworld-evaluate = "smallworld_ai.evaluate:main"
+smallworld-export = "smallworld_ai.export:main"
+smallworld-doctor = "smallworld_ai.device:main"
+
+[tool.setuptools.packages.find]
+include = ["smallworld_ai*"]

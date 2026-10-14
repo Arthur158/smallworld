@@ -82,3 +82,9 @@ kubectl
 /result
 /result-*
 .direnv/
+
+# Offline bot training outputs and exported deployment models
+/ai/bin/
+/ai/runs/
+/ai/models/*.json
+*.egg-info/

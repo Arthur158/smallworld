@@ -15,6 +15,8 @@ import (
 const snapshotVersion = 1
 
 type snapshotPlayer struct {
+	BotModel string `json:"botModel,omitempty"`
+	BotName  string `json:"botName,omitempty"`
 	Username string `json:"username"`
 	Index    int    `json:"index"`
 }
@@ -75,7 +77,7 @@ func (w *Worker) persistRoom(ctx context.Context, room *Room) error {
 	}
 	for i, p := range room.Players {
 		if p != nil {
-			snap.Players[i] = &snapshotPlayer{Username: p.Username, Index: p.Index}
+			snap.Players[i] = &snapshotPlayer{Username: p.Username, Index: p.Index, BotModel: p.BotModel, BotName: p.BotName}
 		}
 	}
 	for _, s := range room.Spectators {
@@ -161,7 +163,12 @@ func (w *Worker) ensureRoomLoaded(ctx context.Context, roomID string) (*Room, er
 		if sp == nil {
 			continue
 		}
-		c := w.clientByUsername(sp.Username)
+		var c *Client
+		if sp.BotModel != "" {
+			c = &Client{Username: sp.Username, BotModel: sp.BotModel, BotName: sp.BotName, worker: w}
+		} else {
+			c = w.clientByUsername(sp.Username)
+		}
 		c.Index = sp.Index
 		if room.IsDisplayRoom {
 			c.DisplayRoom = room
@@ -169,6 +176,9 @@ func (w *Worker) ensureRoomLoaded(ctx context.Context, roomID string) (*Room, er
 			c.Room = room
 		}
 		room.Players[i] = c
+		if i < len(room.Gamestate.Players) {
+			room.Gamestate.Players[i].Name = c.displayName()
+		}
 	}
 	for _, username := range snap.Spectators {
 		c := w.clientByUsername(username)

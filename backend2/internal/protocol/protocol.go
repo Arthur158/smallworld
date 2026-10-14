@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"backend/internal/bot"
 	"backend/internal/messages"
 	"encoding/json"
 	"fmt"
@@ -68,16 +69,24 @@ type RoomMembership struct {
 	IsSpectator bool   `json:"isSpectator"`
 }
 
+// BotSeat describes a worker-owned player without an authenticated connection.
+type BotSeat struct {
+	ModelID string `json:"modelId"`
+	Name    string `json:"name"`
+}
+
 // RoomMetadata is the distributed equivalent of the room list that used to be
 // built by sendRoomsUpdateToAll from the in-process rooms map.
 type RoomMetadata struct {
-	ID         string   `json:"id"`
-	Name       string   `json:"name"`
-	Players    []string `json:"players"`
-	MaxPlayers int      `json:"maxPlayers"`
-	MapName    string   `json:"mapName"`
-	Creator    string   `json:"creator"`
-	InProgress bool     `json:"inProgress"`
+	Bots       map[string]BotSeat `json:"bots,omitempty"`
+	BotModels  []bot.Info         `json:"botModels,omitempty"`
+	ID         string             `json:"id"`
+	Name       string             `json:"name"`
+	Players    []string           `json:"players"`
+	MaxPlayers int                `json:"maxPlayers"`
+	MapName    string             `json:"mapName"`
+	Creator    string             `json:"creator"`
+	InProgress bool               `json:"inProgress"`
 }
 
 func WorkerForRoom(roomID string, workerCount uint32) (uint32, error) {

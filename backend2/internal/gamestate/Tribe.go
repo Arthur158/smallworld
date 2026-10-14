@@ -268,7 +268,7 @@ func (t *Tribe) calculateRemainingAttackingStacks(expanses []PieceStack, tile *T
                 } else if reserve.Amount+3 < expanse.Amount {
                     err = fmt.Errorf("Even the dice can't help")
                 } else if reserve.Amount < expanse.Amount {
-                    diceThrow := RollDice()
+                    diceThrow := gs.rollDice()
                     hasDiceBeenUsed = true
                     if reserve.Amount+diceThrow >= expanse.Amount {
                         gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Success: the result of the dice throw was: %d", diceThrow)})

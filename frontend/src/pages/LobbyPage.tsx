@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAuthConfig, sendMessageToBackend } from '../services/backendService';
 import { reset, clearError } from '../redux/slices/applicationSlice';
 import { Room, SaveGameInfo } from '../types/Board';
+import RoomBotControls, { BotModelSelect } from '../components/RoomBotControls';
 
 export default function LobbyPage() {
   const navigate = useNavigate();
@@ -87,6 +88,8 @@ export default function LobbyPage() {
   // Keyboard shortcut for start game: press 'p'
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
       if (event.key.toLowerCase() === 'p' && currentRoom?.creator === username) {
         handleStartGame();
       }
@@ -321,6 +324,7 @@ export default function LobbyPage() {
                     </select>
                   </div>
                 )}
+                <RoomBotControls room={currentRoom} isHost={currentRoom.creator === username} />
                 <p className="font-semibold mb-3">Players in this room:</p>
                 <div className="space-y-3 mb-4">
                   {currentRoom.players?.map((p, idx) => {
@@ -331,13 +335,15 @@ export default function LobbyPage() {
                         className="flex items-center justify-between p-3 bg-[#EED5B7] rounded-lg shadow-sm"
                       >
                         <span className="font-semibold">
-                          {idx + 1}: {p}
+                          {idx + 1}: {currentRoom?.bots?.[p]?.name ?? p}
+                          {currentRoom?.bots?.[p] && <span className="text-sm font-normal"> · {currentRoom.botModels?.find(model => model.id === currentRoom?.bots?.[p]?.modelId)?.name ?? "Bot"}</span>}
                           {(playerStatuses?.[idx] ?? "") && playerStatuses[idx].trim() !== '' && (
                             <span className="text-sm font-normal"> | {playerStatuses?.[idx] ?? ""}</span>
                           )}
                         </span>
                         {currentRoom?.creator === username && (
-                          <div className="flex space-x-2">
+                          <div className="flex flex-wrap gap-2">
+                            <BotModelSelect room={currentRoom} username={p} />
                             <button
                               onClick={() => handleMoveUp(p)}
                               className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded"

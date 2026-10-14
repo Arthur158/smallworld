@@ -1,0 +1,5 @@
+# Build with ai/models as the context, after building the ordinary worker image.
+ARG WORKER_IMAGE=smallworld-roomworker:dev
+FROM ${WORKER_IMAGE}
+COPY --chown=game:game . /app/bot-models/
+ENV BOT_MODEL_DIR=/app/bot-models
