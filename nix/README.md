@@ -10,7 +10,7 @@ Add this repository to the target machine's flake inputs:
 
 ```nix
 {
-  inputs.smallworld.url = "github:YOUR-USER/smallworld";
+  inputs.smallworld.url = "github:Arthur158/smallworld";
 
   outputs = { nixpkgs, smallworld, ... }@inputs: {
     nixosConfigurations.game-server = nixpkgs.lib.nixosSystem {
