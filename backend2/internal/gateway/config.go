@@ -11,20 +11,29 @@ import (
 )
 
 type Config struct {
-	ListenAddr      string
-	RedisAddr       string
-	RedisURL        string
-	DatabaseURL     string
-	GatewayID       string
-	RoomWorkerCount uint32
-	AllowedOrigins  map[string]struct{}
-	AllowAllOrigins bool
-	PresenceTTL     time.Duration
-	PresenceRefresh time.Duration
-	WriteWait       time.Duration
-	PongWait        time.Duration
-	PingPeriod      time.Duration
-	MaxMessageBytes int64
+	ListenAddr        string
+	RedisAddr         string
+	RedisURL          string
+	DatabaseURL       string
+	GatewayID         string
+	RoomWorkerCount   uint32
+	AllowedOrigins    map[string]struct{}
+	AllowAllOrigins   bool
+	PresenceTTL       time.Duration
+	PresenceRefresh   time.Duration
+	WriteWait         time.Duration
+	PongWait          time.Duration
+	PingPeriod        time.Duration
+	MaxMessageBytes   int64
+	OIDCEnabled       bool
+	OIDCIssuerURL     string
+	OIDCClientID      string
+	OIDCClientSecret  string
+	OIDCRedirectURL   string
+	OIDCSessionSecret string
+	OIDCProviderName  string
+	OIDCUsernameClaim string
+	OIDCCookieSecure  bool
 }
 
 func LoadConfig() (Config, error) {
@@ -49,6 +58,38 @@ func LoadConfig() (Config, error) {
 
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
+	}
+
+	oidcEnabled, err := strconv.ParseBool(envOr("OIDC_ENABLED", "false"))
+	if err != nil {
+		return Config{}, fmt.Errorf("OIDC_ENABLED must be true or false")
+	}
+	cfg.OIDCEnabled = oidcEnabled
+	cfg.OIDCIssuerURL = strings.TrimSpace(os.Getenv("OIDC_ISSUER_URL"))
+	cfg.OIDCClientID = strings.TrimSpace(os.Getenv("OIDC_CLIENT_ID"))
+	cfg.OIDCClientSecret = os.Getenv("OIDC_CLIENT_SECRET")
+	cfg.OIDCRedirectURL = strings.TrimSpace(os.Getenv("OIDC_REDIRECT_URL"))
+	cfg.OIDCSessionSecret = os.Getenv("OIDC_SESSION_SECRET")
+	cfg.OIDCProviderName = envOr("OIDC_PROVIDER_NAME", "Authentik")
+	cfg.OIDCUsernameClaim = envOr("OIDC_USERNAME_CLAIM", "preferred_username")
+	cookieSecure, err := strconv.ParseBool(envOr("OIDC_COOKIE_SECURE", "false"))
+	if err != nil {
+		return Config{}, fmt.Errorf("OIDC_COOKIE_SECURE must be true or false")
+	}
+	cfg.OIDCCookieSecure = cookieSecure
+	if cfg.OIDCEnabled {
+		switch {
+		case cfg.OIDCIssuerURL == "":
+			return Config{}, fmt.Errorf("OIDC_ISSUER_URL is required when OIDC is enabled")
+		case cfg.OIDCClientID == "":
+			return Config{}, fmt.Errorf("OIDC_CLIENT_ID is required when OIDC is enabled")
+		case cfg.OIDCClientSecret == "":
+			return Config{}, fmt.Errorf("OIDC_CLIENT_SECRET is required when OIDC is enabled")
+		case cfg.OIDCRedirectURL == "":
+			return Config{}, fmt.Errorf("OIDC_REDIRECT_URL is required when OIDC is enabled")
+		case len(cfg.OIDCSessionSecret) < 32:
+			return Config{}, fmt.Errorf("OIDC_SESSION_SECRET must contain at least 32 bytes")
+		}
 	}
 
 	cfg.GatewayID = os.Getenv("GATEWAY_ID")

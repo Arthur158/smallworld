@@ -60,6 +60,59 @@ security.acme = {
 See `example-configuration.nix` for the same configuration in a complete
 module fragment.
 
+## Authentik login
+
+In Authentik, create an application with an OAuth2/OIDC provider using a
+confidential client and the authorization-code flow. Select the `openid`,
+`profile`, and `email` scope mappings and register this exact redirect URI:
+
+```text
+https://smallworld.example.com/auth/callback
+```
+
+For Authentik's default per-provider issuer mode, a provider whose application
+slug is `smallworld` has this issuer URL (including the trailing slash):
+
+```text
+https://auth.example.com/application/o/smallworld/
+```
+
+Create a root-readable environment file outside the Nix store, for example
+`/run/keys/smallworld-oidc.env`:
+
+```bash
+OIDC_CLIENT_SECRET=replace-with-the-authentik-client-secret
+OIDC_SESSION_SECRET=replace-with-at-least-32-random-bytes
+```
+
+Generate the session secret with `openssl rand -base64 48`, then provision the
+file with sops-nix, agenix, systemd credentials, or another secret manager.
+Enable OIDC in the NixOS configuration:
+
+```nix
+services.smallworld = {
+  enable = true;
+  hostName = "smallworld.example.com";
+  port = 443;
+  enableACME = true;
+  allowedOrigins = [ "https://smallworld.example.com" ];
+
+  oidc = {
+    enable = true;
+    issuerUrl = "https://auth.example.com/application/o/smallworld/";
+    clientId = "replace-with-the-authentik-client-id";
+    redirectUrl = "https://smallworld.example.com/auth/callback";
+    environmentFile = "/run/keys/smallworld-oidc.env";
+  };
+};
+```
+
+When OIDC is enabled, the username/password WebSocket commands are disabled.
+The browser uses Authentik's authorization-code flow with state, nonce, and
+PKCE checks; the gateway then stores the authenticated identity in a signed,
+HTTP-only session cookie. The immutable OIDC issuer and `sub` identify the
+account, while `preferred_username` is used as the visible in-game name.
+
 ## Module options
 
 All options are under `services.smallworld`:
@@ -80,6 +133,14 @@ All options are under `services.smallworld`:
 | `mapGeneratorPort` | TCP port | `3001` | Loopback port for the map-generator API. |
 | `allowedOrigins` | list of strings | `[ "*" ]` | WebSocket origins accepted by the gateway. For a public deployment, set this to the exact frontend origin. |
 | `environmentFile` | null or path | `null` | Optional systemd environment file applied to the gateway, workers, and map generator. Use it for secrets and external-service overrides rather than putting credentials in the Nix store. |
+| `oidc.enable` | boolean | `false` | Enable OpenID Connect and disable password login and registration. |
+| `oidc.issuerUrl` | string | `""` | Exact issuer URL from provider discovery. For Authentik's default issuer mode, this normally ends in `/application/o/SLUG/`. Required when OIDC is enabled. |
+| `oidc.clientId` | string | `""` | Public OIDC client ID. Required when OIDC is enabled. |
+| `oidc.redirectUrl` | string | `""` | Exact callback URL also registered in Authentik. Required when OIDC is enabled. |
+| `oidc.providerName` | string | `"Authentik"` | Provider name displayed on the login button. |
+| `oidc.usernameClaim` | string | `"preferred_username"` | ID-token or UserInfo claim used as the visible, unique game username. |
+| `oidc.cookieSecure` | null or boolean | `null` | Session-cookie Secure flag. `null` follows `enableACME`; set it to `true` when TLS terminates at an external proxy. |
+| `oidc.environmentFile` | null or path | `null` | Gateway-only file containing `OIDC_CLIENT_SECRET` and an `OIDC_SESSION_SECRET` of at least 32 bytes. Required when OIDC is enabled. |
 | `database.createLocally` | boolean | `true` | Provision a local PostgreSQL database and `smallworld` role using peer authentication. |
 | `database.url` | string | `""` | External `DATABASE_URL` used when `database.createLocally = false`. It or `environmentFile` must be set in that case. |
 | `redis.createLocally` | boolean | `true` | Provision a persistent Redis instance bound only to loopback. |

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lib/pq"
@@ -69,8 +70,16 @@ func (s *Store) EnsureSchema(ctx context.Context) error {
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    oidc_issuer TEXT,
+    oidc_subject TEXT
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS oidc_issuer TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS oidc_subject TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS users_oidc_identity_unique
+    ON users (oidc_issuer, oidc_subject)
+    WHERE oidc_issuer IS NOT NULL AND oidc_subject IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS game_states (
     id BIGSERIAL PRIMARY KEY,
@@ -92,6 +101,49 @@ CREATE TABLE IF NOT EXISTS user_savegames (
 		return fmt.Errorf("ensure database schema: %w", err)
 	}
 	return nil
+}
+
+// EnsureOIDCUser returns the stable game username for an OIDC identity. The
+// first login creates the local user; later changes to the identity provider's
+// display claim do not silently rename the user and detach saved games.
+func (s *Store) EnsureOIDCUser(ctx context.Context, issuer, subject, username string) (string, error) {
+	issuer = strings.TrimSpace(issuer)
+	subject = strings.TrimSpace(subject)
+	username = strings.TrimSpace(username)
+	if issuer == "" || subject == "" || username == "" {
+		return "", errors.New("OIDC issuer, subject, and username are required")
+	}
+
+	var existing string
+	err := s.db.QueryRowContext(ctx, `
+SELECT username FROM users WHERE oidc_issuer = $1 AND oidc_subject = $2
+`, issuer, subject).Scan(&existing)
+	if err == nil {
+		return existing, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return "", fmt.Errorf("read OIDC user: %w", err)
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+INSERT INTO users (username, password_hash, oidc_issuer, oidc_subject)
+VALUES ($1, '', $2, $3)
+`, username, issuer, subject)
+	if err == nil {
+		return username, nil
+	}
+
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+		// Another gateway may have created the same identity concurrently.
+		if lookupErr := s.db.QueryRowContext(ctx, `
+SELECT username FROM users WHERE oidc_issuer = $1 AND oidc_subject = $2
+`, issuer, subject).Scan(&existing); lookupErr == nil {
+			return existing, nil
+		}
+		return "", ErrUserExists
+	}
+	return "", fmt.Errorf("insert OIDC user: %w", err)
 }
 
 func (s *Store) AddUser(ctx context.Context, username, password string) error {

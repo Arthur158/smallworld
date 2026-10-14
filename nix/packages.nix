@@ -14,7 +14,7 @@ rec {
     version = "0.1.0";
     src = backendSrc;
 
-    vendorHash = "sha256-0yrNVxm/+xbc9Pe2WWOhJNxhtKcRVKRqFv2RlXxkBlw=";
+    vendorHash = "sha256-2kb1ZpgoXVFwaX8T/PAKz3n6TFuKSbcaYKoDwYuU5K8=";
     subPackages = [
       "cmd/gateway"
       "cmd/roomworker"

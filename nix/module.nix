@@ -11,6 +11,11 @@ let
   databaseUrl = "postgresql:///smallworld?host=/run/postgresql&sslmode=disable";
   redisAddress = "127.0.0.1:${toString cfg.redis.port}";
   virtualHostName = if cfg.hostName == null then "_" else cfg.hostName;
+  oidcCookieSecure = if cfg.oidc.cookieSecure == null then cfg.enableACME else cfg.oidc.cookieSecure;
+  gatewayEnvironmentFiles = builtins.filter (file: file != null) [
+    cfg.environmentFile
+    cfg.oidc.environmentFile
+  ];
 
   commonEnvironment = {
     DATABASE_URL = if cfg.database.createLocally then databaseUrl else cfg.database.url;
@@ -136,6 +141,55 @@ in
       description = "Optional systemd environment file for secret or external-service overrides.";
     };
 
+    oidc = {
+      enable = lib.mkEnableOption "OpenID Connect login";
+
+      issuerUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        example = "https://auth.example.com/application/o/smallworld/";
+        description = "Exact OpenID Connect issuer URL advertised by the provider.";
+      };
+
+      clientId = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        description = "Public OpenID Connect client ID.";
+      };
+
+      redirectUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        example = "https://smallworld.example.com/auth/callback";
+        description = "Exact callback URL registered with the OpenID Connect provider.";
+      };
+
+      providerName = lib.mkOption {
+        type = lib.types.str;
+        default = "Authentik";
+        description = "Identity-provider name displayed on the login button.";
+      };
+
+      usernameClaim = lib.mkOption {
+        type = lib.types.str;
+        default = "preferred_username";
+        description = "ID-token claim used as the visible, unique Smallworld username.";
+      };
+
+      cookieSecure = lib.mkOption {
+        type = with lib.types; nullOr bool;
+        default = null;
+        description = "Secure flag for login cookies. Null follows enableACME; set true behind an external HTTPS proxy.";
+      };
+
+      environmentFile = lib.mkOption {
+        type = with lib.types; nullOr path;
+        default = null;
+        example = "/run/keys/smallworld-oidc.env";
+        description = "Gateway-only environment file containing OIDC_CLIENT_SECRET and OIDC_SESSION_SECRET.";
+      };
+    };
+
     database = {
       createLocally = lib.mkOption {
         type = lib.types.bool;
@@ -191,6 +245,22 @@ in
         assertion = cfg.workerHealthPortBase + cfg.workerCount - 1 <= 65535;
         message = "Smallworld worker health ports exceed 65535.";
       }
+      {
+        assertion = !cfg.oidc.enable || cfg.oidc.issuerUrl != "";
+        message = "services.smallworld.oidc.issuerUrl is required when OIDC is enabled.";
+      }
+      {
+        assertion = !cfg.oidc.enable || cfg.oidc.clientId != "";
+        message = "services.smallworld.oidc.clientId is required when OIDC is enabled.";
+      }
+      {
+        assertion = !cfg.oidc.enable || cfg.oidc.redirectUrl != "";
+        message = "services.smallworld.oidc.redirectUrl is required when OIDC is enabled.";
+      }
+      {
+        assertion = !cfg.oidc.enable || cfg.oidc.environmentFile != null;
+        message = "services.smallworld.oidc.environmentFile is required when OIDC is enabled.";
+      }
     ];
 
     users.groups.smallworld = { };
@@ -245,6 +315,8 @@ in
           extraConfig = "proxy_read_timeout 86400;";
         };
 
+        locations."/auth/".proxyPass = "http://127.0.0.1:8080";
+
         locations."/generator-api/".proxyPass =
           "http://127.0.0.1:${toString cfg.mapGeneratorPort}/api/";
 
@@ -288,14 +360,21 @@ in
             LISTEN_ADDR = "127.0.0.1:8080";
             GATEWAY_ID = "${config.networking.hostName}-gateway";
             WS_ALLOWED_ORIGINS = lib.concatStringsSep "," cfg.allowedOrigins;
+            OIDC_ENABLED = lib.boolToString cfg.oidc.enable;
+            OIDC_ISSUER_URL = cfg.oidc.issuerUrl;
+            OIDC_CLIENT_ID = cfg.oidc.clientId;
+            OIDC_REDIRECT_URL = cfg.oidc.redirectUrl;
+            OIDC_PROVIDER_NAME = cfg.oidc.providerName;
+            OIDC_USERNAME_CLAIM = cfg.oidc.usernameClaim;
+            OIDC_COOKIE_SECURE = lib.boolToString oidcCookieSecure;
           };
           serviceConfig =
             commonServiceConfig
             // {
               ExecStart = "${cfg.backendPackage}/bin/gateway";
             }
-            // lib.optionalAttrs (cfg.environmentFile != null) {
-              EnvironmentFile = cfg.environmentFile;
+            // lib.optionalAttrs (gatewayEnvironmentFiles != [ ]) {
+              EnvironmentFile = gatewayEnvironmentFiles;
             };
         };
 

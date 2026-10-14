@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
-import { sendMessageToBackend } from '../services/backendService';
+import { getAuthConfig, sendMessageToBackend } from '../services/backendService';
 import { reset, clearError } from '../redux/slices/applicationSlice';
 import { Room, SaveGameInfo } from '../types/Board';
 
@@ -168,7 +168,13 @@ export default function LobbyPage() {
     sendMessageToBackend('kickPlayer', { roomId: currentRoom.id, username: playerName });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const authConfig = await getAuthConfig().catch(() => ({ enabled: false }));
+    if (authConfig.enabled) {
+      dispatch(reset());
+      window.location.assign('/auth/logout');
+      return;
+    }
     sendMessageToBackend('logout', {});
   };
 

@@ -13,6 +13,10 @@ import (
 )
 
 func (g *Gateway) handleRegister(ctx context.Context, c *Client, msg messages.Message) {
+	if g.oidc != nil {
+		c.sendError("password registration is disabled; sign in with the identity provider")
+		return
+	}
 	var data struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -36,6 +40,10 @@ func (g *Gateway) handleRegister(ctx context.Context, c *Client, msg messages.Me
 }
 
 func (g *Gateway) handleLogin(ctx context.Context, c *Client, msg messages.Message) {
+	if g.oidc != nil {
+		c.sendError("password login is disabled; sign in with the identity provider")
+		return
+	}
 	var data struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -63,7 +71,14 @@ func (g *Gateway) login(ctx context.Context, c *Client, username, password strin
 		c.sendError("authentication failed")
 		return
 	}
+	g.completeLogin(ctx, c, username)
+}
 
+func (g *Gateway) completeLogin(ctx context.Context, c *Client, username string) {
+	current := c.snapshot()
+	if current.IsAuthenticated {
+		return
+	}
 	reserved, err := g.reservePresence(ctx, c, username)
 	if err != nil {
 		log.Printf("gateway: reserve presence for %q: %v", username, err)

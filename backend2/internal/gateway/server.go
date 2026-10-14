@@ -28,6 +28,7 @@ type Gateway struct {
 
 	httpServer *http.Server
 	upgrader   websocket.Upgrader
+	oidc       *oidcAuthenticator
 }
 
 func New(cfg Config) (*Gateway, error) {
@@ -50,11 +51,22 @@ func New(cfg Config) (*Gateway, error) {
 		return nil, err
 	}
 
+	var oidcAuth *oidcAuthenticator
+	if cfg.OIDCEnabled {
+		oidcAuth, err = newOIDCAuthenticator(ctx, cfg)
+		if err != nil {
+			_ = dbStore.Close()
+			_ = rdb.Close()
+			return nil, err
+		}
+	}
+
 	g := &Gateway{
 		cfg:     cfg,
 		redis:   rdb,
 		store:   dbStore,
 		clients: newConnectionManager(),
+		oidc:    oidcAuth,
 	}
 	g.upgrader = websocket.Upgrader{
 		CheckOrigin: g.checkOrigin,
@@ -92,6 +104,10 @@ func (g *Gateway) Run(ctx context.Context) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", g.handleWebSocket)
+	mux.HandleFunc("/auth/config", g.handleAuthConfig)
+	mux.HandleFunc("/auth/login", g.handleOIDCLogin)
+	mux.HandleFunc("/auth/callback", g.handleOIDCCallback)
+	mux.HandleFunc("/auth/logout", g.handleOIDCLogout)
 	mux.HandleFunc("/livez", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
@@ -171,6 +187,12 @@ func (g *Gateway) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return conn.SetReadDeadline(time.Now().Add(g.cfg.PongWait))
 	})
 	go client.pingLoop()
+
+	if username, ok := g.oidcSessionUsername(r); ok {
+		g.completeLogin(r.Context(), client, username)
+	} else if g.oidc != nil {
+		client.sendMessage("unauth", map[string]string{"name": ""})
+	}
 
 	lobbyCtx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	if err := g.sendLobbyToClient(lobbyCtx, client); err != nil {

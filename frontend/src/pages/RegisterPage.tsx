@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { connectWebSocket, sendMessageToBackend } from '../services/backendService';
-import { clearError, setName } from '../redux/slices/applicationSlice';
+import { AuthConfig, connectWebSocket, getAuthConfig, sendMessageToBackend } from '../services/backendService';
+import { clearError } from '../redux/slices/applicationSlice';
 import { AppDispatch, RootState } from '../redux/store';
 
 export default function LoginRegisterPage() {
@@ -15,9 +15,14 @@ export default function LoginRegisterPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
+  const [configError, setConfigError] = useState('');
 
   useEffect(() => {
     connectWebSocket();
+    getAuthConfig()
+      .then(setAuthConfig)
+      .catch((err: Error) => setConfigError(err.message));
   }, []);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -52,7 +57,23 @@ export default function LoginRegisterPage() {
       }}
     >
       <div className="max-w-md mx-auto mt-10 p-5 bg-[#FDF5E6] border border-[#5F4B32] rounded-lg shadow-lg">
-        <div className="flex justify-between mb-6">
+        {configError && <div className="text-red-600 mb-2 font-semibold">{configError}</div>}
+
+        {authConfig?.enabled ? (
+          <div>
+            <h1 className="text-2xl font-bold text-center mb-6">Smallworld</h1>
+            {error && <div className="text-red-600 mb-2 font-semibold">{error}</div>}
+            <button
+              type="button"
+              onClick={() => window.location.assign('/auth/login')}
+              className="w-full bg-[#8B4513] text-white py-2 rounded-md hover:bg-[#A0522D]"
+            >
+              Sign in with {authConfig.providerName || 'OpenID Connect'}
+            </button>
+          </div>
+        ) : authConfig ? (
+          <>
+            <div className="flex justify-between mb-6">
           <button
             type="button"
             onClick={() => toggleForm(true)}
@@ -71,9 +92,9 @@ export default function LoginRegisterPage() {
           >
             Register
           </button>
-        </div>
+            </div>
 
-        {isLogin ? (
+            {isLogin ? (
           <form onSubmit={handleLoginSubmit}>
             <div className="mb-4">
               <label className="block font-bold">Username</label>
@@ -137,7 +158,11 @@ export default function LoginRegisterPage() {
               Register
             </button>
           </form>
-        )}
+            )}
+          </>
+        ) : !configError ? (
+          <div className="text-center">Loading authentication…</div>
+        ) : null}
       </div>
     </div>
   );

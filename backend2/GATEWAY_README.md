@@ -35,6 +35,26 @@ export WS_ALLOWED_ORIGINS='*'
 
 `GATEWAY_ID` can be omitted locally. In Kubernetes, set it from the Pod name.
 
+Optional OpenID Connect login is configured with:
+
+```bash
+export OIDC_ENABLED=true
+export OIDC_ISSUER_URL='https://auth.example.com/application/o/smallworld/'
+export OIDC_CLIENT_ID='smallworld-client-id'
+export OIDC_CLIENT_SECRET='client-secret'
+export OIDC_REDIRECT_URL='https://smallworld.example.com/auth/callback'
+export OIDC_SESSION_SECRET='at-least-32-random-bytes-change-this'
+export OIDC_PROVIDER_NAME='Authentik'
+export OIDC_USERNAME_CLAIM='preferred_username'
+export OIDC_COOKIE_SECURE=true
+```
+
+The gateway exposes `/auth/config`, `/auth/login`, `/auth/callback`, and
+`/auth/logout`. The authorization-code flow validates state, nonce, PKCE, the
+ID-token signature, issuer, and audience. A signed HTTP-only cookie then
+authenticates the `/ws` upgrade. When OIDC is enabled, password registration
+and login are disabled.
+
 ## Run
 
 ```bash

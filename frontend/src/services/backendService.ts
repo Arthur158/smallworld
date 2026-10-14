@@ -3,6 +3,22 @@ import { store } from '../redux/store';
 
 let socket: WebSocket | null = null;
 
+export interface AuthConfig {
+  enabled: boolean;
+  providerName?: string;
+}
+
+export const getAuthConfig = async (): Promise<AuthConfig> => {
+  const response = await fetch('/auth/config', {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Unable to load authentication configuration (${response.status})`);
+  }
+  return response.json();
+};
+
 // Connect WebSocket
 export const connectWebSocket = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
