@@ -3,8 +3,10 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { TribeEntry } from '../../types/Board';
 import { sendMessageToBackend } from '../../services/backendService';
+import { useWiki } from '../wiki/WikiContext';
 
 export default function TribeList() {
+  const { inspect } = useWiki();
   const tribes = useSelector((state: RootState) => state.application.availableTribes);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const fromBank = useSelector((state: RootState) => state.application.isStackFromBank);
@@ -90,7 +92,17 @@ export default function TribeList() {
           {tribes.map((tribe: TribeEntry, i: number) => (
             <li key={i}>
               <button
-                onClick={() => handleSelectTribe(i)}
+                aria-label={`${tribe.trait} ${tribe.race}`}
+                title={`${tribe.trait} ${tribe.race} — Ctrl-click or use Inspect mode for rules`}
+                onClick={(event) => {
+                  if (inspect(event, { kind: 'tribe', tribe })) return;
+                  handleSelectTribe(i);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    if (inspect(event, { kind: 'tribe', tribe })) return;
+                  }
+                }}
                 className="flex items-center z-10 transition-transform hover:scale-110 w-full p-0 border-none bg-transparent hover:z-30"
               >
                 {/* Left side: Trait & Race images */}

@@ -1,3 +1,4 @@
+import WikiToolbar from '../components/wiki/WikiToolbar';
 // src/pages/LobbyPage.tsx
 
 import React, { useEffect, useState } from 'react';
@@ -427,6 +428,8 @@ export default function LobbyPage() {
               </button>
             </div>
           </div>
+
+          <div className="px-6 pt-4"><WikiToolbar compact /></div>
 
           {/* Content area of the right column */}
           <div className="flex-1 overflow-y-auto p-6">

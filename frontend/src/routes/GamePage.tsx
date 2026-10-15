@@ -1,3 +1,5 @@
+import WikiToolbar from '../components/wiki/WikiToolbar';
+import { useWiki } from '../components/wiki/WikiContext';
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../redux/store";
@@ -14,6 +16,7 @@ import GameFinishedPopup from "../components/layouts/GameFinishedPopup";
 import CustomCursor from "../components/misc/CustomCursor"; // Import Custom Cursor Component
 
 export default function GamePage() {
+  const { isOpen } = useWiki();
   const dispatch: AppDispatch = useDispatch();
   const error = useSelector((state: RootState) => state.application.error);
   const phase = useSelector((state: RootState) => state.application.phase);
@@ -34,6 +37,9 @@ export default function GamePage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      if (isOpen || event.ctrlKey || event.metaKey || event.altKey) return;
+      const element = event.target as HTMLElement;
+      if (element.closest?.('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
       switch (event.key) {
         case "s":
           setShowTurnInfo((prev) => !prev);
@@ -47,7 +53,7 @@ export default function GamePage() {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [dispatch]);
+  }, [dispatch, isOpen]);
 
   // Handle page refresh
   useEffect(() => {
@@ -103,8 +109,9 @@ export default function GamePage() {
         </div>
 
         {/* RIGHT SECTION (2/3 width): Map */}
-        <div className="w-2/3 h-full p-4">
-          <div className="w-full h-full border-4 border-[#8B4513] rounded-lg bg-white">
+        <div className="w-2/3 h-full p-4 flex flex-col min-h-0">
+          <WikiToolbar />
+          <div className="w-full flex-1 min-h-0 border-4 border-[#8B4513] rounded-lg bg-white">
             <Map />
           </div>
         </div>

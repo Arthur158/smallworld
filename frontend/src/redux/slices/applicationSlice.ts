@@ -2,6 +2,7 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { ApplicationState } from '../../types/redux';
 import { Language } from '../../types/misc';
 import { Player, TribeEntry, Room, Tile, SaveGameInfo } from '../../types/Board';
+import wikiMapMetadata from '../../data/wikiMapMetadata.json';
 import { mapDatabase, MapData } from '../../data/mapData'; // <-- Import your local map data
 
 function base64PngToObjectUrl(base64: string): string {
@@ -33,6 +34,7 @@ function applyMapDataToState(state: any, mapName: string, mapData: MapData) {
         stackY: tileDef.Polygon.StackY,
       },
       pieceStack: [],
+      terrain: (wikiMapMetadata as Record<string, Record<string, NonNullable<Tile['terrain']>>>)[mapName]?.[String(tileDef.ID)],
     };
   });
 
@@ -329,6 +331,13 @@ const applicationSlice = createSlice({
           state.offsetMapTiles = parsedData.offset ?? 0.808;
 
           applyMapDataToState(state, mapName, graphics);
+          for (const tile of parsedData.serverTiles ?? []) {
+            const region = state.tiles[String(tile.id)];
+            if (region) region.terrain = {
+              biome: tile.biome, attributes: tile.attributes ?? [],
+              isEdge: tile.isEdge, isSkyIsland: tile.isSkyIsland,
+            };
+          }
 
           console.log('Registered generated map:', mapName);
           console.log('Generated server tile metadata:', parsedData.serverTiles);
@@ -345,7 +354,7 @@ const applicationSlice = createSlice({
                 race: playerData.activeTribe.race,
                 trait: playerData.activeTribe.trait,
               },
-              passiveTribes: [],
+              passiveTribes: playerData.passiveTribes ?? [],
               pieceStacks: [],
             };
             if (playerData.pieceStacks && Array.isArray(playerData.pieceStacks)) {

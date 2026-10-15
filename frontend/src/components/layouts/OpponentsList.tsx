@@ -1,8 +1,24 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
-import { Player, Tribe, PieceStack } from '../../types/Board';
+import { Player, Tribe } from '../../types/Board';
+import { useWiki, WikiTarget } from '../wiki/WikiContext';
 import { sendMessageToBackend } from '../../services/backendService';
+
+type WikiInspect = ReturnType<typeof useWiki>['inspect'];
+
+const wikiProps = (target: WikiTarget, inspect: WikiInspect) => ({
+  role: 'button', tabIndex: 0,
+  title: 'Ctrl-click or use Inspect mode for rules',
+  onClick: (event: React.MouseEvent) => { if (inspect(event, target)) return; },
+  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      if (inspect(event, target)) return;
+      event.preventDefault();
+      event.currentTarget.click();
+    }
+  },
+});
 
 const getTraitImagePath = (trait?: string) => {
   return trait && trait.trim() !== '' ? `/traits/${trait}.png` : '';
@@ -12,9 +28,9 @@ const getRaceImagePath = (race?: string) => {
   return race && race.trim() !== '' ? `/races/${race}.png` : '';
 };
 
-const renderTribeImages = (tribe: Tribe, customClasses = '') => {
+const renderTribeImages = (tribe: Tribe, inspect: WikiInspect, customClasses = '') => {
   return (
-    <div className={`relative flex items-center ${customClasses} h-24 xl:h-20 lg:h-20 md:h-16 sm:h-14 overflow-hidden`}>
+    <div {...wikiProps({ kind: 'tribe', tribe }, inspect)} aria-label={`${tribe.trait} ${tribe.race}`} className={`relative flex items-center ${customClasses} h-24 xl:h-20 lg:h-20 md:h-16 sm:h-14 overflow-hidden`}>
       <img
         src={getTraitImagePath(tribe.trait)}
         alt={tribe.trait}
@@ -29,9 +45,9 @@ const renderTribeImages = (tribe: Tribe, customClasses = '') => {
   );
 };
 
-const renderPassiveTribeImages = (tribe: Tribe, customClasses = '') => {
+const renderPassiveTribeImages = (tribe: Tribe, inspect: WikiInspect, customClasses = '') => {
   return (
-    <div className={`relative flex items-center ${customClasses} h-16 xl:h-14 lg:h-14 md:h-12 sm:h-10 overflow-hidden`}>
+    <div {...wikiProps({ kind: 'tribe', tribe }, inspect)} aria-label={`${tribe.trait} ${tribe.race}`} className={`relative flex items-center ${customClasses} h-16 xl:h-14 lg:h-14 md:h-12 sm:h-10 overflow-hidden`}>
       <img
         src={getTraitImagePath(tribe.trait)}
         alt={tribe.trait}
@@ -46,10 +62,11 @@ const renderPassiveTribeImages = (tribe: Tribe, customClasses = '') => {
   );
 };
 
-const renderPieceStacks = (pieceStacks: PieceStack[]) => {
+const renderPieceStacks = (player: Player, inspect: WikiInspect) => {
   return (
     <div className="flex flex-wrap space-x-2 mt-2 relative z-10">
-      {pieceStacks.map((stack, index) => {
+      {player.pieceStacks.map((stack, index) => {
+        const tribe = stack.isActive ? player.activeTribe ?? undefined : player.passiveTribes.find(tribe => tribe.race === stack.type);
         const imageSrc = `/stacks/${stack.type}.png`;
         return (
           <div
@@ -60,7 +77,8 @@ const renderPieceStacks = (pieceStacks: PieceStack[]) => {
               height: 45,
               cursor: 'pointer',
             }}
-            onClick={() => console.log(`Stack ${stack.type} clicked`)}
+            {...wikiProps({ kind: 'piece', stack, tribe }, inspect)}
+            aria-label={`${stack.type} pieces in ${player.name}'s bank, ${stack.amount}`}
           >
             <img
               src={imageSrc}
@@ -81,6 +99,7 @@ const renderPieceStacks = (pieceStacks: PieceStack[]) => {
 
 
 export default function OpponentsList() {
+  const { inspect, inspectMode, isOpen } = useWiki();
   const allPlayers = useSelector((state: RootState) => state.application.players);
   const playerIndex = useSelector((state: RootState) => state.application.playerIndex);
   const activeIndex = useSelector((state: RootState) => state.application.playerNumber);
@@ -96,7 +115,12 @@ export default function OpponentsList() {
   const renderOneOpponent = (opponent: Player, isActive: boolean) => {
     return (
       <div
-        onClick={() => {handleOpponentClick(opponent.name)}}
+        onClick={(event) => {
+          if (isOpen) return;
+          if (opponent.activeTribe && inspect(event, { kind: 'tribe', tribe: opponent.activeTribe })) return;
+          if (inspectMode || event.ctrlKey || event.metaKey) return;
+          handleOpponentClick(opponent.name);
+        }}
         key={opponent.name}
         className={`p-3 mb-4 border rounded ${
           isActive
@@ -108,7 +132,7 @@ export default function OpponentsList() {
 
         {opponent.activeTribe && (
           <div className="mt-3 flex items-center justify-center">
-            {renderTribeImages(opponent.activeTribe)}
+            {renderTribeImages(opponent.activeTribe, inspect)}
           </div>
         )}
 
@@ -120,7 +144,7 @@ export default function OpponentsList() {
                 className="opacity-60"
                 style={{ filter: 'grayscale(50%)' }}
               >
-                {renderPassiveTribeImages(tribe)}
+                {renderPassiveTribeImages(tribe, inspect)}
               </div>
             ))}
           </div>
@@ -129,7 +153,7 @@ export default function OpponentsList() {
         {opponent.pieceStacks.length > 0 && (
           <div className="my-4 border-t-4 border-[#8B4513] w-full"></div>
         )}
-        {renderPieceStacks(opponent.pieceStacks)}
+        {renderPieceStacks(opponent, inspect)}
       </div>
     );
   };

@@ -1,3 +1,5 @@
+import WikiToolbar from '../components/wiki/WikiToolbar';
+import { useWiki } from '../components/wiki/WikiContext';
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../redux/store";
@@ -15,6 +17,7 @@ import CustomCursor from "../components/misc/CustomCursor"; // Import Custom Cur
 import BotPlaybackControls from "../components/BotPlaybackControls";
 
 export default function SpectatorPage() {
+  const { isOpen } = useWiki();
   const dispatch: AppDispatch = useDispatch();
   const error = useSelector((state: RootState) => state.application.error);
   const phase = useSelector((state: RootState) => state.application.phase);
@@ -40,6 +43,9 @@ export default function SpectatorPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      if (isOpen || event.ctrlKey || event.metaKey || event.altKey) return;
+      const element = event.target as HTMLElement;
+      if (element.closest?.('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
       const target = event.target as HTMLElement;
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
       switch (event.key) {
@@ -55,7 +61,7 @@ export default function SpectatorPage() {
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, [dispatch]);
+  }, [dispatch, isOpen]);
 
   // Handle page refresh
   useEffect(() => {
@@ -108,6 +114,7 @@ export default function SpectatorPage() {
 
         {/* RIGHT SECTION (2/3 width): Map */}
         <div className="w-2/3 h-full p-4 flex flex-col min-h-0">
+          <WikiToolbar />
           <BotPlaybackControls room={currentRoom} username={username} phase={phase} />
           <div className="w-full flex-1 min-h-0 border-4 border-[#8B4513] rounded-lg bg-white">
             <Map />

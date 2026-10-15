@@ -2,6 +2,7 @@ export interface Tile {
   id: string;
   polygon: Polygon;
   pieceStack: PieceStack[];
+  terrain?: { biome: string; attributes: string[]; isEdge?: boolean; isSkyIsland?: boolean };
 }
 
 export interface ChoiceEntry {

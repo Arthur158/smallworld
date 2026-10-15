@@ -4,6 +4,7 @@ import { Tile } from '../../types/Board';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { sendMessageToBackend } from '../../services/backendService';
+import { useWiki } from '../wiki/WikiContext';
 
 function ImageOrBlueSquare({
   imageSrc,
@@ -38,6 +39,7 @@ function ImageOrBlueSquare({
 }
 
 export default function Map() {
+  const { inspect, isOpen, inspectMode } = useWiki();
   const dispatch = useDispatch();
   const mapImageUrl = useSelector((state: RootState) => state.application.mapImageUrl);
 
@@ -68,7 +70,7 @@ export default function Map() {
   const [translateY, setTranslateY] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
-  const [movedDistance, setMovedDistance] = useState(0);
+  const movedDistance = useRef(0);
   const [minScale, setMinScale] = useState(1);
 
   const maxScale = 5;
@@ -151,6 +153,9 @@ export default function Map() {
   // Listen for 'f' key to reset selection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (isOpen || inspectMode || e.ctrlKey || e.metaKey ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
       if (e.key.toLowerCase() === 'f') {
         dispatch(setSelectedStack(null));
         dispatch(setSelectedTile(null));
@@ -161,7 +166,7 @@ export default function Map() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [dispatch]);
+  }, [dispatch, isOpen, inspectMode]);
 
   if (!mapName || imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
     return <div className="text-center text-[#5F4B32] font-bold">Loading map...</div>;
@@ -327,7 +332,7 @@ export default function Map() {
     e.preventDefault();
     setIsPanning(true);
     setLastMousePosition({ x: e.clientX, y: e.clientY });
-    setMovedDistance(0);
+    movedDistance.current = 0;
   };
 
   /**
@@ -350,7 +355,7 @@ export default function Map() {
     setTranslateX(newTranslateX);
     setTranslateY(newTranslateY);
     setLastMousePosition({ x: e.clientX, y: e.clientY });
-    setMovedDistance(movedDistance + Math.sqrt(dx * dx + dy * dy));
+    movedDistance.current += Math.sqrt(dx * dx + dy * dy);
   };
 
   /**
@@ -383,7 +388,7 @@ export default function Map() {
         ref={svgRef}
         style={{
           userSelect: 'none',
-          cursor: isPanning ? 'grabbing' : 'grab',
+          cursor: isPanning ? 'grabbing' : inspectMode ? 'help' : 'grab',
           width: '100%',
           height: '100%',
         }}
@@ -437,8 +442,22 @@ export default function Map() {
                 strokeWidth={0}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
-                onClick={() => handleTileStackClick(tile.id, null)}
-              />
+                role="button" tabIndex={0} aria-label={`Zone ${tile.id}`}
+                onClick={(event) => {
+                  if (movedDistance.current > 5 || isOpen) return;
+                  if (inspect(event, { kind: 'zone', tile })) return;
+                  handleTileStackClick(tile.id, null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    if (isOpen || inspect(event, { kind: 'zone', tile })) return;
+                    event.preventDefault();
+                    handleTileStackClick(tile.id, null);
+                  }
+                }}
+              >
+                <title>{`Zone ${tile.id} — Ctrl-click or use Inspect mode for rules`}</title>
+              </polygon>
             );
           })}
 
@@ -467,8 +486,22 @@ export default function Map() {
                   return (
                     <g
                       key={`piece-${tile.id}-${index}`}
-                      onClick={() => handleTileStackClick(tile.id, stack.type)}
+                      role="button" tabIndex={0}
+                      aria-label={`${stack.type} pieces in zone ${tile.id}, ${stack.amount} ${stack.isActive ? 'active' : 'declined'}`}
+                      onClick={(event) => {
+                        if (movedDistance.current > 5 || isOpen) return;
+                        if (inspect(event, { kind: 'piece', stack, tileId: tile.id })) return;
+                        handleTileStackClick(tile.id, stack.type);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          if (isOpen || inspect(event, { kind: 'piece', stack, tileId: tile.id })) return;
+                          event.preventDefault();
+                          handleTileStackClick(tile.id, stack.type);
+                        }
+                      }}
                     >
+                      <title>{`${stack.type} in zone ${tile.id} — Ctrl-click or use Inspect mode for rules`}</title>
                       {[...Array(stack.amount)].map((_, i) => {
                         const pieceX = scaledStackX + i * offset * baseSize * offsetStacks / 3.5;
                         const pieceY = scaledStackY + i * offset * baseSize * offsetStacks / 3.5;

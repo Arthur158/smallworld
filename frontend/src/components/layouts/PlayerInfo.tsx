@@ -4,8 +4,10 @@ import { RootState } from '../../redux/store';
 import { Player, PieceStack, Tribe } from '../../types/Board';
 import { setIsStackFromBank, setSelectedStack, setSelectedTile } from '../../redux/slices/applicationSlice';
 import { sendMessageToBackend } from '../../services/backendService';
+import { useWiki } from '../wiki/WikiContext';
 
 export default function PlayerInfo() {
+  const { inspect, isOpen, inspectMode } = useWiki();
   const dispatch = useDispatch();
   const allPlayers = useSelector((state: RootState) => state.application.players);
   const playerIndex = useSelector((state: RootState) => state.application.playerIndex);
@@ -18,6 +20,9 @@ export default function PlayerInfo() {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (isOpen || inspectMode || event.ctrlKey || event.metaKey ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
       if (event.key === 'f') {
         dispatch(setIsStackFromBank(false));
         dispatch(setSelectedTile(null));
@@ -58,7 +63,7 @@ export default function PlayerInfo() {
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [dispatch, selectedTile, selectedStack, player]);
+  }, [dispatch, selectedTile, selectedStack, player, isOpen, inspectMode]);
 
 
 
@@ -103,7 +108,17 @@ export default function PlayerInfo() {
   // Helper to render a single tribe's images stuck together
   const renderTribeImages = (tribe: Tribe, customClasses = '') => {
     return (
-      <div className={`relative flex items-center ${customClasses}`}>
+      <div className={`relative flex items-center ${customClasses}`} role="button" tabIndex={0}
+        aria-label={`${tribe.trait} ${tribe.race}`}
+        title={`${tribe.trait} ${tribe.race} — Ctrl-click or use Inspect mode for rules`}
+        onClick={(event) => { if (inspect(event, { kind: 'tribe', tribe })) return; }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            if (inspect(event, { kind: 'tribe', tribe })) return;
+            event.preventDefault();
+            event.currentTarget.click();
+          }
+        }}>
         <img
           src={getTraitImagePath(tribe.trait)}
           alt={tribe.trait}
@@ -120,7 +135,17 @@ export default function PlayerInfo() {
 
   const renderPassiveTribeImages = (tribe: Tribe, customClasses = '') => {
     return (
-      <div className={`relative flex items-center ${customClasses}`}>
+      <div className={`relative flex items-center ${customClasses}`} role="button" tabIndex={0}
+        aria-label={`${tribe.trait} ${tribe.race}`}
+        title={`${tribe.trait} ${tribe.race} — Ctrl-click or use Inspect mode for rules`}
+        onClick={(event) => { if (inspect(event, { kind: 'tribe', tribe })) return; }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            if (inspect(event, { kind: 'tribe', tribe })) return;
+            event.preventDefault();
+            event.currentTarget.click();
+          }
+        }}>
         <img
           src={getTraitImagePath(tribe.trait)}
           alt={tribe.trait}
@@ -142,11 +167,22 @@ export default function PlayerInfo() {
           const imageSrc = `/stacks/${stack.type}.png`;
           const isFlashy = isStackFromBank && selectedStack === stack.type;
           const isGray = !stack.isActive;
+          const tribe = stack.isActive ? player?.activeTribe ?? undefined : player?.passiveTribes.find(tribe => tribe.race === stack.type);
 
           return (
             <div
               key={index}
               className="relative"
+              role="button" tabIndex={0}
+              aria-label={`${stack.type} pieces in your bank, ${stack.amount}`}
+              title={`${stack.type} — Ctrl-click or use Inspect mode for rules`}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  if (inspect(event, { kind: 'piece', stack, tribe })) return;
+                  event.preventDefault();
+                  handlePieceStackClick(stack.type);
+                }
+              }}
               style={{
                 width: 60,
                 height: 60,
@@ -155,6 +191,7 @@ export default function PlayerInfo() {
                 animation: isFlashy ? 'flash 1s infinite' : undefined,
               }}
               onClick={(e) => {
+                if (inspect(e, { kind: 'piece', stack, tribe })) return;
                 e.stopPropagation();
                 handlePieceStackClick(stack.type);
               }}
@@ -179,7 +216,12 @@ export default function PlayerInfo() {
 return (
 <div 
   className="p-4 border border-[#5F4B32] rounded bg-[#FDF5E6] relative h-full overflow-auto max-w-full" 
-  onClick={handlePlayerClick}
+  onClick={(event) => {
+    if (isOpen) return;
+    if (player?.activeTribe && inspect(event, { kind: 'tribe', tribe: player.activeTribe })) return;
+    if (inspectMode || event.ctrlKey || event.metaKey) return;
+    handlePlayerClick();
+  }}
 >
     <h3 className="text-lg font-bold">{player?.name || "Unknown Player"}</h3>
 

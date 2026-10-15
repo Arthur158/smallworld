@@ -1,0 +1,3912 @@
+{
+  "map2players": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    }
+  },
+  "map3players": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    }
+  },
+  "mapgenerated": {
+    "0": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "30": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "31": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    }
+  },
+  "map4players": {
+    "0": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "30": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "31": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "32": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "33": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "34": {
+      "biome": "Field",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "35": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "36": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "37": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "38": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    }
+  },
+  "map5players": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Mountain",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "30": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "31": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "32": {
+      "biome": "Mountain",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "33": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "34": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "35": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "36": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "37": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "38": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "39": {
+      "biome": "Field",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "40": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "41": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "42": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "43": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "44": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "45": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "46": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "47": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    }
+  },
+  "map3players2islands": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "0i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "1i": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "2i": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "3i": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "4i": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "5i": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "6i": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "7i": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "8i": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "9i": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    }
+  },
+  "map4players2islands": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "0i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "1i": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "2i": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "3i": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "4i": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "5i": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "6i": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "7i": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "8i": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "9i": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    }
+  },
+  "map5players2islands": {
+    "0": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "30": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "31": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "32": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "33": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "34": {
+      "biome": "Field",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "35": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "36": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "37": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "38": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "0i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "1i": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "2i": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "3i": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "4i": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "5i": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "6i": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "7i": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "8i": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "9i": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    }
+  },
+  "map6players2islands": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Mountain",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "30": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "31": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "32": {
+      "biome": "Mountain",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "33": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "34": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "35": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "36": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "37": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "38": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "39": {
+      "biome": "Field",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "40": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "41": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "42": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "43": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "44": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "45": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "46": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "47": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "0i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "1i": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "2i": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "3i": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "4i": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "5i": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "6i": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "7i": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "8i": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "9i": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    }
+  },
+  "map3players3islands": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "0i": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "1i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "2i": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "3i": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "4i": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "5i": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "6i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "7i": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "8i": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    }
+  },
+  "map4players3islands": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "0i": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "1i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "2i": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "3i": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "4i": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "5i": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "6i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "7i": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "8i": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    }
+  },
+  "map5players3islands": {
+    "0": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "30": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "31": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "32": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "33": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "34": {
+      "biome": "Field",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "35": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "36": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "37": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "38": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "0i": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "1i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "2i": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "3i": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "4i": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "5i": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "6i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "7i": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "8i": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    }
+  },
+  "map6players3islands": {
+    "0": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "2": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "3": {
+      "biome": "Mountain",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "4": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5": {
+      "biome": "Forest",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "6": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "7": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "11": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "12": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "13": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "14": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "15": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "16": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "17": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "18": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "19": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "20": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "22": {
+      "biome": "Water",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "24": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave",
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "25": {
+      "biome": "Swamp",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "26": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "27": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "28": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "29": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "30": {
+      "biome": "Hill",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "31": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "32": {
+      "biome": "Mountain",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "33": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "34": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "35": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "36": {
+      "biome": "Swamp",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "37": {
+      "biome": "Hill",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "38": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "39": {
+      "biome": "Field",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "40": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "41": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "42": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "43": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "44": {
+      "biome": "Swamp",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "45": {
+      "biome": "Mountain",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "46": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "47": {
+      "biome": "Field",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "0i": {
+      "biome": "Hill",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "1i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "2i": {
+      "biome": "Field",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "3i": {
+      "biome": "Mountain",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "4i": {
+      "biome": "Field",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "5i": {
+      "biome": "Forest",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "6i": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "7i": {
+      "biome": "Hill",
+      "attributes": [
+        "Cave"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    },
+    "8i": {
+      "biome": "Forest",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": true
+    }
+  },
+  "underground2players": {
+    "0u": {
+      "biome": "AbyssalChasm",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "1u": {
+      "biome": "MineArea",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "2u": {
+      "biome": "MineArea",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "3u": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "4u": {
+      "biome": "CrystalArea",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "5u": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "6u": {
+      "biome": "CrystalArea",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "7u": {
+      "biome": "AbyssalChasm",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "8u": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "9u": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "10u": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "11u": {
+      "biome": "River",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "12u": {
+      "biome": "River",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "13u": {
+      "biome": "River",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "14u": {
+      "biome": "MineArea",
+      "attributes": [
+        "Mine"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "15u": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "16u": {
+      "biome": "AbyssalChasm",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "17u": {
+      "biome": "CrystalArea",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "18u": {
+      "biome": "Swamp",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "19u": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "20u": {
+      "biome": "AbyssalChasm",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "21u": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "22u": {
+      "biome": "AbyssalChasm",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "23u": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "24u": {
+      "biome": "MineArea",
+      "attributes": [],
+      "isEdge": false,
+      "isSkyIsland": false
+    },
+    "25u": {
+      "biome": "Mountain",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "26u": {
+      "biome": "CrystalArea",
+      "attributes": [
+        "Magic"
+      ],
+      "isEdge": true,
+      "isSkyIsland": false
+    },
+    "27u": {
+      "biome": "Forest",
+      "attributes": [],
+      "isEdge": true,
+      "isSkyIsland": false
+    }
+  }
+}

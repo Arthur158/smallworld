@@ -1,8 +1,10 @@
+import { useWiki } from '../wiki/WikiContext';
 import { useState, useEffect } from "react";
 import { RootState } from "../../redux/store";
 import { useSelector } from "react-redux";
 
 export default function CustomCursor() {
+  const { isOpen, inspectMode } = useWiki();
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [imageExists, setImageExists] = useState(false);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
@@ -31,7 +33,7 @@ export default function CustomCursor() {
 
   return (
     <>
-      {imageExists && (
+      {imageExists && !isOpen && !inspectMode && (
         <img
           src={`/stacks/${selectedStack}.png`}
           alt=""

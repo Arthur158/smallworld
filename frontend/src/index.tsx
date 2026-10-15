@@ -7,6 +7,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { Slide, ToastContainer } from 'react-toastify';
 import './index.css';
 import Router from './routes/Router';
+import { WikiProvider } from './components/wiki/WikiContext';
 import { persistor, store } from './redux/store';
 import i18n from './locales/i18n';
 
@@ -16,7 +17,7 @@ root.render(
     <I18nextProvider i18n={i18n}>
       <PersistGate loading={null} persistor={persistor}>
         <BrowserRouter>
-          <Router />
+          <WikiProvider><Router /></WikiProvider>
           <ToastContainer
             position="bottom-center"
             autoClose={3000}
