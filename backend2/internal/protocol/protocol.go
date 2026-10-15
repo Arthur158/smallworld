@@ -82,19 +82,27 @@ type BotPlayback struct {
 	Speed     float64 `json:"speed"`
 }
 
+// GeneratedMapSelection identifies the host-selected preview for a waiting room.
+type GeneratedMapSelection struct {
+	PreviewID   string `json:"previewId"`
+	PlayerCount int    `json:"playerCount"`
+	Seed        string `json:"seed"`
+}
+
 // RoomMetadata is the distributed equivalent of the room list that used to be
 // built by sendRoomsUpdateToAll from the in-process rooms map.
 type RoomMetadata struct {
-	BotPlayback *BotPlayback       `json:"botPlayback,omitempty"`
-	Bots        map[string]BotSeat `json:"bots,omitempty"`
-	BotModels   []bot.Info         `json:"botModels,omitempty"`
-	ID          string             `json:"id"`
-	Name        string             `json:"name"`
-	Players     []string           `json:"players"`
-	MaxPlayers  int                `json:"maxPlayers"`
-	MapName     string             `json:"mapName"`
-	Creator     string             `json:"creator"`
-	InProgress  bool               `json:"inProgress"`
+	GeneratedMapSelection *GeneratedMapSelection `json:"generatedMapSelection,omitempty"`
+	BotPlayback           *BotPlayback           `json:"botPlayback,omitempty"`
+	Bots                  map[string]BotSeat     `json:"bots,omitempty"`
+	BotModels             []bot.Info             `json:"botModels,omitempty"`
+	ID                    string                 `json:"id"`
+	Name                  string                 `json:"name"`
+	Players               []string               `json:"players"`
+	MaxPlayers            int                    `json:"maxPlayers"`
+	MapName               string                 `json:"mapName"`
+	Creator               string                 `json:"creator"`
+	InProgress            bool                   `json:"inProgress"`
 }
 
 func WorkerForRoom(roomID string, workerCount uint32) (uint32, error) {

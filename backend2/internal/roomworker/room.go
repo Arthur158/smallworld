@@ -17,32 +17,36 @@ import (
 )
 
 type Room struct {
-	botHistory          []json.RawMessage
-	botFuture           []json.RawMessage
-	botForceSave        bool
-	botPaused           bool
-	botSpeed            float64
-	botPlaybackDirty    bool
-	botNextMove         time.Time
-	botDirty            bool
-	botTurnEnded        bool
-	botError            string
-	ID                  string
-	Name                string
-	HostUsername        string
-	Players             []*Client
-	Spectators          []*Client
-	InProgress          bool
-	Gamestate           gamestate.GameState
-	mu                  sync.Mutex
-	Map                 Map
-	saveId              int64
-	autoSaveId          int64
-	playerStatuses      []string
-	IsDisplayRoom       bool
-	ExtensionChoices    []Extension
-	GlobalToggle        bool
-	processedCommandIDs []string
+	generatedDraft          *generatedMapPreview
+	generatedSelected       *generatedMapPreview
+	generatedPending        *pendingGeneratedMap
+	generatedSelectionDirty bool
+	botHistory              []json.RawMessage
+	botFuture               []json.RawMessage
+	botForceSave            bool
+	botPaused               bool
+	botSpeed                float64
+	botPlaybackDirty        bool
+	botNextMove             time.Time
+	botDirty                bool
+	botTurnEnded            bool
+	botError                string
+	ID                      string
+	Name                    string
+	HostUsername            string
+	Players                 []*Client
+	Spectators              []*Client
+	InProgress              bool
+	Gamestate               gamestate.GameState
+	mu                      sync.Mutex
+	Map                     Map
+	saveId                  int64
+	autoSaveId              int64
+	playerStatuses          []string
+	IsDisplayRoom           bool
+	ExtensionChoices        []Extension
+	GlobalToggle            bool
+	processedCommandIDs     []string
 }
 
 const processedCommandHistory = 256
@@ -119,6 +123,14 @@ func createRoom(client *Client, roomName, username string) {
 	room.sendPlayerStatuses()
 	room.sendMapChoices()
 	room.sendChoices()
+	room.sendSaveSelectionToHost()
+}
+
+func (room *Room) sendSaveSelectionToHost() {
+	if host := room.hostClient(); host != nil {
+		raw, _ := json.Marshal(map[string]int64{"index": room.saveId})
+		host.sendMessage("saveSelection", raw)
+	}
 }
 
 func (room *Room) sendPlayerStatuses() {
@@ -255,6 +267,7 @@ func (room *Room) ChangeMap(newMap string) bool {
 	if !room.IsDisplayRoom && occupied > gameMap.Capacity {
 		return false
 	}
+	room.clearGeneratedMapCustomization()
 	room.Map = gameMap
 
 	newSize := gameMap.Capacity
@@ -500,11 +513,16 @@ func (room *Room) updateHostAfterLeave() {
 	if room.hostClient() != nil {
 		return
 	}
+	if room.generatedPending != nil {
+		room.generatedPending.cancel()
+		room.generatedPending = nil
+	}
 	room.HostUsername = ""
 	for _, members := range [][]*Client{room.Players, room.Spectators} {
 		for _, client := range members {
 			if client != nil && client.BotModel == "" {
 				room.HostUsername = client.Username
+				room.sendSaveSelectionToHost()
 				return
 			}
 		}
@@ -623,10 +641,12 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		return
 	}
 
-	if IsGeneratedMapChoice(room.Map.Name) {
+	// Keep the waiting lobby intact until all validation and game creation pass.
+	players, gameMap := room.Players, room.Map
+	if IsGeneratedMapChoice(gameMap.Name) {
 		nonNilPlayers := []*Client{}
 
-		for _, player := range room.Players {
+		for _, player := range players {
 			if player != nil {
 				nonNilPlayers = append(nonNilPlayers, player)
 			}
@@ -637,10 +657,14 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 			return
 		}
 
-		room.Players = nonNilPlayers
-		room.Map.Capacity = len(nonNilPlayers)
+		if room.generatedSelected != nil && room.generatedSelected.PlayerCount != len(nonNilPlayers) {
+			client.sendError("The player count changed; generate a new preview or return to automatic maps.")
+			return
+		}
+		players = nonNilPlayers
+		gameMap.Capacity = len(nonNilPlayers)
 	} else {
-		for _, player := range room.Players {
+		for _, player := range players {
 			if player == nil {
 				log.Println("The room is not full")
 				client.sendError("The room is not full")
@@ -648,29 +672,18 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 			}
 		}
 
-		if len(room.Players) < 2 {
+		if len(players) < 2 {
 			client.sendError("Need at least 2 players to start the game.")
 			return
 		}
 	}
 
-	playerNames := make([]string, len(room.Players))
-	for i, client := range room.Players {
+	playerNames := make([]string, len(players))
+	for i, client := range players {
 		playerNames[i] = client.displayName()
 	}
 
 	if room.saveId == -1 {
-		if IsGeneratedMapChoice(room.Map.Name) {
-			generatedMap, err := GenerateRuntimeMapForPlayerCount(len(playerNames))
-			if err != nil {
-				log.Println("Error generating runtime map:", err)
-				client.sendError("Could not generate map: " + err.Error())
-				return
-			}
-
-			mapMap[generatedMap.Name] = generatedMap
-			room.Map = generatedMap
-		}
 		raceKeys := []string{}
 		traitKeys := []string{}
 		powerKeys := []string{}
@@ -711,9 +724,26 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 				return
 			}
 		}
-		newstate, err := gamestate.New(playerNames, room.Map.Name, raceKeys, traitKeys, powerKeys)
+		if IsGeneratedMapChoice(gameMap.Name) {
+			var generatedMap Map
+			var err error
+			if room.generatedSelected != nil {
+				generatedMap, err = room.useSelectedGeneratedMap(len(playerNames))
+			} else {
+				generatedMap, err = GenerateRuntimeMapForPlayerCount(len(playerNames))
+			}
+			if err != nil {
+				log.Println("Error generating runtime map:", err)
+				client.sendError("Could not generate map: " + err.Error())
+				return
+			}
+
+			gameMap = generatedMap
+		}
+		newstate, err := gamestate.New(playerNames, gameMap.Name, raceKeys, traitKeys, powerKeys)
 		if err != nil {
 			log.Println(err)
+			client.sendError("Could not start game: " + err.Error())
 			return
 		}
 		room.Gamestate = *newstate
@@ -740,6 +770,11 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		room.Gamestate = *newstate
 	}
 
+	room.Players, room.Map = players, gameMap
+	mapMap[gameMap.Name] = gameMap
+
+	// Preview drafts are lobby-only; the active map now has its own durable record.
+	room.clearGeneratedMapCustomization()
 	// Mark the room as in-progress
 	room.InProgress = true
 	room.botError = ""

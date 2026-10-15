@@ -1,4 +1,4 @@
-import { websocketMessageReceived } from '../redux/slices/applicationSlice';
+import { websocketMessageReceived, mapEditorFailed } from '../redux/slices/applicationSlice';
 import { store } from '../redux/store';
 
 let socket: WebSocket | null = null;
@@ -30,7 +30,10 @@ export const connectWebSocket = () => {
     // sendMessageToBackend('getRooms', {});
   };
 
-  socket.onclose = () => console.log('WebSocket disconnected');
+  socket.onclose = () => {
+    console.log('WebSocket disconnected');
+    store.dispatch(mapEditorFailed('Connection lost. Reconnect and reopen the map editor to continue.'));
+  };
   socket.onerror = (err) => console.error('WebSocket error:', err);
 
   // Single onmessage handler
@@ -46,7 +49,7 @@ export const connectWebSocket = () => {
 export const sendMessageToBackend = (type: string, data: Record<string, any>) => {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     console.error('WebSocket is not open.');
-    return;
+    return false;
   }
   try {
     const msg = {
@@ -57,8 +60,10 @@ export const sendMessageToBackend = (type: string, data: Record<string, any>) =>
 
     console.log('Sending to server:', payload);
     socket.send(payload);
+    return true;
   } catch (err) {
     console.error('Failed to send WebSocket message:', err);
+    return false;
   }
 };
 

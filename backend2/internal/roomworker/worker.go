@@ -25,10 +25,12 @@ var (
 )
 
 type Worker struct {
-	bots  *bot.Registry
-	cfg   Config
-	redis *redis.Client
-	store *store.Store
+	generatedMapResults  chan generatedMapResult
+	generatedMapRequests int
+	bots                 *bot.Registry
+	cfg                  Config
+	redis                *redis.Client
+	store                *store.Store
 
 	clientsMu sync.Mutex
 	clients   map[string]*Client
@@ -140,9 +142,14 @@ func (w *Worker) Run(ctx context.Context) error {
 			return nil
 		}
 
+		w.drainGeneratedMaps(ctx)
+
 		// All game mutations stay on this command-consumer goroutine.
 		block := w.cfg.CommandBlock
 		if w.advanceBots(ctx) && (block == 0 || block > 100*time.Millisecond) {
+			block = 100 * time.Millisecond
+		}
+		if w.generatedMapRequests > 0 && (block == 0 || block > 100*time.Millisecond) {
 			block = 100 * time.Millisecond
 		}
 		results, err := w.redis.XReadGroup(ctx, &redis.XReadGroupArgs{
@@ -265,6 +272,7 @@ func (w *Worker) processResults(ctx context.Context, stream string, results []re
 					}
 				}
 				if room := rooms[cmd.RoomID]; room != nil {
+					room.publishGeneratedMapSelection()
 					if room.botDirty {
 						room.publishBotMove()
 					}

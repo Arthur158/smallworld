@@ -1,8 +1,22 @@
 import { Language } from './misc';
+import type { GeneratedMapSettings, GeneratedMapPreview } from './GeneratedMap';
 import { TribeEntry, Tile, Player, Room, SaveGameInfo, ChoiceEntry } from './Board'
 
 
+export interface GeneratedMapEditorState {
+  roomId: string;
+  requestId: string;
+  playerCount: number;
+  defaults: GeneratedMapSettings | null;
+  preview: GeneratedMapPreview | null;
+  selectedPreviewId?: string;
+  loading: boolean;
+  selecting: boolean;
+  error: string | null;
+}
+
 export interface ApplicationState {
+  generatedMapEditor: GeneratedMapEditorState | null;
   language: Language;
   error: string | null;
   availableTribes: TribeEntry[];

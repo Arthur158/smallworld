@@ -41,7 +41,19 @@ function applyMapDataToState(state: any, mapName: string, mapData: MapData) {
   state.tiles = newTiles;
 }
 
+function reconcileSelectedStack(state: ApplicationState) {
+  if (state.selectedStack == null) return;
+  const stacks = state.isStackFromBank
+    ? state.players[state.playerIndex]?.pieceStacks
+    : state.selectedTile == null ? undefined : state.tiles[state.selectedTile]?.pieceStack;
+  if (stacks?.some(stack => stack.type === state.selectedStack)) return;
+  state.selectedStack = null;
+  state.selectedTile = null;
+  state.isStackFromBank = false;
+}
+
 const initialState: ApplicationState = {
+  generatedMapEditor: null,
   language: Language.NL,
   error: null,
   availableTribes: [
@@ -86,7 +98,39 @@ const applicationSlice = createSlice({
   name: 'application',
   initialState,
   reducers: {
-    reset: () => initialState,
+    reset: (state) => {
+      if (state.generatedMapEditor?.preview?.imageUrl) URL.revokeObjectURL(state.generatedMapEditor.preview.imageUrl);
+      return initialState;
+    },
+    mapEditorRequested(state, action: PayloadAction<{ roomId: string; requestId: string; clear?: boolean }>) {
+      const { roomId, requestId, clear } = action.payload;
+      if (clear || state.generatedMapEditor?.roomId !== roomId) {
+        if (state.generatedMapEditor?.preview?.imageUrl) URL.revokeObjectURL(state.generatedMapEditor.preview.imageUrl);
+        state.generatedMapEditor = { roomId, requestId, playerCount: 2, defaults: null,
+          preview: null, loading: true, selecting: false, error: null };
+      } else if (state.generatedMapEditor) {
+        state.generatedMapEditor.requestId = requestId;
+        state.generatedMapEditor.loading = true;
+        state.generatedMapEditor.error = null;
+      }
+    },
+    mapEditorSelecting(state) {
+      if (state.generatedMapEditor) {
+        state.generatedMapEditor.selecting = true;
+        state.generatedMapEditor.error = null;
+      }
+    },
+    mapEditorFailed(state, action: PayloadAction<string>) {
+      if (state.generatedMapEditor) {
+        state.generatedMapEditor.loading = false;
+        state.generatedMapEditor.selecting = false;
+        state.generatedMapEditor.error = action.payload;
+      }
+    },
+    mapEditorClosed(state) {
+      if (state.generatedMapEditor?.preview?.imageUrl) URL.revokeObjectURL(state.generatedMapEditor.preview.imageUrl);
+      state.generatedMapEditor = null;
+    },
 
     setLanguage(state, action: PayloadAction<Language>) {
       state.language = action.payload;
@@ -140,6 +184,41 @@ const applicationSlice = createSlice({
 
       const parsedData = data;
       switch (type) {
+        case 'generatedmapsettings':
+        case 'generatedmappreview': {
+          const editor = state.generatedMapEditor;
+          if (!editor || editor.roomId !== parsedData.roomId || editor.requestId !== parsedData.requestId) break;
+          editor.loading = false;
+          editor.error = null;
+          editor.playerCount = parsedData.playerCount;
+          if (type === 'generatedmapsettings') {
+            editor.defaults = parsedData.settings;
+            editor.selectedPreviewId = parsedData.selectedPreviewId || undefined;
+          }
+          const preview = type === 'generatedmappreview' ? parsedData : parsedData.preview;
+          if (editor.preview?.imageUrl) URL.revokeObjectURL(editor.preview.imageUrl);
+          editor.preview = preview ? { id: preview.previewId, imageUrl: base64PngToObjectUrl(preview.imageBase64),
+            settings: preview.settings, playerCount: preview.playerCount } : null;
+          break;
+        }
+        case 'generatedmapselection': {
+          const editor = state.generatedMapEditor;
+          if (editor && editor.roomId === parsedData.roomId) {
+            editor.selecting = false;
+            editor.error = null;
+            editor.selectedPreviewId = parsedData.previewId || undefined;
+          }
+          break;
+        }
+        case 'generatedmaperror': {
+          const editor = state.generatedMapEditor;
+          if (!editor || editor.roomId !== parsedData.roomId ||
+              (parsedData.requestId && editor.requestId !== parsedData.requestId)) break;
+          editor.loading = false;
+          editor.selecting = false;
+          editor.error = parsedData.message;
+          break;
+        }
         // ---------------------------------------------------------------------
         // NEW: Rooms Lobby Management
         // ---------------------------------------------------------------------
@@ -221,6 +300,11 @@ const applicationSlice = createSlice({
           state.error = null
           break;
         case 'error':
+          if (state.generatedMapEditor?.loading || state.generatedMapEditor?.selecting) {
+            state.generatedMapEditor.loading = false;
+            state.generatedMapEditor.selecting = false;
+            state.generatedMapEditor.error = parsedData.message;
+          }
           state.error = parsedData.message;
           state.messages.push(JSON.stringify(parsedData.message));
           break;
@@ -369,30 +453,7 @@ const applicationSlice = createSlice({
             players.push(player);
           }
           state.players = players;
-          if (state.selectedStack != null && state.isStackFromBank) {
-            let found = false
-            for (const stack of state.players[state.playerIndex].pieceStacks) {
-              if (stack.type === state.selectedStack) {
-                found = true; 
-                break
-              }
-            }
-            if (!found) {
-              state.selectedStack = null;
-            }
-          } else if (state.selectedStack != null && !state.isStackFromBank && state.selectedTile != null) {
-            let found = false
-            for (const stack of state.tiles[state.selectedTile].pieceStack) {
-              if (stack.type === state.selectedStack) {
-                found = true
-                break; 
-              }
-            }
-            if (!found) {
-              state.selectedStack = null
-              state.selectedTile = null
-            }
-          }
+          reconcileSelectedStack(state);
           break;
         }
         case 'tribeentries':
@@ -555,33 +616,7 @@ const applicationSlice = createSlice({
               tileObj.pieceStack = stacks;
             }
           }
-          if (state.selectedStack != null && state.isStackFromBank) {
-            let found = false
-            for (const stack of state.players[state.playerIndex].pieceStacks) {
-              if (stack.type === state.selectedStack) {
-                found = true; 
-                break
-              }
-            }
-            if (!found) {
-              state.selectedStack = null;
-              state.isStackFromBank = false
-            }
-          } else if (state.selectedStack != null && !state.isStackFromBank && state.selectedTile != null) {
-            let found = false
-            console.log(state.tiles[state.selectedTile].pieceStack)
-            for (const stack of state.tiles[state.selectedTile].pieceStack) {
-              console.log(stack)
-              if (stack.type === state.selectedStack) {
-                found = true
-                break; 
-              }
-            }
-            if (!found) {
-              state.selectedStack = null
-              state.selectedTile = null
-            }
-          }
+          reconcileSelectedStack(state);
 
           // 5) Next player index (if needed)
           // e.g., you might store it or do something else with it:
@@ -606,6 +641,10 @@ export const applicationReducer = applicationSlice.reducer;
 // Export the auto-generated actions
 export const {
   reset,
+  mapEditorRequested,
+  mapEditorSelecting,
+  mapEditorFailed,
+  mapEditorClosed,
   setLanguage,
   setName,
   setSelectedTile,

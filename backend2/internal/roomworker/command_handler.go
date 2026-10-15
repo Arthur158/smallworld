@@ -44,6 +44,13 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 	}
 
 	switch cmd.Message.Type {
+	case "getGeneratedMapSettings", "previewGeneratedMap", "selectGeneratedMap", "resetGeneratedMap":
+		err := w.handleGeneratedMapCommand(ctx, client, cmd)
+		if err != nil {
+			generatedMapCommandError(client, cmd, err)
+		}
+		return err
+
 	case "setBotPlayback", "stepBot", "previousBotMove":
 		return w.handleBotPlayback(client, cmd)
 
@@ -340,6 +347,7 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 			return errors.New("invalid save id")
 		}
 		if data.SaveID == -1 {
+			room.clearGeneratedMapCustomization()
 			room.playerStatuses = []string{}
 			room.saveId = -1
 			client.sendMessage("saveSelection", json.RawMessage([]byte(`{"index": -1}`)))
@@ -472,6 +480,10 @@ func (w *Worker) handleReconnect(ctx context.Context, client *Client, cmd protoc
 	if room.HostUsername == client.Username {
 		room.sendMapChoices()
 		room.sendChoices()
+	}
+	room.sendGeneratedMapSelection(client)
+	if room.HostUsername == client.Username {
+		room.sendSaveSelectionToHost()
 	}
 	return nil
 }

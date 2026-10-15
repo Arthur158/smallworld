@@ -1,15 +1,17 @@
 import WikiToolbar from '../components/wiki/WikiToolbar';
 // src/pages/LobbyPage.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import { getAuthConfig, sendMessageToBackend } from '../services/backendService';
-import { reset, clearError } from '../redux/slices/applicationSlice';
+import { reset, clearError, mapEditorRequested, mapEditorSelecting, mapEditorFailed, mapEditorClosed } from '../redux/slices/applicationSlice';
 import { Room, SaveGameInfo } from '../types/Board';
 import RoomBotControls, { BotModelSelect } from '../components/RoomBotControls';
 import { useShortcut } from '../hooks/useShortcut';
+import GeneratedMapEditor from '../components/GeneratedMapEditor';
+import type { GeneratedMapSettings } from '../types/GeneratedMap';
 
 const mapLabel = (name: string) => name === 'generatedmap' ? 'Generated map · random layout' : name === 'underground2players' ? 'Underground · 2 players' : name;
 
@@ -29,6 +31,7 @@ export default function LobbyPage() {
     saveSelectionId,
     mapChoices,
     playerStatuses,
+    generatedMapEditor,
   } = useSelector((state: RootState) => ({
     name: state.application.name,
     isAuthenticated: state.application.isAuthenticated,
@@ -41,9 +44,14 @@ export default function LobbyPage() {
     saveSelectionId: state.application.saveSelectionId,
     mapChoices: state.application.mapChoices,
     playerStatuses: state.application.playerStatuses,
+    generatedMapEditor: state.application.generatedMapEditor,
   }), shallowEqual);
 
   const [roomName, setRoomName] = useState('');
+  const [mapEditorOpen, setMapEditorOpen] = useState(false);
+  const customizeMapButton = useRef<HTMLButtonElement>(null);
+  const editorWasOpen = useRef(false);
+  const [pendingMapChoice, setPendingMapChoice] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'saves' | 'dlc'>('saves');
 
   let currentRoom: Room | null = null;
@@ -152,14 +160,122 @@ export default function LobbyPage() {
 
   const userInRoom = !!currentRoom;
   const isWaitingHost = !!currentRoom && currentRoom.creator === username && !currentRoom.inProgress;
+  const occupiedPlayers = currentRoom?.players.filter(player => player?.trim()).length ?? 0;
+  const canCustomizeMap = isWaitingHost && currentRoom?.mapName === 'generatedmap' && saveSelectionId < 0;
+  const mapSelection = currentRoom?.generatedMapSelection;
+  const selectedCountChanged = !!mapSelection && mapSelection.playerCount !== Math.max(2, occupiedPlayers);
+  const editor = generatedMapEditor?.roomId === currentRoom?.id ? generatedMapEditor : null;
+
+  const sendEditorCommand = (type: string, data: Record<string, unknown>) => {
+    if (sendMessageToBackend(type, data) === false) {
+      dispatch(mapEditorFailed('Not connected. Reconnect and reopen the map editor to continue.'));
+    }
+  };
+  const requestMapSettings = () => {
+    if (!currentRoom) return;
+    const requestId = `settings-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    dispatch(mapEditorRequested({ roomId: currentRoom.id, requestId, clear: true }));
+    sendEditorCommand('getGeneratedMapSettings', { requestId });
+  };
+  const closeMapEditor = () => {
+    setMapEditorOpen(false);
+    setPendingMapChoice(null);
+    dispatch(mapEditorClosed());
+  };
+  const generatePreview = (settings: GeneratedMapSettings) => {
+    if (!currentRoom) return;
+    const requestId = `preview-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    dispatch(mapEditorRequested({ roomId: currentRoom.id, requestId }));
+    sendEditorCommand('previewGeneratedMap', { requestId, settings });
+  };
+  const selectPreview = (previewId: string) => {
+    setPendingMapChoice(previewId);
+    dispatch(mapEditorSelecting());
+    sendEditorCommand('selectGeneratedMap', { previewId });
+  };
+  const selectAutomatic = () => {
+    setPendingMapChoice('');
+    dispatch(mapEditorSelecting());
+    sendEditorCommand('resetGeneratedMap', {});
+  };
+
+  useEffect(() => {
+    if (!mapEditorOpen) return;
+    if (!canCustomizeMap) {
+      setMapEditorOpen(false);
+      setPendingMapChoice(null);
+      dispatch(mapEditorClosed());
+      return;
+    }
+    // Settings come from the backend preset for the actual occupied seats.
+    requestMapSettings();
+    // Request again only when this editor opens or the roster/map changes.
+  }, [mapEditorOpen, canCustomizeMap, currentRoom?.id, occupiedPlayers, dispatch]);
+  useEffect(() => {
+    if (!mapEditorOpen || pendingMapChoice === null || !editor || editor.selecting) return;
+    if (editor.error) { setPendingMapChoice(null); return; }
+    if ((editor.selectedPreviewId ?? '') === pendingMapChoice) {
+      setMapEditorOpen(false);
+      setPendingMapChoice(null);
+      dispatch(mapEditorClosed());
+    }
+  }, [mapEditorOpen, pendingMapChoice, editor, dispatch]);
+  useEffect(() => {
+    if (editorWasOpen.current && !mapEditorOpen) customizeMapButton.current?.focus();
+    editorWasOpen.current = mapEditorOpen;
+  }, [mapEditorOpen]);
+  useEffect(() => () => { dispatch(mapEditorClosed()); }, [dispatch]);
+  useEffect(() => {
+    if (!mapEditorOpen || (!editor?.loading && !editor?.selecting)) return;
+    const timeout = window.setTimeout(() => dispatch(mapEditorFailed('The map request timed out. Please try again.')), 75000);
+    return () => window.clearTimeout(timeout);
+  }, [mapEditorOpen, editor?.requestId, editor?.loading, editor?.selecting, dispatch]);
+  useShortcut('m', () => setMapEditorOpen(true), canCustomizeMap);
   useShortcut('s', () => setActiveTab(previous => previous === 'saves' ? 'dlc' : 'saves'));
-  useShortcut('p', handleStartGame, isWaitingHost);
+  useShortcut('p', handleStartGame, isWaitingHost && !selectedCountChanged);
   useShortcut('v', handleEnterDisplayRoom, activeTab === 'saves' && !!username.trim());
   useShortcut('Shift+L', handleLeaveRoom, userInRoom);
   useShortcut('c', () => dispatch(clearError()), !!error);
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
+      {mapEditorOpen && (editor?.defaults ? <GeneratedMapEditor
+        defaultSettings={editor.defaults}
+        initialSettings={editor.preview?.settings}
+        preview={editor.preview ?? undefined}
+        playerCount={Math.max(2, occupiedPlayers)}
+        loading={editor.loading}
+        selecting={editor.selecting}
+        selectedPreviewId={editor.selectedPreviewId}
+        automatic={!editor.selectedPreviewId}
+        error={editor.error ?? undefined}
+        onGenerate={generatePreview}
+        onSelect={selectPreview}
+        onAutomatic={selectAutomatic}
+        onClose={closeMapEditor}
+      /> : <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4"
+        role="dialog" aria-modal="true" aria-labelledby="map-editor-loading-title"
+        onKeyDown={event => {
+          event.stopPropagation();
+          if (event.key === 'Escape') { event.preventDefault(); closeMapEditor(); }
+          if (event.key === 'Tab') {
+            const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button'));
+            const first = buttons[0], last = buttons[buttons.length - 1];
+            if (event.shiftKey ? document.activeElement === first : document.activeElement === last) {
+              event.preventDefault(); (event.shiftKey ? last : first)?.focus();
+            }
+          }
+        }}>
+        <div className="w-full max-w-lg rounded-xl border border-[#8B4513] bg-[#FDF5E6] p-6 shadow-2xl">
+          <h2 id="map-editor-loading-title" className="text-2xl font-bold">Customize generated map</h2>
+          <p role={editor?.error ? 'alert' : 'status'} className="my-4">{editor?.error ?? 'Loading the current map settings…'}</p>
+          <div className="flex gap-3">
+            {editor?.error && <button type="button" onClick={requestMapSettings} className="rounded bg-[#8B4513] px-4 py-2 text-white">Try again</button>}
+            <button type="button" autoFocus onClick={closeMapEditor} data-tooltip="Return to the lobby · Esc"
+              className="rounded border border-[#8B4513] px-4 py-2">Back to lobby</button>
+          </div>
+        </div>
+      </div>)}
       <div className="flex w-full h-full">
         {/* Left column */}
         <div 
@@ -284,13 +400,22 @@ export default function LobbyPage() {
               <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
                 <h2 className="text-xl font-bold mb-4 underline">Room: {currentRoom.name}</h2>
                 <div className="mb-4">
-                  <p className="font-semibold">Selected Map: {mapLabel(currentRoom.mapName)}</p>
+                  <p className="font-semibold">Selected Map: {currentRoom.mapName === 'generatedmap' && mapSelection ? 'Generated map · custom preview selected' : mapLabel(currentRoom.mapName)}</p>
+                  {currentRoom.mapName === 'generatedmap' && <p className="mt-1 text-sm text-[#78674f]">
+                    {mapSelection ? `${mapSelection.playerCount} players · Seed: ${mapSelection.seed}` : 'A fresh, balanced layout is generated when the game starts.'}
+                  </p>}
+                  {selectedCountChanged && <p role="status" className="mt-2 text-sm text-amber-800">The player count changed. Open Customize map and generate a new preview, or use automatic generation.</p>}
+                  {canCustomizeMap && <button ref={customizeMapButton} type="button" onClick={() => setMapEditorOpen(true)} aria-keyshortcuts="M"
+                    data-tooltip="Adjust settings, generate a preview, and select the map to play · M"
+                    className="mt-3 rounded border border-[#8B4513] bg-[#FDF5E6] px-4 py-2 font-semibold text-[#8B4513] hover:bg-[#EED5B7] transition-colors">
+                    Customize map
+                  </button>}
                 </div>
                 {currentRoom.creator === username && mapChoices && mapChoices.length > 0 && (
                   <div className="mb-4">
                     <label htmlFor="lobby-room-map" className="font-semibold mr-2">Choose Map:</label>
                     <select id="lobby-room-map" value={currentRoom.mapName} onChange={handleMapChange}
-                      data-tooltip="Choose the room's map; generated maps get a fresh layout when the game starts"
+                      data-tooltip="Choose the room's map; generated maps can be automatic or customized with a preview"
                       className="border p-2 rounded focus:outline-none">
                       <option value="">-- Select a Map --</option>
                       {mapChoices.map((map) => (
@@ -364,7 +489,7 @@ export default function LobbyPage() {
                   {currentRoom.creator === username && (
                     <button
                       type="button"
-                      onClick={handleStartGame} aria-keyshortcuts="P" data-tooltip="Start the game with the current map and rules · P"
+                      onClick={handleStartGame} disabled={selectedCountChanged} aria-keyshortcuts="P" data-tooltip="Start the game with the current map and rules · P"
                       className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 px-4 rounded transition-colors shadow-md"
                     >
                       {currentRoom.players.includes(currentRoom.creator) ? 'Start Game' : 'Start & Watch'}

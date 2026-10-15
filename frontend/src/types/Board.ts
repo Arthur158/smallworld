@@ -53,6 +53,7 @@ export interface BotSeat { modelId: string; name: string; }
 export interface BotPlayback { paused: boolean; speed: number; canGoBack?: boolean; }
 
 export interface Room {
+  generatedMapSelection?: { previewId: string; playerCount: number; seed: string };
   botPlayback?: BotPlayback;
   bots?: Record<string, BotSeat>;
   botModels?: BotModel[];

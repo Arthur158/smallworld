@@ -28,6 +28,8 @@ type generatedMapSnapshot struct {
 }
 
 type roomSnapshot struct {
+	GeneratedDraft      *generatedMapPreview  `json:"generatedDraft,omitempty"`
+	GeneratedSelected   *generatedMapPreview  `json:"generatedSelected,omitempty"`
 	BotHistory          []json.RawMessage     `json:"botHistory,omitempty"`
 	BotFuture           []json.RawMessage     `json:"botFuture,omitempty"`
 	BotPlayback         *protocol.BotPlayback `json:"botPlayback,omitempty"`
@@ -63,6 +65,8 @@ func (w *Worker) persistCommandRoom(ctx context.Context, roomID string) error {
 
 func (w *Worker) persistRoom(ctx context.Context, room *Room) error {
 	snap := roomSnapshot{
+		GeneratedDraft:      room.generatedDraft,
+		GeneratedSelected:   room.generatedSelected,
 		BotHistory:          room.botHistory,
 		BotFuture:           room.botFuture,
 		BotPlayback:         room.botPlayback(),
@@ -81,6 +85,9 @@ func (w *Worker) persistRoom(ctx context.Context, room *Room) error {
 		ExtensionChoices:    room.ExtensionChoices,
 		GlobalToggle:        room.GlobalToggle,
 		ProcessedCommandIDs: append([]string(nil), room.processedCommandIDs...),
+	}
+	if snap.GeneratedDraft != nil && snap.GeneratedSelected != nil && snap.GeneratedDraft.PreviewID == snap.GeneratedSelected.PreviewID {
+		snap.GeneratedDraft = nil
 	}
 	for i, p := range room.Players {
 		if p != nil {
@@ -108,15 +115,18 @@ func (w *Worker) persistRoom(ctx context.Context, room *Room) error {
 	if room.IsDisplayRoom {
 		ttl = w.cfg.DisplayRoomTTL
 	}
-	if err := w.redis.Set(ctx, roomSnapshotKey(room.ID), data, ttl).Err(); err != nil {
-		return err
-	}
-
+	// The map pixels/specs and room reference must become durable together.
+	pipe := w.redis.TxPipeline()
 	if visuals, ok := GetGeneratedMapVisuals(room.Map.Name); ok {
-		v, _ := json.Marshal(generatedMapSnapshot{Map: room.Map, Visuals: visuals})
-		_ = w.redis.Set(ctx, generatedMapKey(room.Map.Name), v, w.cfg.SnapshotTTL).Err()
+		v, err := json.Marshal(generatedMapSnapshot{Map: room.Map, Visuals: visuals})
+		if err != nil {
+			return err
+		}
+		pipe.Set(ctx, generatedMapKey(room.Map.Name), v, w.cfg.SnapshotTTL)
 	}
-	return nil
+	pipe.Set(ctx, roomSnapshotKey(room.ID), data, ttl)
+	_, err = pipe.Exec(ctx)
+	return err
 }
 
 func (w *Worker) ensureRoomLoaded(ctx context.Context, roomID string) (*Room, error) {
@@ -143,6 +153,8 @@ func (w *Worker) ensureRoomLoaded(ctx context.Context, roomID string) (*Room, er
 	_ = w.restoreGeneratedMap(ctx, snap.Map.Name)
 
 	room := &Room{
+		generatedDraft:      snap.GeneratedDraft,
+		generatedSelected:   snap.GeneratedSelected,
 		botHistory:          snap.BotHistory,
 		botFuture:           snap.BotFuture,
 		ID:                  snap.ID,

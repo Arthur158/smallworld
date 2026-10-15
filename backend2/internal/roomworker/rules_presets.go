@@ -68,6 +68,7 @@ func (room *Room) setRulesPreset(preset string) error {
 
 	// Commit the map, roster and choices together only after every check passes.
 	// The command consumer persists this state and command ID before ACKing.
+	room.clearGeneratedMapCustomization()
 	room.Map = gameMap
 	room.Players = players
 	room.ExtensionChoices = choices

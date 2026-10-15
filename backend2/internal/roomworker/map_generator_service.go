@@ -3,6 +3,7 @@ package roomworker
 import (
 	"backend/internal/gamestate"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -445,6 +446,10 @@ func variedGeneratedMapSettings(playerCount int, seed string) MapGeneratorSettin
 }
 
 func requestGeneratedMap(settings MapGeneratorSettings) (*mapGeneratorResponse, error) {
+	return requestGeneratedMapContext(context.Background(), settings)
+}
+
+func requestGeneratedMapContext(ctx context.Context, settings MapGeneratorSettings) (*mapGeneratorResponse, error) {
 	body, err := json.Marshal(settings)
 	if err != nil {
 		return nil, err
@@ -453,7 +458,12 @@ func requestGeneratedMap(settings MapGeneratorSettings) (*mapGeneratorResponse, 
 	url := mapGeneratorURL() + "/api/generate"
 
 	httpClient := &http.Client{Timeout: 60 * time.Second}
-	resp, err := httpClient.Post(url, "application/json", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to contact map generator at %s: %w", url, err)
 	}
