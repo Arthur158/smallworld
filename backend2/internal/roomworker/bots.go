@@ -117,6 +117,9 @@ func (w *Worker) advanceBots(ctx context.Context) bool {
 		if !room.InProgress || !room.hasConnectedUsers() || room.botError != "" || room.Gamestate.TurnInfo == nil {
 			continue
 		}
+		if room.onlyBots() && room.botPaused {
+			continue
+		}
 		i := room.Gamestate.TurnInfo.PlayerIndex
 		if i < 0 || i >= len(room.Players) {
 			continue
@@ -129,19 +132,12 @@ func (w *Worker) advanceBots(ctx context.Context) bool {
 		if time.Now().Before(room.botNextMove) {
 			continue
 		}
-		if !w.bots.Has(p.BotModel) {
-			room.sendStateMessage("A saved bot model is unavailable; this bot will use the random policy.")
-			p.BotModel = "random"
-			sendRoomsUpdateToAll()
-		}
-		if err := room.stepBot(w); err != nil {
+		if err := room.applyBotMove(w); err != nil {
 			room.botError = err.Error()
 			log.Printf("roomworker: bot in room %s paused: %v", room.ID, err)
 			room.sendStateMessage("Bot paused because its move could not be validated. Leave the room to end this match.")
 			continue
 		}
-		room.botDirty = true
-		room.botNextMove = time.Now().Add(w.cfg.BotMoveDelay)
 		if !w.commitBotMove(ctx, room) {
 			return active
 		}
@@ -185,17 +181,28 @@ func (w *Worker) commitBotMove(ctx context.Context, room *Room) bool {
 		case <-time.After(500 * time.Millisecond):
 		}
 	}
+	room.publishBotMove()
+	return true
+}
+
+// publishBotMove is also called after a manual step's state and command ID have
+// been persisted together. It must never publish a move ahead of that journal.
+func (room *Room) publishBotMove() {
 	room.botDirty = false
 	room.flushGameMessages()
 	room.sendMegaUpdate()
 	room.SendCoinUpdate()
-	if room.botTurnEnded {
+	if room.botTurnEnded || room.botForceSave {
 		room.AutoSave()
 		room.botTurnEnded = false
+		room.botForceSave = false
 	}
 	if room.Gamestate.TurnInfo.Phase == gamestate.GameFinished {
 		room.sendGameFinishedUpdate()
-		sendRoomsUpdateToAll()
+		room.botPlaybackDirty = true
 	}
-	return true
+	if room.botPlaybackDirty {
+		sendRoomsUpdateToAll()
+		room.botPlaybackDirty = false
+	}
 }

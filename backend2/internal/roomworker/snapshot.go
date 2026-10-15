@@ -2,6 +2,7 @@ package roomworker
 
 import (
 	"backend/internal/gamestate"
+	"backend/internal/protocol"
 	"backend/internal/store"
 	"context"
 	"encoding/json"
@@ -27,22 +28,25 @@ type generatedMapSnapshot struct {
 }
 
 type roomSnapshot struct {
-	Version             int               `json:"version"`
-	ID                  string            `json:"id"`
-	Name                string            `json:"name"`
-	HostUsername        string            `json:"hostUsername"`
-	Players             []*snapshotPlayer `json:"players"`
-	Spectators          []string          `json:"spectators"`
-	InProgress          bool              `json:"inProgress"`
-	Map                 Map               `json:"map"`
-	SaveID              int64             `json:"saveId"`
-	AutoSaveID          int64             `json:"autoSaveId"`
-	PlayerStatuses      []string          `json:"playerStatuses"`
-	IsDisplayRoom       bool              `json:"isDisplayRoom"`
-	ExtensionChoices    []Extension       `json:"extensionChoices"`
-	GlobalToggle        bool              `json:"globalToggle"`
-	ProcessedCommandIDs []string          `json:"processedCommandIds,omitempty"`
-	GameState           json.RawMessage   `json:"gameState,omitempty"`
+	BotHistory          []json.RawMessage     `json:"botHistory,omitempty"`
+	BotFuture           []json.RawMessage     `json:"botFuture,omitempty"`
+	BotPlayback         *protocol.BotPlayback `json:"botPlayback,omitempty"`
+	Version             int                   `json:"version"`
+	ID                  string                `json:"id"`
+	Name                string                `json:"name"`
+	HostUsername        string                `json:"hostUsername"`
+	Players             []*snapshotPlayer     `json:"players"`
+	Spectators          []string              `json:"spectators"`
+	InProgress          bool                  `json:"inProgress"`
+	Map                 Map                   `json:"map"`
+	SaveID              int64                 `json:"saveId"`
+	AutoSaveID          int64                 `json:"autoSaveId"`
+	PlayerStatuses      []string              `json:"playerStatuses"`
+	IsDisplayRoom       bool                  `json:"isDisplayRoom"`
+	ExtensionChoices    []Extension           `json:"extensionChoices"`
+	GlobalToggle        bool                  `json:"globalToggle"`
+	ProcessedCommandIDs []string              `json:"processedCommandIds,omitempty"`
+	GameState           json.RawMessage       `json:"gameState,omitempty"`
 }
 
 func roomSnapshotKey(roomID string) string  { return "game:room:" + roomID + ":snapshot" }
@@ -59,6 +63,9 @@ func (w *Worker) persistCommandRoom(ctx context.Context, roomID string) error {
 
 func (w *Worker) persistRoom(ctx context.Context, room *Room) error {
 	snap := roomSnapshot{
+		BotHistory:          room.botHistory,
+		BotFuture:           room.botFuture,
+		BotPlayback:         room.botPlayback(),
 		Version:             snapshotVersion,
 		ID:                  room.ID,
 		Name:                room.Name,
@@ -136,6 +143,8 @@ func (w *Worker) ensureRoomLoaded(ctx context.Context, roomID string) (*Room, er
 	_ = w.restoreGeneratedMap(ctx, snap.Map.Name)
 
 	room := &Room{
+		botHistory:          snap.BotHistory,
+		botFuture:           snap.BotFuture,
 		ID:                  snap.ID,
 		Name:                snap.Name,
 		HostUsername:        snap.HostUsername,
@@ -150,6 +159,12 @@ func (w *Worker) ensureRoomLoaded(ctx context.Context, roomID string) (*Room, er
 		ExtensionChoices:    snap.ExtensionChoices,
 		GlobalToggle:        snap.GlobalToggle,
 		processedCommandIDs: append([]string(nil), snap.ProcessedCommandIDs...),
+	}
+	if snap.BotPlayback != nil {
+		room.botPaused = snap.BotPlayback.Paused
+		if validBotSpeed(snap.BotPlayback.Speed) {
+			room.botSpeed = snap.BotPlayback.Speed
+		}
 	}
 	if len(snap.GameState) > 0 {
 		gs, err := store.DecodeGameState(snap.GameState)
@@ -187,6 +202,11 @@ func (w *Worker) ensureRoomLoaded(ctx context.Context, roomID string) (*Room, er
 		room.Spectators = append(room.Spectators, c)
 	}
 
+	if room.onlyBots() {
+		room.trimBotHistory()
+	} else {
+		room.botHistory, room.botFuture = nil, nil
+	}
 	rooms[room.ID] = room
 	return room, nil
 }

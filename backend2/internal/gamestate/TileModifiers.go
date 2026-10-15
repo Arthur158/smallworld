@@ -35,7 +35,7 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState){
         delete(tile.ModifierDefenses, "Loot")
         delete(tile.ModifierSpecialDefenses, "Loot")
         delete(tile.ModifierAfterConquest, "Loot")
-        for i := range tile.PieceStacks {
+        for i := len(tile.PieceStacks)-1; i >= 0; i-- {
             if tile.PieceStacks[i].Type == "Loot" {
                 tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                 break
@@ -142,7 +142,8 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState){
             power.Owner = nil
         }
         for _, tile := range gs.TileList {
-            for i, stack := range tile.PieceStacks {
+            for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Tomb-raider" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     delete(tile.ModifierDefenses, "Tomb-raider")
@@ -150,7 +151,8 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState){
             }
         }
         if tile.OwningTribe != nil {
-            for i, stack := range tile.OwningTribe.Owner.PieceStacks {
+            for i := len(tile.OwningTribe.Owner.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.OwningTribe.Owner.PieceStacks[i]
                 if stack.Type == "Tomb-raider" {
                     tile.OwningTribe.Owner.PieceStacks = append(tile.OwningTribe.Owner.PieceStacks[:i], tile.OwningTribe.Owner.PieceStacks[i+1:]...)
                     break
@@ -166,7 +168,8 @@ var TileModifierAfterConquests = map[string]func(*Tile, *Tribe, *GameState){
             power.Owner = nil
         }
         if tile.OwningTribe != nil {
-            for i, stack := range tile.OwningTribe.Owner.PieceStacks {
+            for i := len(tile.OwningTribe.Owner.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.OwningTribe.Owner.PieceStacks[i]
                 if stack.Type == "Altar of Souls" {
                     tile.OwningTribe.Owner.PieceStacks = append(tile.OwningTribe.Owner.PieceStacks[:i], tile.OwningTribe.Owner.PieceStacks[i+1:]...)
                     break
@@ -282,7 +285,7 @@ var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, str
                 TurnInfo: nil,
                 actionBefore: func(gs *GameState) {
                     delete(tile.ModifierDefenses, "Skag Attack")
-                    for i := range tile.PieceStacks {
+                    for i := len(tile.PieceStacks)-1; i >= 0; i-- {
                         if tile.PieceStacks[i].Type == "Skag Attack" {
                             tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                             break

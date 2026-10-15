@@ -1,6 +1,7 @@
 package roomworker
 
 import (
+	"backend/internal/gamestate"
 	"backend/internal/messages"
 	"backend/internal/protocol"
 	"context"
@@ -43,6 +44,25 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 	}
 
 	switch cmd.Message.Type {
+	case "setBotPlayback", "stepBot", "previousBotMove":
+		return w.handleBotPlayback(client, cmd)
+
+	case "setHostSpectator":
+		room, err := requireHost(client)
+		if err != nil {
+			return err
+		}
+		if room.ID != cmd.RoomID {
+			return errors.New("client not in the requested room")
+		}
+		var data struct {
+			Spectator *bool `json:"spectator"`
+		}
+		if err := json.Unmarshal(cmd.Message.Data, &data); err != nil || data.Spectator == nil {
+			return errors.New("spectator must be a boolean")
+		}
+		return room.setHostSpectator(client, *data.Spectator)
+
 	case "addBot", "setBotModel", "useBotRules":
 		room, err := requireHost(client)
 		if err != nil {
@@ -321,7 +341,7 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 		if index < 0 || index >= len(room.Players) {
 			return errors.New("saved player index does not fit selected map")
 		}
-		if !room.MovePlayerWithIndex(client.Username, index) {
+		if !client.IsSpectator && !room.MovePlayerWithIndex(client.Username, index) {
 			return errors.New("error moving player")
 		}
 		room.playerStatuses = statuses
@@ -415,14 +435,23 @@ func (w *Worker) handleReconnect(ctx context.Context, client *Client, cmd protoc
 
 	roomIDData, _ := json.Marshal(map[string]string{"roomid": room.ID})
 	client.sendMessage("roomid", roomIDData)
-	if spectator {
+	hasGame := room.InProgress || room.Gamestate.TurnInfo != nil
+	if spectator && hasGame {
 		client.sendMessage("spectate", json.RawMessage([]byte(`{"index":"1"}`)))
-	} else if room.InProgress {
+	} else if hasGame {
 		client.sendMessage("index", json.RawMessage([]byte(`{"index":"`+strconv.Itoa(index)+`"}`)))
 	}
 	room.sendSmallMapUpdateToClient(client)
 	room.sendGeneratedMapVisualsToClient(client)
 	room.sendMegaUpdateToClient(client)
+	if room.Gamestate.TurnInfo != nil && room.Gamestate.TurnInfo.Phase == gamestate.GameFinished {
+		scores := make([]int, len(room.Gamestate.Players))
+		for i, player := range room.Gamestate.Players {
+			scores[i] = player.CoinPile
+		}
+		raw, _ := json.Marshal(scores)
+		client.sendMessage("gamefinished", raw)
+	}
 	room.sendPlayerStatusesToClient(client)
 	if room.HostUsername == client.Username {
 		room.sendMapChoices()
@@ -526,7 +555,7 @@ func (room *Room) sendSmallMapUpdateToClient(c *Client) {
 }
 
 func (room *Room) sendMegaUpdateToClient(c *Client) {
-	if !room.InProgress && !room.IsDisplayRoom {
+	if !room.InProgress && room.Gamestate.TurnInfo == nil && !room.IsDisplayRoom {
 		return
 	}
 	// megaUpdate is room-wide state, so rebroadcasting it on reconnect is safe

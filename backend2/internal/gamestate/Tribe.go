@@ -2,6 +2,7 @@ package gamestate
 
 import (
     "fmt"
+    "sort"
 )
 
 type Race string
@@ -82,17 +83,22 @@ type Tribe struct {
 
 func (t *Tribe) giveInitialStacks() []PieceStack {
     stacks := []PieceStack{}
-    for _, f := range t.giveInitialStacksMap {
+    for _, key := range sortedHookKeys(t.giveInitialStacksMap) {
+        f := t.giveInitialStacksMap[key]
+        if f == nil { continue }
         stacks = AddPieceStacks(stacks, f())
     }
     return stacks
 }
 
 func (t *Tribe) checkPresence(tile *Tile, race Race) bool {
+    if t == nil || tile == nil || tile.OwningTribe == nil { return false }
     if tile.OwningTribe.Race == race {
         return true
     }
-    for _, f := range t.checkPresenceMap {
+    for _, key := range sortedHookKeys(t.checkPresenceMap) {
+        f := t.checkPresenceMap[key]
+        if f == nil { continue }
         if f(tile, race) {
             return true
         }
@@ -103,7 +109,9 @@ func (t *Tribe) checkPresence(tile *Tile, race Race) bool {
 func (t *Tribe) canTileBeAbandoned(tile *Tile) bool {
     val := t.IsActive && tile.OwningTribe.checkPresence(tile, t.Race)
     // Here, not fully commutative, maybe add a system of priority for sorting making sure different tribes do not collide.
-    for _, f := range t.canTileBeAbandonedMap {
+    for _, key := range sortedHookKeys(t.canTileBeAbandonedMap) {
+        f := t.canTileBeAbandonedMap[key]
+        if f == nil { continue }
         val = f(tile)
     }
     return val
@@ -113,19 +121,25 @@ func (t *Tribe) handleAbandonment(tile *Tile, gs *GameState) {
     tile.handleAfterConquest(gs, nil)
     t.clearTile(tile, gs, 0)
 
-    for _, f := range t.handleAbandonmentMap {
+    for _, key := range sortedHookKeys(t.handleAbandonmentMap) {
+        f := t.handleAbandonmentMap[key]
+        if f == nil { continue }
         f(tile, gs)
     }
 }
 
 func (t *Tribe) getStacksForConquestTurn(player *Player, gs *GameState) {
-    for _, f := range t.getStacksForConquestTurnMap {
+    for _, key := range sortedHookKeys(t.getStacksForConquestTurnMap) {
+        f := t.getStacksForConquestTurnMap[key]
+        if f == nil { continue }
         f(player, gs)
     }
 }
 
 func (t *Tribe) getStacksForConquest(tile *Tile, player *Player) {
-    for _, f := range t.getStacksForConquestMap {
+    for _, key := range sortedHookKeys(t.getStacksForConquestMap) {
+        f := t.getStacksForConquestMap[key]
+        if f == nil { continue }
         f(tile, player)
     }
     if t.IsActive {
@@ -145,7 +159,9 @@ func (t *Tribe) IsStackValid(s string) bool {
         return true
     }
 
-    for _, f := range t.IsStackValidMap {
+    for _, key := range sortedHookKeys(t.IsStackValidMap) {
+        f := t.IsStackValidMap[key]
+        if f == nil { continue }
         if f(s) {
             return true
         }
@@ -163,7 +179,9 @@ func (t *Tribe) checkZoneAccess(tile *Tile) error {
         err = fmt.Errorf("Cannot conquer abysmal chasm!")
     }
 
-    for _, f := range t.checkZoneAccessMap {
+    for _, key := range sortedHookKeys(t.checkZoneAccessMap) {
+        f := t.checkZoneAccessMap[key]
+        if f == nil { continue }
         err = f(tile, err)
     }
     return err
@@ -183,7 +201,9 @@ func (t *Tribe) checkAdjacency(tile *Tile, gs *GameState) error {
         err = nil
     }
 
-    for _, f := range t.checkAdjacencyMap {
+    for _, key := range sortedHookKeys(t.checkAdjacencyMap) {
+        f := t.checkAdjacencyMap[key]
+        if f == nil { continue }
         err = f(tile, gs, err)
     }
     return err
@@ -195,7 +215,9 @@ func (t *Tribe) countAttack(tile *Tile, cost int, stackType string) ([]PieceStac
     }
 
     err := fmt.Errorf("The piecestack was not recognized")
-    for _, f := range t.countAttackMap {
+    for _, key := range sortedHookKeys(t.countAttackMap) {
+        f := t.countAttackMap[key]
+        if f == nil { continue }
         stacks, a, b, c, err2 := f(tile, cost, stackType)
         err = err2
         if err == nil {
@@ -208,7 +230,9 @@ func (t *Tribe) countAttack(tile *Tile, cost int, stackType string) ([]PieceStac
 
 func (t *Tribe) computeDiscount(tile *Tile) int {
     total := 0
-    for _, f := range t.computeDiscountMap {
+    for _, key := range sortedHookKeys(t.computeDiscountMap) {
+        f := t.computeDiscountMap[key]
+        if f == nil { continue }
         total += f(tile)
     }
     return total
@@ -216,7 +240,9 @@ func (t *Tribe) computeDiscount(tile *Tile) int {
 
 func (t *Tribe) computeGainAttacker(tile *Tile) int {
     total := 0
-    for _, f := range t.computeGainAttackerMap {
+    for _, key := range sortedHookKeys(t.computeGainAttackerMap) {
+        f := t.computeGainAttackerMap[key]
+        if f == nil { continue }
         total += f(tile)
     }
     return total
@@ -224,7 +250,9 @@ func (t *Tribe) computeGainAttacker(tile *Tile) int {
 
 func (t *Tribe) computeLossDefender(tile *Tile) int {
     total := 0
-    for _, f := range t.computeLossDefenderMap {
+    for _, key := range sortedHookKeys(t.computeLossDefenderMap) {
+        f := t.computeLossDefenderMap[key]
+        if f == nil { continue }
         total += f(tile)
     }
     return total
@@ -232,21 +260,27 @@ func (t *Tribe) computeLossDefender(tile *Tile) int {
 
 func (t *Tribe) computePawnKill(tile *Tile) int {
     total := 1
-    for _, f := range t.computePawnKillMap {
+    for _, key := range sortedHookKeys(t.computePawnKillMap) {
+        f := t.computePawnKillMap[key]
+        if f == nil { continue }
         total += f(tile)
     }
     return total
 }
 
 func (t *Tribe) countNewTileStacks(ps []PieceStack, tile *Tile, gs *GameState) []PieceStack {
-    for _, f := range t.countNewTileStacksMap {
+    for _, key := range sortedHookKeys(t.countNewTileStacksMap) {
+        f := t.countNewTileStacksMap[key]
+        if f == nil { continue }
         ps = f(ps, tile, gs)
     }
     return ps
 }
 
 func (t *Tribe) postConquest(tile *Tile, gs *GameState) {
-    for _, f := range t.postConquestMap {
+    for _, key := range sortedHookKeys(t.postConquestMap) {
+        f := t.postConquestMap[key]
+        if f == nil { continue }
         f(tile, gs)
     }
 }
@@ -287,14 +321,18 @@ func (t *Tribe) calculateRemainingAttackingStacks(expanses []PieceStack, tile *T
             err = fmt.Errorf("Player did not have stack %s", expanse.Type)
         }
     }
-    for _, f := range t.calculateRemainingAttackingStacksMap {
+    for _, key := range sortedHookKeys(t.calculateRemainingAttackingStacksMap) {
+        f := t.calculateRemainingAttackingStacksMap[key]
+        if f == nil { continue }
         result, hasDiceBeenUsed, ok, err = f(result, hasDiceBeenUsed, ok, err, tile, gs)
     }
     return result, hasDiceBeenUsed, ok, err
 }
 
 func (t *Tribe) specialConquest(gs *GameState, tile *Tile, s string) (bool, error) {
-    for _, f := range t.specialConquestMap {
+    for _, key := range sortedHookKeys(t.specialConquestMap) {
+        f := t.specialConquestMap[key]
+        if f == nil { continue }
         ok, err := f(gs, tile, s)
         if ok {
             return ok, err
@@ -304,7 +342,9 @@ func (t *Tribe) specialConquest(gs *GameState, tile *Tile, s string) (bool, erro
 }
 
 func (t *Tribe) handleMovement(s string, t1, t2 *Tile, gs *GameState) error {
-    for _, f := range t.handleMovementMap {
+    for _, key := range sortedHookKeys(t.handleMovementMap) {
+        f := t.handleMovementMap[key]
+        if f == nil { continue }
         err := f(s, t1, t2, gs)
         if err == nil {
             return nil
@@ -323,7 +363,9 @@ func (t *Tribe) countDefense(tile *Tile, player *Player, gs *GameState) (int, in
             price += stack.Amount
         }
     }
-    for _, f := range t.countDefenseMap {
+    for _, key := range sortedHookKeys(t.countDefenseMap) {
+        f := t.countDefenseMap[key]
+        if f == nil { continue }
         newprice, newb, newc, err := f(tile, player, gs)
         if err != nil {
             return 0, 0, 0, err
@@ -338,13 +380,16 @@ func (t *Tribe) countDefense(tile *Tile, player *Player, gs *GameState) (int, in
 
 func (t *Tribe) handleReturn(tile *Tile, gs *GameState, cost int) {
     t.clearTile(tile, gs, cost)
-    for _, f := range t.handleReturnMap {
+    for _, key := range sortedHookKeys(t.handleReturnMap) {
+        f := t.handleReturnMap[key]
+        if f == nil { continue }
         f(tile, gs, cost)
     }
 }
 
 func (t *Tribe) clearTile(tile *Tile, gs *GameState, cost int) {
-    for i, stack := range tile.PieceStacks {
+    for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
         if stack.Type == string(t.Race) {
             tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
             stack.Amount = max(0, stack.Amount-cost)
@@ -356,13 +401,17 @@ func (t *Tribe) clearTile(tile *Tile, gs *GameState, cost int) {
             }
         }
     }
-    for _, f := range t.clearTileMap {
+    for _, key := range sortedHookKeys(t.clearTileMap) {
+        f := t.clearTileMap[key]
+        if f == nil { continue }
         f(tile, gs, cost)
     }
 }
 
 func (t *Tribe) specialDefense(gs *GameState, tile *Tile, attackingTribe *Tribe, s string) (bool, error) {
-    for _, f := range t.specialDefenseMap {
+    for _, key := range sortedHookKeys(t.specialDefenseMap) {
+        f := t.specialDefenseMap[key]
+        if f == nil { continue }
         ok, err := f(gs, tile, attackingTribe, s)
         if ok {
             return ok, err
@@ -373,7 +422,9 @@ func (t *Tribe) specialDefense(gs *GameState, tile *Tile, attackingTribe *Tribe,
 
 func (t *Tribe) startRedeployment(gs *GameState) []PieceStack {
     stacks := []PieceStack{}
-    for _, f := range t.startRedeploymentMap {
+    for _, key := range sortedHookKeys(t.startRedeploymentMap) {
+        f := t.startRedeploymentMap[key]
+        if f == nil { continue }
         stacks = AddPieceStacks(stacks, f(gs))
     }
 
@@ -390,7 +441,9 @@ func (t *Tribe) startRedeploymentTile(tile *Tile, gs *GameState) {
         t.clearTile(tile, gs, 0)
     }
 
-    for _, f := range t.startRedeploymentTileMap {
+    for _, key := range sortedHookKeys(t.startRedeploymentTileMap) {
+        f := t.startRedeploymentTileMap[key]
+        if f == nil { continue }
         f(tile, gs)
     }
 }
@@ -415,7 +468,9 @@ func (t *Tribe) getStacksOutRedeployment(tile *Tile, stackType string) ([]PieceS
             }
         }
     }
-    for _, f := range t.getStacksOutRedeploymentMap {
+    for _, key := range sortedHookKeys(t.getStacksOutRedeploymentMap) {
+        f := t.getStacksOutRedeploymentMap[key]
+        if f == nil { continue }
         ps, err := f(tile, stackType)
         if err == nil {
             return ps, nil
@@ -427,7 +482,9 @@ func (t *Tribe) getStacksOutRedeployment(tile *Tile, stackType string) ([]PieceS
 
 func (t *Tribe) canBeRedeployedOut(tile *Tile, s string) bool {
     res := s == string(t.Race)
-    for _, f := range t.canBeRedeployedOutMap {
+    for _, key := range sortedHookKeys(t.canBeRedeployedOutMap) {
+        f := t.canBeRedeployedOutMap[key]
+        if f == nil { continue }
         res = f(res, tile, s)
     }
     return res
@@ -435,7 +492,9 @@ func (t *Tribe) canBeRedeployedOut(tile *Tile, s string) bool {
 
 func (t *Tribe) canBeRedeployedIn(tile *Tile, s string, gs *GameState) bool {
     res := s == string(t.Race) && tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race)
-    for _, f := range t.canBeRedeployedInMap {
+    for _, key := range sortedHookKeys(t.canBeRedeployedInMap) {
+        f := t.canBeRedeployedInMap[key]
+        if f == nil { continue }
         res = f(res, tile, s, gs)
     }
     return res
@@ -443,7 +502,9 @@ func (t *Tribe) canBeRedeployedIn(tile *Tile, s string, gs *GameState) bool {
 
 func (t *Tribe) handleDeploymentOut(tile *Tile, stackType string, gs *GameState) error {
 
-    for _, f := range t.handleDeploymentOutMap {
+    for _, key := range sortedHookKeys(t.handleDeploymentOutMap) {
+        f := t.handleDeploymentOutMap[key]
+        if f == nil { continue }
         err := f(tile, stackType, gs)
         if err == nil {
             return nil
@@ -472,7 +533,9 @@ func (t *Tribe) handleDeploymentOut(tile *Tile, stackType string, gs *GameState)
 }
 
 func (t *Tribe) handleDeploymentIn(tile *Tile, stackType string, i int, gs *GameState) error {
-    for _, f := range t.handleDeploymentInMap {
+    for _, key := range sortedHookKeys(t.handleDeploymentInMap) {
+        f := t.handleDeploymentInMap[key]
+        if f == nil { continue }
         err := f(tile, stackType, i, gs)
         if err == nil {
             return nil
@@ -503,7 +566,9 @@ func (t *Tribe) handleDeploymentIn(tile *Tile, stackType string, i int, gs *Game
 }
 
 func (t *Tribe) getRedeploymentStack(s string, ps []PieceStack) []PieceStack {
-    for _, f := range t.getRedeploymentStackMap {
+    for _, key := range sortedHookKeys(t.getRedeploymentStackMap) {
+        f := t.getRedeploymentStackMap[key]
+        if f == nil { continue }
         stacks := f(s, ps)
         if len(stacks) > 0 {
             return stacks
@@ -513,7 +578,9 @@ func (t *Tribe) getRedeploymentStack(s string, ps []PieceStack) []PieceStack {
 }
 
 func (t *Tribe) handleOpponentAction(s string, p *Player, gs *GameState) error {
-    for _, f := range t.handleOpponentActionMap {
+    for _, key := range sortedHookKeys(t.handleOpponentActionMap) {
+        f := t.handleOpponentActionMap[key]
+        if f == nil { continue }
         err := f(s, p, gs)
         if err == nil {
             return nil
@@ -523,7 +590,9 @@ func (t *Tribe) handleOpponentAction(s string, p *Player, gs *GameState) error {
 }
 
 func (t *Tribe) handleEntryAction(i int, s string, gs *GameState) error {
-    for _, f := range t.handleEntryActionMap {
+    for _, key := range sortedHookKeys(t.handleEntryActionMap) {
+        f := t.handleEntryActionMap[key]
+        if f == nil { continue }
         err := f(i, s, gs)
         if err == nil {
             return nil
@@ -533,7 +602,9 @@ func (t *Tribe) handleEntryAction(i int, s string, gs *GameState) error {
 }
 
 func (t *Tribe) canEndTurn(gs *GameState) error {
-    for _, f := range t.canEndTurnMap {
+    for _, key := range sortedHookKeys(t.canEndTurnMap) {
+        f := t.canEndTurnMap[key]
+        if f == nil { continue }
         err := f(gs)
         if err != nil {
             return err
@@ -543,7 +614,9 @@ func (t *Tribe) canEndTurn(gs *GameState) error {
 }
 func (t *Tribe) countPoints(tile *Tile) int {
     total := tile.countPoints()
-    for _, f := range t.countPointsMap {
+    for _, key := range sortedHookKeys(t.countPointsMap) {
+        f := t.countPointsMap[key]
+        if f == nil { continue }
         total += f(tile)
     }
     return max(0, total)
@@ -551,7 +624,9 @@ func (t *Tribe) countPoints(tile *Tile) int {
 
 func (t *Tribe) countExtrapoints(gs *GameState) int {
     count := 0
-    for _, f := range t.countExtrapointsMap {
+    for _, key := range sortedHookKeys(t.countExtrapointsMap) {
+        f := t.countExtrapointsMap[key]
+        if f == nil { continue }
         count += f(gs)
     }
     return count
@@ -566,7 +641,9 @@ func (t *Tribe) countRemovablePieces(tile *Tile) []PieceStack {
     }
     stacks := []PieceStack{{Type: string(tile.OwningTribe.Race), Amount: amount - 1}}
 
-    for _, f := range t.countRemovablePiecesMap {
+    for _, key := range sortedHookKeys(t.countRemovablePiecesMap) {
+        f := t.countRemovablePiecesMap[key]
+        if f == nil { continue }
         stacks = f(stacks, tile)
     }
 
@@ -581,7 +658,9 @@ func (t *Tribe) countRemovableAttackingStacks(player *Player) []PieceStack {
         }
     }
 
-    for _, f := range t.countRemovableAttackingStacksMap {
+    for _, key := range sortedHookKeys(t.countRemovableAttackingStacksMap) {
+        f := t.countRemovableAttackingStacksMap[key]
+        if f == nil { continue }
         newstacks = f(newstacks, player)
     }
     return newstacks
@@ -589,14 +668,18 @@ func (t *Tribe) countRemovableAttackingStacks(player *Player) []PieceStack {
 
 func (t *Tribe) canGoIntoDecline(gs *GameState) bool {
     res := gs.TurnInfo.Phase == DeclineChoice
-    for _, f := range t.canGoIntoDeclineMap {
+    for _, key := range sortedHookKeys(t.canGoIntoDeclineMap) {
+        f := t.canGoIntoDeclineMap[key]
+        if f == nil { continue }
         res = f(res, gs)
     }
     return res
 }
 
 func (t *Tribe) goIntoDecline(gs *GameState) {
-    for _, f := range t.alternativeDeclineMap {
+    for _, key := range sortedHookKeys(t.alternativeDeclineMap) {
+        f := t.alternativeDeclineMap[key]
+        if f == nil { continue }
         ok := f(gs)
         if ok {
             return
@@ -604,7 +687,8 @@ func (t *Tribe) goIntoDecline(gs *GameState) {
     }
     player := t.Owner
 
-    for i, tribe := range player.PassiveTribes {
+    for i := len(player.PassiveTribes)-1; i >= 0; i-- {
+ tribe := player.PassiveTribes[i]
         if tribe.prepareRemoval(gs) {
             player.PassiveTribes = append(player.PassiveTribes[:i], player.PassiveTribes[i+1:]...)
             player.PieceStacks, _ = SubtractPieceStacks(player.PieceStacks, tribe.countRemovableAttackingStacks(player))
@@ -623,13 +707,17 @@ func (t *Tribe) goIntoDecline(gs *GameState) {
     player.PassiveTribes = append(player.PassiveTribes, player.ActiveTribe)
     player.ActiveTribe = nil
 
-    for _, f := range t.goIntoDeclineMap {
+    for _, key := range sortedHookKeys(t.goIntoDeclineMap) {
+        f := t.goIntoDeclineMap[key]
+        if f == nil { continue }
         f(gs)
     }
 }
 
 func (t *Tribe) prepareRemoval(gs *GameState) bool {
-    for _, f := range t.prepareRemovalMap {
+    for _, key := range sortedHookKeys(t.prepareRemovalMap) {
+        f := t.prepareRemovalMap[key]
+        if f == nil { continue }
         return f(gs)
     }
     for _, tile := range gs.TileList {
@@ -644,7 +732,14 @@ func (t *Tribe) prepareRemoval(gs *GameState) bool {
 }
 
 func (t *Tribe) handleEndOfGame(gs *GameState) {
-    for _, f := range t.handleEndOfGameMap {
+    for _, key := range sortedHookKeys(t.handleEndOfGameMap) {
+        f := t.handleEndOfGameMap[key]
+        if f == nil { continue }
         f(gs)
     }
+}
+
+// Hook composition must be stable when race and trait both define a rule.
+func sortedHookKeys[V any](m map[string]V) []string {
+ keys:=make([]string,0,len(m));for key:=range m{keys=append(keys,key)};sort.Strings(keys);return keys
 }

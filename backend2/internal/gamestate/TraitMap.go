@@ -161,7 +161,7 @@ var TraitMap = map[Trait]TraitValue{
     }, Count: 5},
     "Berserk": {Transform: func(t *Tribe) {
         //here
-        t.State["diceroll"] = RollDice()
+		t.State["diceroll"] = 0 // Rolled by the per-game turn initializer.
         t.computeDiscountMap["Berserk"] = func(tile *Tile) int {
             if !t.IsActive {
                 return 0
@@ -180,7 +180,7 @@ var TraitMap = map[Trait]TraitValue{
             if !t.IsActive {
                 return
             }
-            val := RollDice()
+			val := gs.rollDice()
             t.State["diceroll"] = val
             gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("New throw of dice for berserk tribe: %d", val)})
         }
@@ -191,7 +191,7 @@ var TraitMap = map[Trait]TraitValue{
             if diceUsed {
                 return nil, true, false, fmt.Errorf("Berserk tribe cannot use the dice twice!")
             }
-            val := RollDice()
+			val := gs.rollDice()
             t.State["diceroll"] = val
             gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("New throw of dice for berserk tribe: %d", val)})
             return ps, false, true, nil
@@ -238,7 +238,8 @@ var TraitMap = map[Trait]TraitValue{
             return 0
         }
         t.clearTileMap["Fortified"] = func(tile *Tile, gs *GameState, pk int) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Fortress" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     return // Exit after removal to avoid index shifting issues
@@ -267,7 +268,8 @@ var TraitMap = map[Trait]TraitValue{
             return stackType == "Encampment"
         }
         t.getStacksForConquestMap["Bivouacking"] = func(tile *Tile, p *Player) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Encampment" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     p.PieceStacks = AddPieceStacks(p.PieceStacks, []PieceStack{stack})
@@ -306,7 +308,8 @@ var TraitMap = map[Trait]TraitValue{
             return ps
         }
         t.clearTileMap["Bivouacking"] = func(tile *Tile, gs *GameState, pk int) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Encampment" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     t.Owner.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{stack})
@@ -335,7 +338,8 @@ var TraitMap = map[Trait]TraitValue{
             return stackType == "Hero"
         }
         t.getStacksForConquestMap["Heroic"] = func(tile *Tile, p *Player) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Hero" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     p.PieceStacks = AddPieceStacks(p.PieceStacks, []PieceStack{stack})
@@ -374,7 +378,8 @@ var TraitMap = map[Trait]TraitValue{
             return oldStacks
         }
         t.clearTileMap["Heroic"] = func(tile *Tile, gs *GameState, pk int) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Hero" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     return // Exit after removal to avoid index shifting issues
@@ -387,7 +392,8 @@ var TraitMap = map[Trait]TraitValue{
             return []PieceStack{{Type: "Dragon", Amount: 1}}
         }
         t.getStacksForConquestMap["Dragon Master"] = func(tile *Tile, p *Player) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Dragon" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     p.PieceStacks = append(p.PieceStacks, stack)
@@ -634,7 +640,8 @@ var TraitMap = map[Trait]TraitValue{
             return []PieceStack{{Type: "Catapult", Amount: 1}}
         }
         t.getStacksForConquestMap["Catapult"] = func(tile *Tile, p *Player) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Catapult" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     p.PieceStacks = append(p.PieceStacks, stack)
@@ -934,14 +941,14 @@ var TraitMap = map[Trait]TraitValue{
         }
         t.getStacksForConquestTurnMap["Lava"] = func(p *Player, gs *GameState) {
             for _, tile := range gs.TileList {
-                for i := range tile.PieceStacks {
+				for i := len(tile.PieceStacks)-1; i >= 0; i-- {
                     if tile.PieceStacks[i].Type == "Lava" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         delete(tile.ModifierDefenses, "Lava")
                     }
                 }
             }
-            for i := range p.PieceStacks {
+			for i := len(p.PieceStacks)-1; i >= 0; i-- {
                 if p.PieceStacks[i].Type == "Lava" {
                     p.PieceStacks = append(p.PieceStacks[:i], p.PieceStacks[i+1:]...)
                     break
@@ -1119,7 +1126,7 @@ var TraitMap = map[Trait]TraitValue{
                 return true, err
             }
 
-            diceThrow := RollDice()
+			diceThrow := gs.rollDice()
 
             if diceThrow == 0 {
                 gs.Messages = append(gs.Messages, Message{Content: fmt.Sprintf("Failure: The throw of dice for zeppelined tribe was: %d", diceThrow)})
@@ -1172,7 +1179,7 @@ var TraitMap = map[Trait]TraitValue{
         }
         t.getStacksForConquestTurnMap["Zeppelined"] = func(p *Player, gs *GameState) {
             for _, tile := range gs.TileList {
-                for i := range tile.PieceStacks {
+				for i := len(tile.PieceStacks)-1; i >= 0; i-- {
                     if tile.PieceStacks[i].Type == "Burning Zeppelin" || tile.PieceStacks[i].Type == "Zeppelin" {
                         tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                         delete(tile.ModifierDefenses, "Burning Zeppelin")
@@ -1182,7 +1189,8 @@ var TraitMap = map[Trait]TraitValue{
             }
         }
         t.clearTileMap["Zeppelined"] = func(tile *Tile, gs *GameState, pk int) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Zeppelin" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     t.Owner.PieceStacks = AddPieceStacks(tile.PieceStacks, []PieceStack{stack})
@@ -1377,7 +1385,8 @@ var TraitMap = map[Trait]TraitValue{
 
         }
         t.countRemovableAttackingStacksMap["Tomb"] = func(oldStacks []PieceStack, p *Player) []PieceStack {
-            for i, stack := range oldStacks {
+			for i := len(oldStacks)-1; i >= 0; i-- {
+ stack := oldStacks[i]
                 if stack.Type == string(t.Race) {
                     oldStacks = append(oldStacks[:i], oldStacks[i+1:]...)
                     break
@@ -1434,7 +1443,8 @@ var TraitMap = map[Trait]TraitValue{
             if !t.IsActive {
                 return
             }
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Queen" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     p.PieceStacks = AddPieceStacks(p.PieceStacks, []PieceStack{stack})
@@ -1457,7 +1467,8 @@ var TraitMap = map[Trait]TraitValue{
             return s == "Queen"
         }
         t.clearTileMap["Royal"] = func(tile *Tile, gs *GameState, pk int) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Queen" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     return // Exit after removal to avoid index shifting issues
@@ -1658,7 +1669,8 @@ var TraitMap = map[Trait]TraitValue{
                 }
             }
             
-            return total}
+			return total
+		}
     }, Count: 5},
     "Martyr": {Transform: func(t *Tribe) {
         t.countDefenseMap["Martyr"] = func(tile *Tile, p *Player, gs *GameState) (int, int, int, error) {
@@ -1736,7 +1748,8 @@ var TraitMap = map[Trait]TraitValue{
             return oldStacks
         }
         t.clearTileMap["Shield"] = func(tile *Tile, gs *GameState, pk int) {
-            for i, stack := range tile.PieceStacks {
+			for i := len(tile.PieceStacks)-1; i >= 0; i-- {
+ stack := tile.PieceStacks[i]
                 if stack.Type == "Mushroom Shield" {
                     tile.PieceStacks = append(tile.PieceStacks[:i], tile.PieceStacks[i+1:]...)
                     return
@@ -1842,7 +1855,7 @@ var TraitMap = map[Trait]TraitValue{
     }, Count: 5},
     "Vanishing": {Transform: func(t *Tribe) {
         t.goIntoDeclineMap["Vanishing"] = func(gs *GameState) {
-            for _, tile := range(gs.TileList) {
+			for _, tile := range gs.TileList {
                 if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
                     t.clearTile(tile, gs, 1000)
                     t.Owner.CoinPile += 2
@@ -1853,12 +1866,12 @@ var TraitMap = map[Trait]TraitValue{
     "Thieving": {Transform: func(t *Tribe) {
         t.countExtrapointsMap["Thieving"] = func(gs *GameState) int {
             indices := []int{}
-            for _, tile := range(gs.TileList) {
+			for _, tile := range gs.TileList {
                 if tile.CheckPresence() != None && tile.OwningTribe.checkPresence(tile, t.Race) {
-                    for _, tile2 := range(tile.AdjacentTiles) {
+					for _, tile2 := range tile.AdjacentTiles {
                         if tile2.CheckPresence() == Active && tile2.OwningTribe.Owner != t.Owner {
                             found := false 
-                            for _, index := range(indices) {
+							for _, index := range indices {
                                 if index == tile2.OwningTribe.Owner.Index {
                                     found = true
                                 }
@@ -1871,7 +1884,7 @@ var TraitMap = map[Trait]TraitValue{
                 }
             }
             total := 0
-            for _, index := range(indices) {
+			for _, index := range indices {
                 gs.Players[index].CoinPile -= 1
                 total += 1
             }
@@ -1883,7 +1896,7 @@ var TraitMap = map[Trait]TraitValue{
             if t.IsActive {
                 return
             }
-            for i := range p.PieceStacks {
+			for i := len(p.PieceStacks)-1; i >= 0; i-- {
                 if p.PieceStacks[i].Type == "Phoenix" {
                     p.PieceStacks = append(p.PieceStacks[:i], p.PieceStacks[i+1:]...)
                     break
@@ -1932,7 +1945,7 @@ var TraitMap = map[Trait]TraitValue{
     }, Count: 4},
     "Frightened": {Transform: func(t *Tribe) {
         t.countPointsMap["Frightened"] = func(tile *Tile) int {
-            for _, stack := range(tile.PieceStacks) {
+			for _, stack := range tile.PieceStacks {
                 if stack.Type == string(t.Race) {
                     if stack.Amount >= 3 {
                         return 1

@@ -12,6 +12,7 @@ import TurnInfoBlockSpectate from "../components/layouts/TurnInfoBlockSpectate";
 import Chat from "../components/inputs/Chat";
 import GameFinishedPopup from "../components/layouts/GameFinishedPopup";
 import CustomCursor from "../components/misc/CustomCursor"; // Import Custom Cursor Component
+import BotPlaybackControls from "../components/BotPlaybackControls";
 
 export default function SpectatorPage() {
   const dispatch: AppDispatch = useDispatch();
@@ -20,6 +21,11 @@ export default function SpectatorPage() {
   const playerNumber = useSelector((state: RootState) => state.application.playerNumber);
   const playerIndex = useSelector((state: RootState) => state.application.playerIndex);
   const players = useSelector((state: RootState) => state.application.players);
+  const username = useSelector((state: RootState) => state.application.name);
+  const currentRoom = useSelector((state: RootState) => {
+    const { roomid, rooms, roomsInProgress } = state.application;
+    return roomsInProgress?.find(room => room.id === roomid) ?? rooms?.find(room => room.id === roomid);
+  });
 
   const currentPlayer = players[playerNumber]?.name || "Unknown Player";
   const [showTurnInfo, setShowTurnInfo] = useState(false);
@@ -34,6 +40,8 @@ export default function SpectatorPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
       switch (event.key) {
         case "s":
           setShowTurnInfo((prev) => !prev);
@@ -99,8 +107,9 @@ export default function SpectatorPage() {
         </div>
 
         {/* RIGHT SECTION (2/3 width): Map */}
-        <div className="w-2/3 h-full p-4">
-          <div className="w-full h-full border-4 border-[#8B4513] rounded-lg bg-white">
+        <div className="w-2/3 h-full p-4 flex flex-col min-h-0">
+          <BotPlaybackControls room={currentRoom} username={username} phase={phase} />
+          <div className="w-full flex-1 min-h-0 border-4 border-[#8B4513] rounded-lg bg-white">
             <Map />
           </div>
         </div>

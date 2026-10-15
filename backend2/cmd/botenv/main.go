@@ -11,19 +11,26 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sort"
 )
 
 type request struct {
-	Tiles   []gamestate.RuntimeTileSpec `json:"tiles"`
-	Op      string                      `json:"op"`
-	Seed    uint64                      `json:"seed"`
-	Players int                         `json:"players"`
-	Map     string                      `json:"map"`
-	Action  *int                        `json:"action"`
-	Policy  string                      `json:"policy"`
+	Rules      string                      `json:"rules"`
+	Curriculum int                         `json:"curriculum"`
+	Focus      bool                        `json:"focus"`
+	Tiles      []gamestate.RuntimeTileSpec `json:"tiles"`
+	Op         string                      `json:"op"`
+	Seed       uint64                      `json:"seed"`
+	Players    int                         `json:"players"`
+	Map        string                      `json:"map"`
+	Action     *int                        `json:"action"`
+	Policy     string                      `json:"policy"`
 }
 
 type response struct {
+	Rejected     bool                   `json:"rejected,omitempty"`
+	Coverage     map[string][]string    `json:"coverage,omitempty"`
+	Spec         map[string]interface{} `json:"spec,omitempty"`
 	PolicyScores []float64              `json:"policy_scores,omitempty"`
 	Decision     *gamestate.BotDecision `json:"decision,omitempty"`
 	Done         bool                   `json:"done"`
@@ -34,6 +41,9 @@ type response struct {
 }
 
 type environment struct {
+	full     bool
+	rejected bool
+	coverage map[string]map[string]bool
 	state    *gamestate.GameState
 	policies *bot.Registry
 	rng      *rand.Rand
@@ -42,8 +52,14 @@ type environment struct {
 }
 
 func (e *environment) handle(req request) (response, error) {
+	e.rejected = false
 	switch req.Op {
+	case "spec":
+		return response{Spec: gamestate.BotV2Spec()}, nil
 	case "reset":
+		if req.Curriculum < 0 {
+			return response{}, fmt.Errorf("curriculum must be nonnegative")
+		}
 		if req.Players < 2 || req.Players > 6 {
 			return response{}, fmt.Errorf("players must be between 2 and 6")
 		}
@@ -60,11 +76,47 @@ func (e *environment) handle(req request) (response, error) {
 		for i := range names {
 			names[i] = fmt.Sprintf("Player %d", i+1)
 		}
-		state, err := gamestate.NewSeeded(names, mapName, gamestate.BotRaces(), gamestate.BotTraits(), nil, req.Seed)
+		races, traits, powers := gamestate.BotRaces(), gamestate.BotTraits(), []string(nil)
+		if req.Rules != "" && req.Rules != "legacy" && req.Rules != "surface" {
+			return response{}, fmt.Errorf("unknown rules preset")
+		}
+		e.full = req.Rules == "surface"
+		if e.full {
+			races, traits = gamestate.BotV2Races(), gamestate.BotV2Traits()
+		}
+		state, err := gamestate.NewSeeded(names, mapName, races, traits, powers, req.Seed)
 		if err != nil {
 			return response{}, err
 		}
+		if e.full && req.Map == "generated" {
+			state.PopulateBotSurfaceMap()
+		}
 		e.state, e.steps = state, 0
+		e.coverage = map[string]map[string]bool{"races": {}, "traits": {}, "powers": {}, "actions": {}}
+		if e.full && req.Focus {
+			// Cover race/trait marginals and then cycle all pairings (35 x 38).
+			race, trait := races[req.Curriculum%len(races)], traits[req.Curriculum%len(traits)]
+			for i, entry := range state.TribeList {
+				if string(entry.Race) == race {
+					state.TribeList[0].Race, state.TribeList[i].Race = state.TribeList[i].Race, state.TribeList[0].Race
+					break
+				}
+			}
+			for i, entry := range state.TribeList {
+				if string(entry.Trait) == trait {
+					state.TribeList[0].Trait, state.TribeList[i].Trait = state.TribeList[i].Trait, state.TribeList[0].Trait
+					break
+				}
+			}
+			// A trait omitted by a shorter deck still receives curriculum exposure.
+			state.TribeList[0].Trait = gamestate.Trait(trait)
+			for _, entry := range state.TribeList {
+				entry.PiecePile = gamestate.RaceMap[entry.Race].Count + gamestate.TraitMap[entry.Trait].Count
+			}
+			if err := state.HandleTribeChoice(0, 0); err != nil {
+				return response{}, err
+			}
+		}
 		e.rng = rand.New(rand.NewSource(int64(req.Seed)))
 	case "observe", "scores":
 		if e.state == nil {
@@ -84,7 +136,7 @@ func (e *environment) handle(req request) (response, error) {
 		if req.Action != nil {
 			choice = *req.Action
 		} else {
-			d, err := e.state.BotDecision()
+			d, err := e.decision()
 			if err != nil {
 				return response{}, err
 			}
@@ -93,7 +145,22 @@ func (e *environment) handle(req request) (response, error) {
 				return response{}, err
 			}
 		}
-		if err := e.state.ApplyBotAction(choice); err != nil {
+		if e.full {
+			d, err := e.decision()
+			if err != nil {
+				return response{}, err
+			}
+			if choice < 0 || choice >= len(d.Candidates) {
+				return response{}, fmt.Errorf("action out of range")
+			}
+			e.rejected, err = e.state.ApplyBotActionV2(choice)
+			if err != nil {
+				return response{}, err
+			}
+			if !e.rejected {
+				e.coverage["actions"][d.Candidates[choice].Action.Kind+":"+d.Candidates[choice].Action.Stack] = true
+			}
+		} else if err := e.state.ApplyBotAction(choice); err != nil {
 			return response{}, err
 		}
 		e.steps++
@@ -102,11 +169,32 @@ func (e *environment) handle(req request) (response, error) {
 	default:
 		return response{}, fmt.Errorf("unknown operation %q", req.Op)
 	}
-	d, err := e.state.BotDecision()
+	d, err := e.decision()
 	if err != nil {
 		return response{}, err
 	}
-	out := response{Decision: &d, Steps: e.steps, Done: e.state.TurnInfo.Phase == gamestate.GameFinished}
+	out := response{Decision: &d, Steps: e.steps, Done: e.state.TurnInfo.Phase == gamestate.GameFinished, Rejected: e.rejected}
+	if e.full {
+		for _, p := range e.state.Players {
+			tribes := append([]*gamestate.Tribe{p.ActiveTribe}, p.PassiveTribes...)
+			for _, t := range tribes {
+				if t != nil {
+					e.coverage["races"][string(t.Race)] = true
+					e.coverage["traits"][string(t.Trait)] = true
+				}
+			}
+		}
+		for name := range e.state.Powers {
+			e.coverage["powers"][name] = true
+		}
+		out.Coverage = map[string][]string{}
+		for k, values := range e.coverage {
+			for v := range values {
+				out.Coverage[k] = append(out.Coverage[k], v)
+			}
+			sort.Strings(out.Coverage[k])
+		}
+	}
 	out.Truncated = !out.Done && e.steps >= e.limit
 	for _, p := range e.state.Players {
 		out.Scores = append(out.Scores, p.CoinPile)
@@ -118,6 +206,13 @@ func (e *environment) handle(req request) (response, error) {
 		}
 	}
 	return out, nil
+}
+
+func (e *environment) decision() (gamestate.BotDecision, error) {
+	if e.full {
+		return e.state.BotDecisionV2()
+	}
+	return e.state.BotDecision()
 }
 
 func main() {

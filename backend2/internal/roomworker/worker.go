@@ -264,6 +264,15 @@ func (w *Worker) processResults(ctx context.Context, stream string, results []re
 					case <-time.After(500 * time.Millisecond):
 					}
 				}
+				if room := rooms[cmd.RoomID]; room != nil {
+					if room.botDirty {
+						room.publishBotMove()
+					}
+					if room.botPlaybackDirty {
+						sendRoomsUpdateToAll()
+						room.botPlaybackDirty = false
+					}
+				}
 			}
 
 			if err := w.redis.XAck(ctx, stream, w.cfg.ConsumerGroup, entry.ID).Err(); err != nil {

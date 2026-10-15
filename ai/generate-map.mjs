@@ -9,7 +9,7 @@ import { createMapMetadata } from '../smallworld-map-generator/src/export/mapMet
 export function validGraph(tiles, players) {
   const byId = new Map(tiles.map(tile => [String(tile.id), tile]));
   if (byId.size !== tiles.length || tiles.length < 12 || tiles.length > 160) return false;
-  const land = tiles.filter(tile => tile.biome !== 'Water');
+  const land = tiles.filter(tile => tile.biome !== 'Water' && tile.biome !== 'AbyssalChasm');
   if (land.length < players * 4) return false;
   for (const tile of tiles) {
     const neighbors = tile.adjacentIds.map(String);
@@ -34,7 +34,7 @@ export function validGraph(tiles, players) {
   const checked = new Set();
   for (const tile of land) {
     if (checked.has(String(tile.id))) continue;
-    const component = visit(tile, t => t.biome !== 'Water');
+    const component = visit(tile, t => t.biome !== 'Water' && t.biome !== 'AbyssalChasm');
     if (![...component].some(id => byId.get(id).isEdge)) return false;
     for (const id of component) checked.add(id);
   }
@@ -44,13 +44,13 @@ export function validGraph(tiles, players) {
 export function generate({ seed, players = 2, split = 'train', distribution = 'standard' }) {
   if (!Number.isInteger(players) || players < 2 || players > 6) throw new Error('players must be 2..6');
   if (!['train', 'eval', 'test'].includes(split)) throw new Error('invalid map split');
-  if (!['standard', 'stress'].includes(distribution)) throw new Error('invalid map distribution');
+  if (!['standard', 'stress', 'surface', 'surface-stress'].includes(distribution)) throw new Error('invalid map distribution');
   const namespace = `smallworld-v1:${split}:${String(seed)}`;
   for (let attempt = 0; attempt < 30; attempt++) {
     const rng = makeRng(`${namespace}:settings:${attempt}`);
     const between = (a,b) => a+rng()*(b-a);
     const integer = (a,b) => Math.floor(between(a,b+1));
-    const stress = distribution === 'stress';
+    const stress = distribution.includes('stress');
     const base = [0,0,22,29,38,47,56][players];
     const count = Math.max(18, Math.min(110, Math.round(base*between(stress ? .65 : .8, stress ? 1.8 : 1.4))));
     const settings = {
@@ -68,6 +68,12 @@ export function generate({ seed, players = 2, split = 'train', distribution = 's
       buildingSettings: { averagePerTile: 0, maxPerTile: 0, symbolBuildingChance: 0 },
     };
     const tiles = createMapMetadata(makeMap(settings), settings).server.tiles;
+    const theme = 'surface';
+    // One surface palette only. Sky-island metadata is optional surface content.
+    if (distribution.startsWith('surface')) {
+      const sky = rng() < .25;
+      for (const tile of tiles) tile.isSkyIsland = sky && tile.biome !== 'Water' && rng() < .2;
+    }
     if (!validGraph(tiles, players)) continue;
     // Arbitrary labels break any tie-order/numbering regularity across maps.
     const labels = tiles.map((_, i) => `region-${i}`);
@@ -78,7 +84,7 @@ export function generate({ seed, players = 2, split = 'train', distribution = 's
     const hash = createHash('sha256').update(JSON.stringify(tiles)).digest('hex');
     // waterPlan is derived/mutated by the generator; omit it from concise logs.
     const { waterPlan, ...loggedSettings } = settings;
-    return { tiles: relabeled, info: { seed: String(seed), split, distribution, players, hash, tile_count: tiles.length, attempt, settings: loggedSettings } };
+    return { tiles: relabeled, info: { seed: String(seed), split, distribution, theme, players, hash, tile_count: tiles.length, attempt, settings: loggedSettings } };
   }
   throw new Error(`Could not generate a connected, enterable map after 30 attempts (${namespace})`);
 }

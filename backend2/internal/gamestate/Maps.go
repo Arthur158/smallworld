@@ -892,6 +892,7 @@ func MapIsles2(gs *GameState) map[string]*Tile {
     }
 
     for key := range tileMap {
+        tileMap[key].IsSkyIsland = true
         tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
         tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *Tribe, *GameState))
         tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))
@@ -1018,6 +1019,7 @@ func MapIsles3(gs *GameState) map[string]*Tile {
     }
 
     for key := range tileMap {
+        tileMap[key].IsSkyIsland = true
         tileMap[key].ModifierDefenses = make(map[string]func(*Tile, *GameState) (int, int, int, error))
         tileMap[key].ModifierAfterConquest = make(map[string]func(*Tile, *Tribe, *GameState))
         tileMap[key].ModifierSpecialDefenses = make(map[string]func(*Tile, *GameState, *Tribe, string) (bool, error))

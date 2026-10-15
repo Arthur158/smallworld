@@ -3,8 +3,11 @@ package roomworker
 import (
 	"backend/internal/gamestate"
 	"backend/internal/messages"
+	"backend/internal/protocol"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"sync"
@@ -14,6 +17,12 @@ import (
 )
 
 type Room struct {
+	botHistory          []json.RawMessage
+	botFuture           []json.RawMessage
+	botForceSave        bool
+	botPaused           bool
+	botSpeed            float64
+	botPlaybackDirty    bool
 	botNextMove         time.Time
 	botDirty            bool
 	botTurnEnded        bool
@@ -146,13 +155,7 @@ func (room *Room) sendMapChoices() {
 		mapChoices = append(mapChoices, key)
 	}
 
-	var host *Client
-	for i, client := range room.Players {
-		if client != nil && client.Username == room.HostUsername {
-			host = room.Players[i]
-			break
-		}
-	}
+	host := room.hostClient()
 
 	message := map[string]interface{}{
 		"mapChoices": mapChoices, // This ensures it's an empty list if no maps exist
@@ -170,13 +173,7 @@ func (room *Room) sendMapChoices() {
 }
 
 func (room *Room) sendChoices() {
-	var host *Client
-	for i, client := range room.Players {
-		if client != nil && client.Username == room.HostUsername {
-			host = room.Players[i]
-			break
-		}
-	}
+	host := room.hostClient()
 
 	message := map[string]interface{}{
 		"extensionChoices": room.ExtensionChoices,
@@ -434,27 +431,120 @@ func spectateRoom(client *Client, roomID string) {
 	sendRoomsUpdateToAll()
 }
 
+// hostClient includes hosts who watch a game without occupying a player seat.
+func (room *Room) hostClient() *Client {
+	for _, members := range [][]*Client{room.Players, room.Spectators} {
+		for _, client := range members {
+			if client != nil && client.BotModel == "" && client.Username == room.HostUsername {
+				return client
+			}
+		}
+	}
+	return nil
+}
+
+func (room *Room) setHostSpectator(client *Client, spectator bool) error {
+	roomsMu.Lock()
+	defer roomsMu.Unlock()
+
+	if room.InProgress {
+		return errors.New("game already started")
+	}
+	if client.Username != room.HostUsername || !roomHasUser(room, client.Username) {
+		return errors.New("only the room host can do that")
+	}
+	if roomHasSpectator(room, client.Username) == spectator {
+		return nil
+	}
+
+	seat := roomPlayerIndex(room, client.Username)
+	if !spectator {
+		seat = -1
+		for i, player := range room.Players {
+			if player == nil {
+				seat = i
+				break
+			}
+		}
+		if seat < 0 {
+			return errors.New("room is full; remove a bot or wait for a free seat to play")
+		}
+	}
+
+	// Persist the gateway role before changing the roster. A failed write must
+	// leave both the host's seat and their spectator state unchanged.
+	if err := client.worker.setMembership(context.Background(), client.Username, room.ID, spectator); err != nil {
+		return fmt.Errorf("update host role: %w", err)
+	}
+	if spectator {
+		room.Players[seat] = nil
+		room.Spectators = append(room.Spectators, client)
+	} else {
+		for i, member := range room.Spectators {
+			if member != nil && member.Username == client.Username {
+				room.Spectators = append(room.Spectators[:i], room.Spectators[i+1:]...)
+				break
+			}
+		}
+		room.Players[seat] = client
+		client.Index = seat
+	}
+	client.IsSpectator = spectator
+	if err := client.sendMessages(&protocol.Binding{
+		Action: protocol.BindingSet, Scope: protocol.ScopeRoom, RoomID: room.ID, IsSpectator: spectator,
+	}); err != nil {
+		// The role is already durable. Keep the command successful so the room
+		// snapshot is saved; reconnect recovers a missed gateway notification.
+		log.Printf("roomworker: publish host role: %v", err)
+	}
+	room.sendMapChoices()
+	room.sendChoices()
+	sendRoomsUpdateToAll()
+	return nil
+}
+
+// updateHostAfterLeave runs with roomsMu held. Humans in either role keep a
+// room alive; bots alone do not. Prefer a seated human when a host leaves.
+func (room *Room) updateHostAfterLeave() {
+	if room.hostClient() != nil {
+		return
+	}
+	room.HostUsername = ""
+	for _, members := range [][]*Client{room.Players, room.Spectators} {
+		for _, client := range members {
+			if client != nil && client.BotModel == "" {
+				room.HostUsername = client.Username
+				return
+			}
+		}
+	}
+	delete(rooms, room.ID)
+	room.InProgress = false
+	for _, player := range room.Players {
+		if player != nil {
+			player.Room = nil
+		}
+	}
+}
+
 func (room *Room) removeSpectator(username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
-	var client *Client
-
-	if room == nil || room.Spectators == nil {
-		log.Println("room uninitialized or something")
+	if room == nil {
 		return
 	}
-
-	for i, player := range room.Spectators {
-		if player != nil && player.Username == username {
-			client = player
-			room.Spectators = append(room.Spectators[:i], room.Spectators[i+1:]...)
-			break
+	for i, spectator := range room.Spectators {
+		if spectator == nil || spectator.Username != username {
+			continue
 		}
+		room.Spectators = append(room.Spectators[:i], room.Spectators[i+1:]...)
+		_ = spectator.clearRoom(messages.Message{Type: "lobby"})
+		room.updateHostAfterLeave()
+		room.sendMapChoices()
+		room.sendChoices()
+		sendRoomsUpdateToAll()
+		return
 	}
-	if client != nil {
-		_ = client.clearRoom(messages.Message{Type: "lobby", Data: nil})
-	}
-
 }
 
 func (room *Room) removePlayer(username string) {
@@ -463,10 +553,8 @@ func (room *Room) removePlayer(username string) {
 	var client *Client
 
 	if room == nil || room.Players == nil {
-		log.Println("room uninitialized or something")
 		return
 	}
-
 	for i, player := range room.Players {
 		if player != nil && player.Username == username {
 			client = player
@@ -477,41 +565,17 @@ func (room *Room) removePlayer(username string) {
 	if client == nil {
 		return
 	}
-	if room.HostUsername == client.Username && len(room.Players) != 0 {
-		room.HostUsername = ""
-		for _, player := range room.Players {
-			if player != nil && player.BotModel == "" {
-				room.HostUsername = player.Username
-			}
-		}
-	}
 	if room.InProgress {
-		room.sendStateMessage("A player left the game, game ended!") // in the future replace with a bot
-		// also allow for players to juggle between multiple games in the future.
+		room.sendStateMessage("A player left the game, game ended!")
 		room.sendGameFinishedUpdate()
 		room.InProgress = false
 	}
-	// If all players left, remove the room or handle as you wish
-	count := 0
-	for _, player := range room.Players {
-		if player != nil && player.BotModel == "" {
-			count += 1
-		}
-	}
-	if count == 0 {
-		delete(rooms, room.ID)
-		for _, spectator := range room.Spectators {
-			if spectator != nil {
-				_ = spectator.clearRoom(messages.Message{Type: "lobby"})
-			}
-		}
-	}
-
 	if client.BotModel == "" {
-		_ = client.clearRoom(messages.Message{Type: "lobby", Data: nil})
+		_ = client.clearRoom(messages.Message{Type: "lobby"})
 	} else {
 		client.Room = nil
 	}
+	room.updateHostAfterLeave()
 	room.sendMapChoices()
 	room.sendChoices()
 	sendRoomsUpdateToAll()
@@ -688,6 +752,8 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	// Mark the room as in-progress
 	room.InProgress = true
 	room.botError = ""
+	room.botPaused = false
+	room.botHistory, room.botFuture = nil, nil
 	room.botNextMove = time.Now().Add(350 * time.Millisecond)
 
 	id, err := SaveGameState(&room.Gamestate, 0, room.Map.Name)
@@ -699,10 +765,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 	}
 
 	if id > 0 {
-		for _, player := range room.Players {
-			if player == nil || player.BotModel != "" {
-				continue
-			}
+		for _, player := range room.saveOwners() {
 			if err := AddGameIDToUser(player.Username, id); err != nil {
 				log.Println("Problem adding new save for player:", err)
 			}
@@ -1218,6 +1281,23 @@ func (room *Room) sendGeneratedMapVisuals() {
 	})
 }
 
+// Ordinary spectators do not own saves, but a watching host must be able to
+// load their bot-only matches just like a host who occupies a player seat.
+func (room *Room) saveOwners() []*Client {
+	owners := make([]*Client, 0, len(room.Players)+1)
+	for _, player := range room.Players {
+		if player != nil && player.BotModel == "" {
+			owners = append(owners, player)
+		}
+	}
+	if roomHasSpectator(room, room.HostUsername) {
+		if host := room.hostClient(); host != nil {
+			owners = append(owners, host)
+		}
+	}
+	return owners
+}
+
 func (room *Room) AutoSave() {
 	if !room.InProgress && (room.Gamestate.TurnInfo == nil || room.Gamestate.TurnInfo.Phase != gamestate.GameFinished) {
 		return
@@ -1229,10 +1309,7 @@ func (room *Room) AutoSave() {
 	}
 	oldID := room.autoSaveId
 	room.autoSaveId = id
-	for _, player := range room.Players {
-		if player == nil || player.BotModel != "" {
-			continue
-		}
+	for _, player := range room.saveOwners() {
 		if oldID > 0 {
 			_ = RemoveGameIDFromUser(player.Username, oldID)
 		}

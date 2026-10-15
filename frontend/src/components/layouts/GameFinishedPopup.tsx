@@ -8,11 +8,20 @@ export default function GameFinishedPopup() {
   const phase = useSelector((state: RootState) => state.application.phase);
   const players = useSelector((state: RootState) => state.application.players);
   const scores = useSelector((state: RootState) => state.application.scores);
+  const username = useSelector((state: RootState) => state.application.name);
+  const currentRoom = useSelector((state: RootState) => {
+    const { roomid, rooms, roomsInProgress } = state.application;
+    return roomsInProgress?.find(room => room.id === roomid) ?? rooms?.find(room => room.id === roomid);
+  });
   const dispatch = useDispatch();
 
   if (phase !== 'GameFinished') {
     return null;
   }
+
+  const canGoBack = currentRoom?.creator === username &&
+    currentRoom.botPlayback?.canGoBack && currentRoom.players.length > 0 &&
+    currentRoom.players.every(player => currentRoom.bots?.[player]);
 
   // Combine players and scores
   const combined = players.map((player, index) => ({
@@ -53,9 +62,18 @@ export default function GameFinishedPopup() {
             <strong>{rankLabel(index)}:</strong> {item.player} - {item.score}
           </div>
         ))}
-        <button onClick={handleLeaveGame} className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 px-3 rounded transition-colors">
-          Leave Game <span className="text-sm text-gray-300"></span>
-        </button>
+        <div className="flex flex-col gap-2 mt-3">
+          {canGoBack && (
+            <button type="button" onClick={() => sendMessageToBackend('previousBotMove', {})}
+              title="Go back one bot move and pause the game"
+              className="w-full border border-[#8B4513] hover:bg-[#EED5B7] py-2 px-3 rounded transition-colors">
+              Previous move
+            </button>
+          )}
+          <button type="button" onClick={handleLeaveGame} className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 px-3 rounded transition-colors">
+            Leave Game <span className="text-sm text-gray-300"></span>
+          </button>
+        </div>
       </div>
     </div>
   );

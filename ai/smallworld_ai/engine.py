@@ -10,7 +10,8 @@ DEFAULT_ENGINE = ROOT / "bin" / "botenv"
 
 
 class Engine:
-    def __init__(self, binary=DEFAULT_ENGINE, model_dir=None, max_steps=4096):
+    def __init__(self, binary=DEFAULT_ENGINE, model_dir=None, max_steps=4096, rules="legacy"):
+        self.rules = rules
         binary = Path(binary).resolve()
         if not binary.is_file():
             raise FileNotFoundError(f"Build the engine first: (cd backend2 && go build -o ../ai/bin/botenv ./cmd/botenv). Missing: {binary}")
@@ -25,7 +26,8 @@ class Engine:
     def request(self, **request):
         if request.get("op") == "reset":
             split = request.pop("map_split", "train")
-            distribution = request.pop("map_distribution", "standard")
+            request.setdefault("rules", self.rules)
+            distribution = request.pop("map_distribution", "surface" if request["rules"] == "surface" else "standard")
             if request.get("map") == "generated":
                 from .maps import MapGenerator
                 if self.generator is None:
@@ -82,10 +84,13 @@ class LearnerEnv:
     Opponent snapshots are frozen for an entire episode. Rewards contain own
     coin change / 100 plus +1/-1/0 for win/loss/tie at the true game end.
     """
-    def __init__(self, binary, seed, players, maps, opponent, max_steps=4096):
-        self.engine = Engine(binary, max_steps=max_steps)
+    def __init__(self, binary, seed, players, maps, opponent, max_steps=4096, rules="legacy", curriculum_start=0, curriculum_stride=1):
+        self.rules, self.curriculum, self.curriculum_stride = rules, curriculum_start, curriculum_stride
+        self.episodes = 0
+        self.engine = Engine(binary, max_steps=max_steps, rules=rules)
         self.rng = random.Random(seed)
-        self.players, self.maps, self.opponent = players, maps, opponent
+        self.player_counts = players if isinstance(players, list) else [players]
+        self.players, self.maps, self.opponent = self.player_counts[0], maps, opponent
         self.snapshots = []
         self.seat = 0
         self.response = None
@@ -93,16 +98,24 @@ class LearnerEnv:
         self.episode_return = 0.0
 
     def reset(self):
-        self.seat = self.rng.randrange(self.players)
+        self.players = self.rng.choice(self.player_counts)
+        focus = self.rules == "surface" and self.episodes % 4 != 3
+        self.seat = 0 if focus else self.rng.randrange(self.players)
+        self.episodes += 1
         self.episode_return = 0.0
         policy = self.opponent
         if policy == "mixed":
-            policy = self.rng.choice(["random", "greedy", "selfplay"] if self.snapshots else ["random", "greedy"])
+            if self.rules == "surface" and self.snapshots:
+                policy = self.rng.choices(["random", "greedy", "selfplay"], weights=[1, 2, 7])[0]
+            else:
+                policy = self.rng.choice(["random", "greedy", "selfplay"] if self.snapshots else ["random", "greedy"])
         self.opponent_policy = self.rng.choice(self.snapshots) if policy == "selfplay" and self.snapshots else policy
         if self.opponent_policy == "selfplay":
             self.opponent_policy = "random"
         self.response = self.engine.request(op="reset", seed=self.rng.randrange(1, 2**53),
-                                            players=self.players, map=self.rng.choice(self.maps))
+                                            players=self.players, map=self.rng.choice(self.maps),
+                                            curriculum=self.curriculum, focus=focus)
+        self.curriculum += self.curriculum_stride
         self._advance_opponents()
         return self.response["decision"]
 
@@ -116,13 +129,14 @@ class LearnerEnv:
     def step(self, action):
         before = self.response["scores"][self.seat]
         self.response = self.engine.request(op="step", action=int(action))
+        rejected = self.response.get("rejected", False)
         self._advance_opponents()
-        reward = (self.response["scores"][self.seat] - before) / 100.0
+        reward = (self.response["scores"][self.seat] - before) / 100.0 - (0.03 if rejected else 0)
         if self.response["done"]:
             reward += outcome(self.response["scores"], self.seat)
         self.episode_return += reward
         info = {"scores": self.response["scores"], "seat": self.seat,
-                "engine_steps": self.response["steps"], "map": self.engine.map_info, "episode_return": self.episode_return}
+                "engine_steps": self.response["steps"], "rejected": rejected, "coverage": self.response.get("coverage", {}), "map": self.engine.map_info, "episode_return": self.episode_return}
         return self.response["decision"], reward, self.response["done"], self.response["truncated"], info
 
     def close(self):

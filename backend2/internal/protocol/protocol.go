@@ -75,18 +75,26 @@ type BotSeat struct {
 	Name    string `json:"name"`
 }
 
+// BotPlayback controls the pacing of a room whose occupied seats are all bots.
+type BotPlayback struct {
+	CanGoBack bool    `json:"canGoBack"`
+	Paused    bool    `json:"paused"`
+	Speed     float64 `json:"speed"`
+}
+
 // RoomMetadata is the distributed equivalent of the room list that used to be
 // built by sendRoomsUpdateToAll from the in-process rooms map.
 type RoomMetadata struct {
-	Bots       map[string]BotSeat `json:"bots,omitempty"`
-	BotModels  []bot.Info         `json:"botModels,omitempty"`
-	ID         string             `json:"id"`
-	Name       string             `json:"name"`
-	Players    []string           `json:"players"`
-	MaxPlayers int                `json:"maxPlayers"`
-	MapName    string             `json:"mapName"`
-	Creator    string             `json:"creator"`
-	InProgress bool               `json:"inProgress"`
+	BotPlayback *BotPlayback       `json:"botPlayback,omitempty"`
+	Bots        map[string]BotSeat `json:"bots,omitempty"`
+	BotModels   []bot.Info         `json:"botModels,omitempty"`
+	ID          string             `json:"id"`
+	Name        string             `json:"name"`
+	Players     []string           `json:"players"`
+	MaxPlayers  int                `json:"maxPlayers"`
+	MapName     string             `json:"mapName"`
+	Creator     string             `json:"creator"`
+	InProgress  bool               `json:"inProgress"`
 }
 
 func WorkerForRoom(roomID string, workerCount uint32) (uint32, error) {

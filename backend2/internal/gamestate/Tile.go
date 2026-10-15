@@ -8,6 +8,7 @@ type Tile struct {
     Biome         Biome
     Attributes    []Attribute
     IsEdge        bool
+    IsSkyIsland   bool
 
     State                   map[string]interface{}
     ModifierPoints          map[string]func(*Tile) int

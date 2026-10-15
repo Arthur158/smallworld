@@ -36,15 +36,16 @@ func (w *Worker) syncLobbyMetadata(ctx context.Context) error {
 			}
 		}
 		local[id] = protocol.RoomMetadata{
-			Bots:       room.botSeats(),
-			BotModels:  w.bots.Catalog(),
-			ID:         room.ID,
-			Name:       room.Name,
-			Players:    players,
-			MaxPlayers: room.Map.Capacity,
-			MapName:    room.Map.Name,
-			Creator:    room.HostUsername,
-			InProgress: room.InProgress,
+			BotPlayback: room.botPlayback(),
+			Bots:        room.botSeats(),
+			BotModels:   w.bots.Catalog(),
+			ID:          room.ID,
+			Name:        room.Name,
+			Players:     players,
+			MaxPlayers:  room.Map.Capacity,
+			MapName:     room.Map.Name,
+			Creator:     room.HostUsername,
+			InProgress:  room.InProgress,
 		}
 	}
 	pipe := w.redis.TxPipeline()

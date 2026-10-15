@@ -50,7 +50,7 @@ func installTrainingMap(tiles []gamestate.RuntimeTileSpec) error {
 			current := queue[0]
 			queue = queue[1:]
 			for _, id := range byID[current].AdjacentIDs {
-				if !seen[id] && (!landOnly || byID[id].Biome != gamestate.Water) {
+				if !seen[id] && (!landOnly || byID[id].Biome != gamestate.Water && byID[id].Biome != gamestate.AbyssalChasm) {
 					seen[id] = true
 					queue = append(queue, id)
 				}
@@ -64,7 +64,7 @@ func installTrainingMap(tiles []gamestate.RuntimeTileSpec) error {
 	landSeen := make(map[string]bool)
 	landCount := 0
 	for _, tile := range tiles {
-		if tile.Biome == gamestate.Water {
+		if tile.Biome == gamestate.Water || tile.Biome == gamestate.AbyssalChasm {
 			continue
 		}
 		landCount++

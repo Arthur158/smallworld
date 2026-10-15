@@ -2,11 +2,12 @@ package gamestate
 
 import (
     "fmt"
-    "math/rand"
+
     "time"
 )
 
 type GameState struct {
+	BotV2Memory        *BotV2Memory // Ephemeral action feedback, never game rules or hidden information.
     RNGState           uint64 // Per-game random stream; persisted with snapshots.
     Players            []*Player
     TribeList          []*TribeEntry
@@ -31,7 +32,9 @@ func NewSeeded(playerNames []string, mapName string, raceKeys []string, traitKey
     traitKeys = append([]string(nil), traitKeys...)
     powerKeys = append([]string(nil), powerKeys...)
     gs := &GameState{RNGState: seed}
-    if gs.RNGState == 0 { gs.RNGState = 1 }
+	if gs.RNGState == 0 {
+		gs.RNGState = 1
+	}
     gs.Players = make([]*Player, len(playerNames))
     for i, name := range playerNames {
         gs.Players[i] = &Player{
@@ -78,8 +81,7 @@ func NewSeeded(playerNames []string, mapName string, raceKeys []string, traitKey
     testingPowers := true
     if testingPowers {
         if len(playerNames)+2 < len(powerKeys) {
-            rand.Seed(time.Now().UnixNano())
-            rand.Shuffle(len(powerKeys), func(i, j int) {
+			gs.shuffle(len(powerKeys), func(i, j int) {
                 powerKeys[i], powerKeys[j] = powerKeys[j], powerKeys[i]
             })
             powerKeys = powerKeys[:len(playerNames)+2] // Adjust number of powers according to the number of players
@@ -105,7 +107,7 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
         return fmt.Errorf("The player is not supposed to pick a new tribe!")
     }
 
-    if entryIndex > 5 || entryIndex < 0 {
+	if entryIndex >= 5 || entryIndex < 0 {
         return fmt.Errorf("Invalid entry index")
     }
 
@@ -491,7 +493,11 @@ func (gs *GameState) HandleDecline(playerIndex int) error {
 
     // Reserve the remaining market entries for players already needing a tribe.
     waiting := 0
-    for _, p := range gs.Players { if p.ActiveTribe == nil { waiting++ } }
+	for _, p := range gs.Players {
+		if p.ActiveTribe == nil {
+			waiting++
+		}
+	}
     if len(gs.TribeList) <= waiting {
         return fmt.Errorf("no spare tribe remains for a new decline")
     }
@@ -545,7 +551,9 @@ func (gs *GameState) handleNextPlayerTurn() {
     if gs.TurnInfo.PlayerIndex == len(gs.Players)-1 {
         if gs.TurnInfo.TurnIndex == 9 {
             for _, player := range gs.Players {
-                if player.ActiveTribe != nil { player.ActiveTribe.handleEndOfGame(gs) }
+				if player.ActiveTribe != nil {
+					player.ActiveTribe.handleEndOfGame(gs)
+				}
                 for _, tribe := range player.PassiveTribes {
                     tribe.handleEndOfGame(gs)
                 }

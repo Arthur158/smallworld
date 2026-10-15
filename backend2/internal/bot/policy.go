@@ -33,6 +33,8 @@ type Model struct {
 	StateFeatures  int     `json:"state_features"`
 	ActionFeatures int     `json:"action_features"`
 	Layers         []Layer `json:"layers"`
+	NodeFeatures   int     `json:"node_features,omitempty"`
+	GraphLayers    []Layer `json:"graph_layers,omitempty"`
 }
 
 type Registry struct{ models map[string]*Model }
@@ -68,12 +70,12 @@ func NewRegistry(dir string) (*Registry, error) {
 }
 
 func ReadModel(reader io.Reader) (*Model, error) {
-	data, err := io.ReadAll(io.LimitReader(reader, (8<<20)+1))
+	data, err := io.ReadAll(io.LimitReader(reader, (32<<20)+1))
 	if err != nil {
 		return nil, err
 	}
-	if len(data) > 8<<20 {
-		return nil, fmt.Errorf("model exceeds 8 MiB")
+	if len(data) > 32<<20 {
+		return nil, fmt.Errorf("model exceeds 32 MiB")
 	}
 	var m Model
 	if err := json.Unmarshal(data, &m); err != nil {
@@ -91,13 +93,23 @@ func (m *Model) Validate() error {
 	if !modelID.MatchString(m.ID) || m.Name == "" || len(m.Name) > 80 || len(m.Description) > 300 {
 		return fmt.Errorf("invalid model identity")
 	}
-	if m.FormatVersion != 1 || m.Schema != gamestate.BotSchema || m.StateFeatures != gamestate.BotStateFeatures || m.ActionFeatures != gamestate.BotActionFeatures {
+	legacy := m.FormatVersion == 1 && m.Schema == gamestate.BotSchema && m.StateFeatures == gamestate.BotStateFeatures && m.ActionFeatures == gamestate.BotActionFeatures && len(m.GraphLayers) == 0
+	full := m.FormatVersion == 2 && m.Schema == gamestate.BotSchemaV2 && m.StateFeatures == gamestate.BotV2StateWidth() && m.ActionFeatures == gamestate.BotV2ActionWidth() && m.NodeFeatures == gamestate.BotV2NodeWidth()
+	if full {
+		if err := validateGraphLayers(m.GraphLayers, m.NodeFeatures); err != nil {
+			return err
+		}
+	}
+	if !legacy && !full {
 		return fmt.Errorf("model schema or feature dimensions do not match this server")
 	}
 	if len(m.Layers) != 3 {
 		return fmt.Errorf("expected three actor layers")
 	}
 	width := m.StateFeatures + m.ActionFeatures
+	if full {
+		width += 3 * graphWidth
+	}
 	for i, l := range m.Layers {
 		if len(l.Bias) < 1 || len(l.Bias) > 256 || len(l.Weights) != len(l.Bias) {
 			return fmt.Errorf("invalid layer %d dimensions", i)
@@ -152,11 +164,33 @@ func (m *Model) Scores(d gamestate.BotDecision) ([]float64, error) {
 		return nil, fmt.Errorf("incompatible decision")
 	}
 	scores := make([]float64, len(d.Candidates))
+	var nodes [][]float64
+	var pooled []float64
+	if m.Schema == gamestate.BotSchemaV2 {
+		var err error
+		nodes, pooled, err = m.graphEmbeddings(d)
+		if err != nil {
+			return nil, err
+		}
+	}
 	for i, c := range d.Candidates {
 		if len(c.Features) != m.ActionFeatures {
 			return nil, fmt.Errorf("incompatible action features")
 		}
 		x := append(append([]float64(nil), d.State...), c.Features...)
+		if nodes != nil {
+			for _, target := range []int{c.Target, c.Source} {
+				if target < -1 || target >= len(nodes) {
+					return nil, fmt.Errorf("invalid graph action target")
+				}
+				if target == -1 {
+					x = append(x, make([]float64, graphWidth)...)
+				} else {
+					x = append(x, nodes[target]...)
+				}
+			}
+			x = append(x, pooled...)
+		}
 		for _, value := range x {
 			if !finite(value) {
 				return nil, fmt.Errorf("non-finite input")

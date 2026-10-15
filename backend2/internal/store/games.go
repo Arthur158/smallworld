@@ -49,6 +49,7 @@ type PlayerCopy struct {
 }
 
 type TileCopy struct {
+ IsSkyIsland bool
 	Id                      string
 	AdjacentTiles           []string
 	PieceStacks             []PieceStackCopy
@@ -219,6 +220,7 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 
 		tiles = append(tiles, TileCopy{
 			Id:                      t.Id,
+ IsSkyIsland: t.IsSkyIsland,
 			AdjacentTiles:           adjacentIDs,
 			PieceStacks:             pieceStacks,
 			OwningTribe:             owningTribe,
@@ -350,6 +352,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 
 		tile := &gamestate.Tile{
 			Id:                      tc.Id,
+ IsSkyIsland: tc.IsSkyIsland || strings.HasSuffix(tc.Id,"i"),
 			PieceStacks:             piecestacks,
 			OwningTribe:             nil,
 			Biome:                   parseBiome(tc.Biome),

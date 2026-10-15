@@ -3,6 +3,7 @@ package gamestate
 import "sync"
 
 type RuntimeTileSpec struct {
+ IsSkyIsland bool
 	ID          string
 	Biome      Biome
 	Attributes []Attribute
@@ -37,6 +38,7 @@ func BuildRuntimeMap(name string, gs *GameState) (map[string]*Tile, bool) {
 	for _, spec := range specs {
 		tileMap[spec.ID] = &Tile{
 			Id:         spec.ID,
+ IsSkyIsland: spec.IsSkyIsland,
 			Biome:     spec.Biome,
 			Attributes: spec.Attributes,
 			IsEdge:    spec.IsEdge,

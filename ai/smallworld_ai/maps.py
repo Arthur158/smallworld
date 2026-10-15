@@ -36,7 +36,7 @@ class MapGenerator:
             raise RuntimeError(result["error"])
         # RuntimeTileSpec uses numeric Go enums; the exported site metadata has names.
         tiles = [dict(ID=t['id'], Biome=BIOMES[t['biome']], Attributes=[ATTRIBUTES[a] for a in t['attributes']],
-                      IsEdge=t['isEdge'], AdjacentIDs=t['adjacentIds']) for t in result['tiles']]
+                      IsEdge=t['isEdge'], IsSkyIsland=t.get('isSkyIsland', False), AdjacentIDs=t['adjacentIds']) for t in result['tiles']]
         return tiles, result['info']
 
     def close(self):

@@ -49,8 +49,10 @@ export interface Player {
 
 export interface BotModel { id: string; name: string; description: string; }
 export interface BotSeat { modelId: string; name: string; }
+export interface BotPlayback { paused: boolean; speed: number; canGoBack?: boolean; }
 
 export interface Room {
+  botPlayback?: BotPlayback;
   bots?: Record<string, BotSeat>;
   botModels?: BotModel[];
   inProgress?: boolean;

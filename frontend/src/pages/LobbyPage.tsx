@@ -325,10 +325,19 @@ export default function LobbyPage() {
                   </div>
                 )}
                 <RoomBotControls room={currentRoom} isHost={currentRoom.creator === username} />
-                <p className="font-semibold mb-3">Players in this room:</p>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <p className="font-semibold">Players in this room:</p>
+                  {!currentRoom.players.includes(currentRoom.creator) && (
+                    <span className="text-sm">{currentRoom.creator} · Host watching</span>
+                  )}
+                </div>
                 <div className="space-y-3 mb-4">
                   {currentRoom.players?.map((p, idx) => {
-                    if (!p || !p.trim().length) return null;
+                    if (!p || !p.trim().length) return (
+                      <div key={`empty-${idx}`} className="p-3 rounded-lg border border-dashed border-[#8B4513]/40 bg-[#FDF5E6] text-sm">
+                        <span className="font-semibold">{idx + 1}: Open seat</span>
+                      </div>
+                    );
                     return (
                       <div
                         key={p}
@@ -375,7 +384,7 @@ export default function LobbyPage() {
                       onClick={handleStartGame}
                       className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 px-4 rounded transition-colors shadow-md"
                     >
-                      Start Game
+                      {currentRoom.players.includes(currentRoom.creator) ? 'Start Game' : 'Start & Watch'}
                     </button>
                   )}
                   <button

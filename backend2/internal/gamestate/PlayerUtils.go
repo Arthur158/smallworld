@@ -2,7 +2,6 @@ package gamestate
 
 import (
     "fmt"
-    "log"
     "math/rand"
 )
 
@@ -30,7 +29,7 @@ func (player *Player) getTribe(stackType string) (*Tribe, error) {
 
 func (player *Player) StartRedeployment(gs *GameState) {
 
-    player.PieceStacks = AddPieceStacks(player.PieceStacks, player.ActiveTribe.startRedeployment(gs))
+    if player.ActiveTribe != nil { player.PieceStacks = AddPieceStacks(player.PieceStacks, player.ActiveTribe.startRedeployment(gs)) }
 
     for _, tribe := range player.PassiveTribes {
         player.PieceStacks = AddPieceStacks(player.PieceStacks, tribe.startRedeployment(gs))
@@ -64,53 +63,17 @@ func AddPieceStacks(first, second []PieceStack) []PieceStack {
     return result
 }
 
-func SubtractPieceStacks(reserves, expanses []PieceStack) ([]PieceStack, bool) {
-    result := []PieceStack{} // Start with an empty list
-
-    for _, stack1 := range reserves {
-        subtracted := false
-
-        // Search for a matching type in expanses
-        for _, stack2 := range expanses {
-            if stack1.Type == stack2.Type {
-                if stack1.Amount < stack2.Amount {
-                    // Not enough quantity to subtract
-                    log.Println(fmt.Sprintf("There was not enough of the stack %s", stack1.Type))
-                    return nil, false
-                }
-                // Subtract the amount
-                remainingAmount := stack1.Amount - stack2.Amount
-                if remainingAmount > 0 {
-                    // Only add to result if the remaining amount is greater than 0
-                    result = append(result, PieceStack{Type: stack1.Type, Amount: remainingAmount, Tribe: stack1.Tribe})
-                }
-                subtracted = true
-                break
-            }
-        }
-
-        // If no match was found in expanses, add the stack1 element unchanged
-        if !subtracted {
-            result = append(result, stack1)
-        }
-    }
-
-    // Verify no types in expanses are missing from reserves
-    for _, stack2 := range expanses {
-        found := false
-        for _, stack1 := range reserves {
-            if stack1.Type == stack2.Type {
-                found = true
-                break
-            }
-        }
-        if !found {
-            log.Println(fmt.Sprintf("This stack was not found: %s", stack2.Type))
-            return nil, false
-        }
-    }
-
-    return result, true
+// Subtraction is atomic: failed expenses leave every reserve intact. Zero
+// expenses do not require a matching stack (e.g. depleted temporary pieces).
+func SubtractPieceStacks(reserves, expenses []PieceStack) ([]PieceStack, bool) {
+    cost:=make(map[string]int)
+    for _,s:=range expenses {if s.Amount<0{return reserves,false};cost[s.Type]+=s.Amount}
+    available:=make(map[string]int)
+    for _,s:=range reserves {available[s.Type]+=s.Amount}
+    for kind,amount:=range cost {if available[kind]<amount{return reserves,false}}
+    result:=make([]PieceStack,0,len(reserves))
+    for _,s:=range reserves {take:=min(s.Amount,cost[s.Type]);s.Amount-=take;cost[s.Type]-=take;if s.Amount>0{result=append(result,s)}}
+    return result,true
 }
 
 // rollCustomDiceWithLocalRNG returns a random number from a dice with faces 0, 0, 0, 1, 2, 3 using a local RNG

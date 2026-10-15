@@ -27,6 +27,18 @@ class GeneratedMapTests(unittest.TestCase):
         finally:
             generator.close()
 
+    def test_surface_training_never_contains_underground(self):
+        generator = MapGenerator()
+        try:
+            for seed in range(40):
+                tiles, info = generator.generate(seed, 2+seed%5, "train", "surface")
+                self.assertEqual(info["theme"], "surface")
+                self.assertTrue(all(t["Biome"] in {0, 1, 2, 3, 4, 6} for t in tiles))
+            with self.assertRaisesRegex(RuntimeError, "invalid map distribution"):
+                generator.generate(1, 2, "train", "full")
+        finally:
+            generator.close()
+
     @unittest.skipUnless(DEFAULT_ENGINE.is_file(), "build ai/bin/botenv first")
     def test_complete_generated_matches(self):
         with Engine() as engine:

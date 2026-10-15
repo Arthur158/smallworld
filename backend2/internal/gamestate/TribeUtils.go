@@ -122,7 +122,8 @@ func CreateBaseTribe() *Tribe {
 }
 
 func (t *Tribe) DeletePower(s string, gs *GameState) {
-    for i, trait := range t.AdditionalPowers {
+    for i := len(t.AdditionalPowers)-1; i >= 0; i-- {
+ trait := t.AdditionalPowers[i]
         if trait == Trait(s) {
             t.AdditionalPowers = append(t.AdditionalPowers[:i], t.AdditionalPowers[i+1:]...)
         }

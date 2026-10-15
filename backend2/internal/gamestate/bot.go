@@ -19,18 +19,24 @@ func BotRaces() []string  { return slices.Clone(botRaces) }
 func BotTraits() []string { return slices.Clone(botTraits) }
 
 type BotAction struct {
-	Kind  string `json:"kind"`
-	Tile  string `json:"tile,omitempty"`
-	Entry int    `json:"entry,omitempty"`
+	Kind     string `json:"kind"`
+	Stack    string `json:"stack,omitempty"`
+	From     string `json:"from,omitempty"`
+	Opponent int    `json:"opponent,omitempty"`
+	Tile     string `json:"tile,omitempty"`
+	Entry    int    `json:"entry,omitempty"`
 }
 
 type BotCandidate struct {
 	Action   BotAction `json:"action"`
+	Target   int       `json:"target"`
+	Source   int       `json:"source"`
 	Features []float64 `json:"features"`
 }
 
 type BotDecision struct {
 	Schema     string         `json:"schema"`
+	Graph      *BotGraph      `json:"graph,omitempty"`
 	Player     int            `json:"player"`
 	State      []float64      `json:"state"`
 	Candidates []BotCandidate `json:"candidates"`

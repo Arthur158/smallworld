@@ -41,13 +41,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", type=Path, default=DEFAULT_ENGINE)
     parser.add_argument("--model", default="random")
+    parser.add_argument("--rules", choices=["legacy", "surface"], default="legacy")
     parser.add_argument("--model-dir", type=Path)
     parser.add_argument("--opponent", default="greedy")
     parser.add_argument("--games", type=int, default=100)
     parser.add_argument("--seed", type=int, default=1_000_000)
     parser.add_argument("--players", type=int, default=2)
     parser.add_argument("--maps", nargs="+", default=["generated"])
-    parser.add_argument("--map-distribution", choices=["standard", "stress"], default="standard")
+    parser.add_argument("--map-distribution", choices=["standard", "stress", "surface", "surface-stress"], default="standard")
     parser.add_argument("--exclude-map-log", type=Path, help="reject any exact map hash already recorded during training")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
@@ -60,7 +61,7 @@ def main():
                 value = json.loads(line).get("map", {}).get("hash")
                 if value:
                     excluded_hashes.add(value)
-    with Engine(args.engine, args.model_dir) as engine:
+    with Engine(args.engine, args.model_dir, rules=args.rules, max_steps=8192 if args.rules == "surface" else 4096) as engine:
         result = evaluate(engine, args.model, args.opponent, args.games, args.seed, args.players, args.maps, args.map_distribution, excluded_hashes)
     print(json.dumps({k:v for k,v in result.items() if k != "matches"}, indent=2))
     if args.output:
