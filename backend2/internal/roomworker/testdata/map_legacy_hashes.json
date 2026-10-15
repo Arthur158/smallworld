@@ -1,0 +1,202 @@
+[
+  {
+    "players": 2,
+    "seed": "legacy-compat-0",
+    "hash": "95395347a543e7b1e1c7f3133040601518a2bde6610ce1e975038d314ced1ae3"
+  },
+  {
+    "players": 2,
+    "seed": "legacy-compat-1",
+    "hash": "87c8aa4c70c14f37cfe887e98f619b6e6dcd77bf5deb4617cf1b42ab7bfe9354"
+  },
+  {
+    "players": 2,
+    "seed": "legacy-compat-2",
+    "hash": "3c4418076dc4dfd8de381e6b65f1b4aeee728094e521c970295e939531d699ad"
+  },
+  {
+    "players": 2,
+    "seed": "legacy-compat-3",
+    "hash": "0af4c94308e9cf3d7c37e0bd6d78ec86bad014a3f3eefd1c689262e1a9da8906"
+  },
+  {
+    "players": 2,
+    "seed": "legacy-compat-4",
+    "hash": "c639aa07056519928b307accd16f85d0f915b83029cc01812a645b5fc68fc284"
+  },
+  {
+    "players": 2,
+    "seed": "legacy-compat-5",
+    "hash": "3d8e89dc5fb3f65f5eb348743723c79182c0616cbaadb2d3d76283df5170b8f2"
+  },
+  {
+    "players": 2,
+    "seed": "legacy-compat-6",
+    "hash": "9722cf305efb05614048c838e378c736412a4eb19cf6bb89c3bf45afaf8d1338"
+  },
+  {
+    "players": 2,
+    "seed": "legacy-compat-7",
+    "hash": "7e8b7711ddf8d841c7d4a106a8ebea9716f23051d7b85fcb6516bbe4bccb48f8"
+  },
+  {
+    "players": 3,
+    "seed": "legacy-compat-0",
+    "hash": "93d4ec49ebb4cafa4f744297aaea4869bb2f7c3aa5c9562e878a89b13f2616a8"
+  },
+  {
+    "players": 3,
+    "seed": "legacy-compat-1",
+    "hash": "e60572efa23c17490fcb9b74f5521af2767303610477e9f6d31c1130354a4621"
+  },
+  {
+    "players": 3,
+    "seed": "legacy-compat-2",
+    "hash": "d7ce461e89617872c1b23b3ba9c4f73f85654978c905caf643ea89977ec631a0"
+  },
+  {
+    "players": 3,
+    "seed": "legacy-compat-3",
+    "hash": "745d926837ce82b4210f550120f8ea92370773b249d39f6e023c69ef4f3a2b50"
+  },
+  {
+    "players": 3,
+    "seed": "legacy-compat-4",
+    "hash": "0fa3fb63f1b2761ad553d991f23a96e5b67dbf433e7b5c5e621f73ae3dc389ab"
+  },
+  {
+    "players": 3,
+    "seed": "legacy-compat-5",
+    "hash": "10e87fc0602da72a20a603478c7390c3d3fb9639621f16e7007b82ce9e3602d7"
+  },
+  {
+    "players": 3,
+    "seed": "legacy-compat-6",
+    "hash": "e4a880fb2b2cbd6845eaea7809323124696fa6bceebc11bdaf00b8f375dbf3a4"
+  },
+  {
+    "players": 3,
+    "seed": "legacy-compat-7",
+    "hash": "38b693ff782b280ab7fe15e284a77f302e3339e9afa519a34fb6a69db2e62354"
+  },
+  {
+    "players": 4,
+    "seed": "legacy-compat-0",
+    "hash": "03093dd157168f7ef70451b324ec9553527e8aa39176c205ce210c6b50e95640"
+  },
+  {
+    "players": 4,
+    "seed": "legacy-compat-1",
+    "hash": "57d383bc048d0df8bb53feb8d72f0e91299c8a1200f7e3aabdcde1264fcfe18c"
+  },
+  {
+    "players": 4,
+    "seed": "legacy-compat-2",
+    "hash": "12c7b404704d3497ed3f581f9c5e2e3dc7303edbb073258ee525735754be6b65"
+  },
+  {
+    "players": 4,
+    "seed": "legacy-compat-3",
+    "hash": "c0b8d30e43db880161cb9c019dd2fea4a964c9ec1b619e85c69399dc5886b05a"
+  },
+  {
+    "players": 4,
+    "seed": "legacy-compat-4",
+    "hash": "90c271d5f527f192e6956eeb7e148ef77f1aceda3429be78d770bd8479205604"
+  },
+  {
+    "players": 4,
+    "seed": "legacy-compat-5",
+    "hash": "10aeb7ad73f4e82f44e48bb19da37ed1038626d0e1724cd793637633daa6136b"
+  },
+  {
+    "players": 4,
+    "seed": "legacy-compat-6",
+    "hash": "9f4c333ce911a3642e48c51f663ecd713f2f73f33db003d429e231691df3c8a1"
+  },
+  {
+    "players": 4,
+    "seed": "legacy-compat-7",
+    "hash": "fd547bc945b1ae8bb37c7d97c8515d39a4595027ea707f55aa4b343b6fd6c0e7"
+  },
+  {
+    "players": 5,
+    "seed": "legacy-compat-0",
+    "hash": "ac5eddbc779fc8738e630898a957dca690307872077a9380d3ceaa136b365640"
+  },
+  {
+    "players": 5,
+    "seed": "legacy-compat-1",
+    "hash": "18abade7d079afa3e27683b19984d5da2d13a595ec89655b415a9f77019a4c09"
+  },
+  {
+    "players": 5,
+    "seed": "legacy-compat-2",
+    "hash": "c8c2bb6d38d2a0b988bc4d3c007778f9be3608bfa4707ca294aa16f2df6ea8f4"
+  },
+  {
+    "players": 5,
+    "seed": "legacy-compat-3",
+    "hash": "6a0fd27934e2cd3547d66007dd765300f0e36bf3bbd461d149570039582b321d"
+  },
+  {
+    "players": 5,
+    "seed": "legacy-compat-4",
+    "hash": "255bbbdca9eb62b5bb9cee82b2c4da4d5e8ff67e76a3329cc1fef5c7ee0d93fb"
+  },
+  {
+    "players": 5,
+    "seed": "legacy-compat-5",
+    "hash": "ec79d7661b8ee6735351b5146bd56db9b51a68e3f3174bf7180963b040ee8b6c"
+  },
+  {
+    "players": 5,
+    "seed": "legacy-compat-6",
+    "hash": "867b6ee32c83bc72a44faac7229bd3f0af4c2cb2c8f3d5017f4006068c9559f1"
+  },
+  {
+    "players": 5,
+    "seed": "legacy-compat-7",
+    "hash": "636b3e6c42663e5cdcc535f0c4fc0c329e01f325c6557b0f3ebdf40799254ca4"
+  },
+  {
+    "players": 6,
+    "seed": "legacy-compat-0",
+    "hash": "bce28da0471d9caab0df88f17be144e404893341aa56a511338d2a39491b9784"
+  },
+  {
+    "players": 6,
+    "seed": "legacy-compat-1",
+    "hash": "a16a18369a8f2aedead814ffc7fcbdb47d01f8eb54ec6de4c14c46deab012079"
+  },
+  {
+    "players": 6,
+    "seed": "legacy-compat-2",
+    "hash": "c19263e3bf03c21013bc02d32e87497396d10d506fb2317f954c9ada5f89f247"
+  },
+  {
+    "players": 6,
+    "seed": "legacy-compat-3",
+    "hash": "e93af83aa8850a77d85f3ccae8fcacde8255f222111c7778c7cffa7bda2405c6"
+  },
+  {
+    "players": 6,
+    "seed": "legacy-compat-4",
+    "hash": "f3eaee12121bf62638f3d771c16a5eca79451d733e1f4c96cc18098bfd463645"
+  },
+  {
+    "players": 6,
+    "seed": "legacy-compat-5",
+    "hash": "677030ff83ccfba389a5527f7d04a9778402771b59161cd670483d894ef66be9"
+  },
+  {
+    "players": 6,
+    "seed": "legacy-compat-6",
+    "hash": "5fcef12c95aafa6cf55e9afca56ba03c15b663dc2ea2b98f2586cd7a3af4894a"
+  },
+  {
+    "players": 6,
+    "seed": "legacy-compat-7",
+    "hash": "751ad6294cb05057a47dbd7ae1a63a415aa59a9c04bd50766f667ea5f6606148"
+  }
+]

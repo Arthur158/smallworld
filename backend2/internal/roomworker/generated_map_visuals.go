@@ -50,7 +50,9 @@ type GeneratedMapVisuals struct {
 	Graphics    json.RawMessage       `json:"graphics"`
 	Settings    json.RawMessage       `json:"settings"`
 	ServerTiles []GeneratedServerTile `json:"serverTiles"`
-	Offset      float64               `json:"offset"`
+	// Initial neutral setup is separate from generator geometry and saved games.
+	LostTribeTileIDs []string `json:"lostTribeTileIds,omitempty"`
+	Offset           float64  `json:"offset"`
 }
 
 var generatedMapVisualsMu sync.RWMutex

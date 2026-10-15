@@ -8,7 +8,7 @@ type WikiInspect = ReturnType<typeof useWiki>['inspect'];
 
 const wikiProps = (target: WikiTarget, inspect: WikiInspect) => ({
   role: 'button', tabIndex: 0,
-  title: 'Ctrl-click or use Inspect mode for rules',
+  'data-tooltip': 'Ctrl/Cmd-click or Ctrl/Cmd-Enter/Space: rules · Inspect mode: click to inspect',
   onClick: (event: React.MouseEvent) => { if (inspect(event, target)) return; },
   onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {

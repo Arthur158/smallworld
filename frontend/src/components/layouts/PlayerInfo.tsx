@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
-import { Player, PieceStack, Tribe } from '../../types/Board';
+import { PieceStack, Tribe } from '../../types/Board';
 import { setIsStackFromBank, setSelectedStack, setSelectedTile } from '../../redux/slices/applicationSlice';
 import { sendMessageToBackend } from '../../services/backendService';
 import { useWiki } from '../wiki/WikiContext';
+import { useShortcut } from '../../hooks/useShortcut';
 
 export default function PlayerInfo() {
   const { inspect, isOpen, inspectMode } = useWiki();
@@ -18,54 +19,33 @@ export default function PlayerInfo() {
   const phase = useSelector((state: RootState) => state.application.phase);
   const player = allPlayers?.[playerIndex] || null;
 
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
-      if (isOpen || inspectMode || event.ctrlKey || event.metaKey ||
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
-      if (event.key === 'f') {
-        dispatch(setIsStackFromBank(false));
-        dispatch(setSelectedTile(null));
-        dispatch(setSelectedStack(null));
-      }
-      if (event.key === 'a' && (phase == "DeclineChoice" || phase == "TileAbandonment") && selectedTile != null && selectedStack != null) {
-        console.log("enter here")
-        sendMessageToBackend('abandonment', { tileId: selectedTile.toString(), stackType: selectedStack.toString() });
-      }
-      if (event.key === 'a' && phase == "Redeployment" && selectedTile != null && selectedStack != null) {
-        sendMessageToBackend('deploymentout', {
-          tileId: selectedTile.toString(),
-          stackType: selectedStack.toString(),
-        });
-        dispatch(setSelectedStack(null));
-        dispatch(setSelectedTile(null));
-      }
-      if (event.key === 'g' && isStackFromBank && player) {
-        for (let i = 0; i < player.pieceStacks.length; i++) {
-          if (selectedStack == player.pieceStacks[i].type && i == player.pieceStacks.length - 1) {
-            dispatch(setSelectedStack(null))
-            dispatch(setIsStackFromBank(false))
-          } else if (selectedStack == player.pieceStacks[i].type) {
-            dispatch(setSelectedStack(player.pieceStacks[i+1].type))
-          }
-        }
-      }
-      if (event.key === 'g' && !isStackFromBank && player) {
-        if (player.pieceStacks.length != 0) {
-          dispatch(setSelectedStack(player.pieceStacks[0].type))
-          dispatch(setIsStackFromBank(true))
-          dispatch(setSelectedTile(null))
-        }
-      }
-    };
+  const isSpectating = useSelector((state: RootState) => state.application.isSpectating);
+  const inDisplayRoom = useSelector((state: RootState) => state.application.inDisplayRoom);
+  const canUseShortcuts = !isOpen && !inspectMode && !!player && playerIndex === playerNumber &&
+    !isSpectating && !inDisplayRoom && phase !== 'GameFinished';
+  const canReturnPiece = !isStackFromBank && selectedTile != null && selectedStack != null &&
+    ['DeclineChoice', 'TileAbandonment', 'Redeployment'].includes(phase);
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [dispatch, selectedTile, selectedStack, player, isOpen, inspectMode]);
+  useShortcut('a', () => {
+    if (!canReturnPiece) return;
+    if (phase === 'Redeployment') {
+      sendMessageToBackend('deploymentout', { tileId: selectedTile!, stackType: selectedStack! });
+      dispatch(setSelectedStack(null));
+      dispatch(setSelectedTile(null));
+      dispatch(setIsStackFromBank(false));
+    } else {
+      sendMessageToBackend('abandonment', { tileId: selectedTile!, stackType: selectedStack! });
+    }
+  }, canUseShortcuts && canReturnPiece);
 
-
+  useShortcut('g', () => {
+    const available = player?.pieceStacks.filter(stack => stack.amount > 0) ?? [];
+    const current = isStackFromBank ? available.findIndex(stack => stack.type === selectedStack) : -1;
+    const next = available[current + 1];
+    dispatch(setSelectedStack(next?.type ?? null));
+    dispatch(setIsStackFromBank(!!next));
+    dispatch(setSelectedTile(null));
+  }, canUseShortcuts);
 
   // Same logic as in TribeList
   const getTraitImagePath = (trait?: string) => {
@@ -102,6 +82,7 @@ export default function PlayerInfo() {
     } else {
       dispatch(setIsStackFromBank(true));
       dispatch(setSelectedStack(stackType));
+      dispatch(setSelectedTile(null));
     }
   };
 
@@ -110,7 +91,7 @@ export default function PlayerInfo() {
     return (
       <div className={`relative flex items-center ${customClasses}`} role="button" tabIndex={0}
         aria-label={`${tribe.trait} ${tribe.race}`}
-        title={`${tribe.trait} ${tribe.race} — Ctrl-click or use Inspect mode for rules`}
+        data-tooltip={`${tribe.trait} ${tribe.race} · Click or Enter/Space: return selected board piece · Ctrl/Cmd-click: rules`}
         onClick={(event) => { if (inspect(event, { kind: 'tribe', tribe })) return; }}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -137,7 +118,7 @@ export default function PlayerInfo() {
     return (
       <div className={`relative flex items-center ${customClasses}`} role="button" tabIndex={0}
         aria-label={`${tribe.trait} ${tribe.race}`}
-        title={`${tribe.trait} ${tribe.race} — Ctrl-click or use Inspect mode for rules`}
+        data-tooltip={`${tribe.trait} ${tribe.race} · Click or Enter/Space: return selected board piece · Ctrl/Cmd-click: rules`}
         onClick={(event) => { if (inspect(event, { kind: 'tribe', tribe })) return; }}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -175,7 +156,7 @@ export default function PlayerInfo() {
               className="relative"
               role="button" tabIndex={0}
               aria-label={`${stack.type} pieces in your bank, ${stack.amount}`}
-              title={`${stack.type} — Ctrl-click or use Inspect mode for rules`}
+              data-tooltip={`${stack.type} · Click or Enter/Space: select/deselect · G: next bank piece · Ctrl/Cmd-click: rules`}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   if (inspect(event, { kind: 'piece', stack, tribe })) return;

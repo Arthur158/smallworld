@@ -85,8 +85,8 @@ func TestBotHostAuthorizationAndSeats(t *testing.T) {
 		t.Fatal("model unchanged")
 	}
 	room.InProgress = true
-	for _, kind := range []string{"addBot", "setBotModel", "kickPlayer", "useBotRules"} {
-		if command(t, w, room, "host", kind, map[string]string{"username": p.Username, "modelId": "random"}) == nil {
+	for _, kind := range []string{"addBot", "setBotModel", "kickPlayer", "useBotRules", "setRulesPreset"} {
+		if command(t, w, room, "host", kind, map[string]string{"username": p.Username, "modelId": "random", "preset": "standard"}) == nil {
 			t.Fatalf("accepted %s mid-game", kind)
 		}
 	}

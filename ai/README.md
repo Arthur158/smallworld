@@ -244,16 +244,29 @@ readable directory on **every** worker and restart them. On NixOS the existing
 The Nix backend package also builds `botenv`.
 
 For the existing local kind cluster, bake the same model set into the worker
-image instead of using a size-limited ConfigMap:
+image instead of using a size-limited ConfigMap. Whenever `ai/models` contains
+exported JSON models, include the model layer on **every worker rebuild**, not
+just the first bot deployment. The base worker image contains no trained models.
+Keep all model files referenced by existing rooms; missing models fall back to
+the random policy when they next move.
+
+Run from the repository root, using a fresh release tag for each deployment:
 
 ```bash
-docker build -t smallworld-roomworker:dev -f backend2/Dockerfile.worker backend2
-docker build -t smallworld-roomworker:bots -f ai/deploy/Dockerfile.models ai/models
-kind load docker-image smallworld-roomworker:bots --name game-local
+worker_release=20261015-1
+docker build -t "smallworld-roomworker:${worker_release}-base" \
+  -f backend2/Dockerfile.worker backend2
+docker build -t "smallworld-roomworker:${worker_release}-models" \
+  --build-arg "WORKER_IMAGE=smallworld-roomworker:${worker_release}-base" \
+  -f ai/deploy/Dockerfile.models ai/models
+kind load docker-image "smallworld-roomworker:${worker_release}-models" --name game-local
 kubectl --context kind-game-local -n game set image statefulset/room-worker \
-  room-worker=smallworld-roomworker:bots
+  room-worker="smallworld-roomworker:${worker_release}-models"
 kubectl --context kind-game-local -n game rollout status statefulset/room-worker
 ```
+
+Load and deploy the final `-models` image. The explicit `WORKER_IMAGE` argument
+ensures the model layer uses the newly built worker when using custom tags.
 
 Rebuild/deploy the gateway and frontend too for the first bot-enabled release.
 These are deployment instructions; the training tools do not modify a cluster.

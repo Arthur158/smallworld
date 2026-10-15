@@ -1,5 +1,5 @@
 import WikiToolbar from '../components/wiki/WikiToolbar';
-import { useWiki } from '../components/wiki/WikiContext';
+import { useShortcut } from '../hooks/useShortcut';
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../redux/store";
@@ -8,7 +8,6 @@ import { reset, clearError } from "../redux/slices/applicationSlice";
 
 import TribeList from "../components/layouts/TribeList";
 import Map from "../components/misc/Map";
-import PlayerInfo from "../components/layouts/PlayerInfo";
 import OpponentsListAll from "../components/layouts/OpponentsListAll";
 import TurnInfoBlockSpectate from "../components/layouts/TurnInfoBlockSpectate";
 import Chat from "../components/inputs/Chat";
@@ -17,51 +16,19 @@ import CustomCursor from "../components/misc/CustomCursor"; // Import Custom Cur
 import BotPlaybackControls from "../components/BotPlaybackControls";
 
 export default function SpectatorPage() {
-  const { isOpen } = useWiki();
   const dispatch: AppDispatch = useDispatch();
   const error = useSelector((state: RootState) => state.application.error);
   const phase = useSelector((state: RootState) => state.application.phase);
-  const playerNumber = useSelector((state: RootState) => state.application.playerNumber);
-  const playerIndex = useSelector((state: RootState) => state.application.playerIndex);
-  const players = useSelector((state: RootState) => state.application.players);
   const username = useSelector((state: RootState) => state.application.name);
   const currentRoom = useSelector((state: RootState) => {
     const { roomid, rooms, roomsInProgress } = state.application;
     return roomsInProgress?.find(room => room.id === roomid) ?? rooms?.find(room => room.id === roomid);
   });
 
-  const currentPlayer = players[playerNumber]?.name || "Unknown Player";
-  const [showTurnInfo, setShowTurnInfo] = useState(false);
+  const [showPlayers, setShowPlayers] = useState(true);
 
-  // Auto-toggle the middle section based on phase
-  useEffect(() => {
-    if (phase === "TribeChoice") {
-      setShowTurnInfo(false);
-    }
-  }, [phase, playerNumber, playerIndex]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (isOpen || event.ctrlKey || event.metaKey || event.altKey) return;
-      const element = event.target as HTMLElement;
-      if (element.closest?.('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
-      const target = event.target as HTMLElement;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
-      switch (event.key) {
-        case "s":
-          setShowTurnInfo((prev) => !prev);
-          break;
-        case "c":
-          dispatch(clearError());
-          break;
-      }
-    };
-    window.addEventListener("keydown", handleKeyPress);
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, [dispatch, isOpen]);
+  useShortcut('s', () => setShowPlayers(previous => !previous));
+  useShortcut('c', () => dispatch(clearError()), !!error);
 
   // Handle page refresh
   useEffect(() => {
@@ -88,13 +55,16 @@ export default function SpectatorPage() {
             {/* Top: PlayerInfo (fixed height: h-1/3) */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
               <button
-                onClick={() => setShowTurnInfo(!showTurnInfo)}
+                type="button"
+                onClick={() => setShowPlayers(previous => !previous)}
+                aria-keyshortcuts="S"
+                data-tooltip={showPlayers ? 'Show available race and trait choices · S' : 'Show players and their tribes · S'}
                 className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white font-bold py-1 px-2 rounded mt-2 mb-2"
               >
-                {showTurnInfo ? "Show Tribe List" : "Show Turn Info"}
+                {showPlayers ? "Show Tribes" : "Show Players"}
               </button>
               <div className="h-full flex-1 overflow-auto min-h-0">
-                {showTurnInfo ? <OpponentsListAll /> : <TribeList />}
+                {showPlayers ? <OpponentsListAll /> : <TribeList />}
               </div>
             </div>
           </div>
@@ -127,8 +97,13 @@ export default function SpectatorPage() {
 
       {/* Error Banner */}
       {error && (
-        <div className="fixed bottom-0 left-0 w-full bg-red-500 text-white text-center py-2 z-50">
-          {error}
+        <div role="alert" className="fixed bottom-0 left-0 w-full bg-red-500 text-white py-2 px-4 z-50 flex items-center justify-center gap-3">
+          <span>{error}</span>
+          <button type="button" onClick={() => dispatch(clearError())} aria-label="Dismiss error"
+            aria-keyshortcuts="C" data-tooltip="Dismiss this message · C"
+            className="shrink-0 rounded border border-white/70 px-2 py-1 text-sm hover:bg-white/15">
+            Dismiss <kbd className="ml-1 text-xs">C</kbd>
+          </button>
         </div>
       )}
     </div>

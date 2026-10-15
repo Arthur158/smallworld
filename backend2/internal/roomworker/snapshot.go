@@ -266,6 +266,8 @@ func (w *Worker) restoreGeneratedMap(ctx context.Context, mapName string) error 
 			AdjacentIDs: generatedIDsToStrings(tile.AdjacentIDs),
 		})
 	}
+	// Old map records have no neutral setup; never repopulate them on restore.
+	markGeneratedLostTribes(specs, visuals.LostTribeTileIDs)
 	gamestate.RegisterRuntimeMap(mapName, specs)
 	StoreGeneratedMapVisuals(visuals)
 	if saved.Map.Name == "" {

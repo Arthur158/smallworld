@@ -1,0 +1,2 @@
+# Local kind database volumes are runtime data, never application build inputs.
+.kind-data/

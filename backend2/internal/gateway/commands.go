@@ -43,6 +43,7 @@ var workerMessageTypes = map[string]struct{}{
 	"moveUp":            {},
 	"moveDown":          {},
 	"changeRoomMap":     {},
+	"setRulesPreset":    {},
 	"kickPlayer":        {},
 	"savegame":          {},
 	"rollback":          {},

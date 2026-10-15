@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { sendMessageToBackend } from '../../services/backendService';
 import { useWiki } from '../wiki/WikiContext';
+import { useShortcut } from '../../hooks/useShortcut';
 
 function ImageOrBlueSquare({
   imageSrc,
@@ -150,23 +151,13 @@ export default function Map() {
     setTranslateY(centeredY);
   }, [imageDimensions, offsetMapTiles]);
 
-  // Listen for 'f' key to reset selection
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (isOpen || inspectMode || e.ctrlKey || e.metaKey ||
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
-      if (e.key.toLowerCase() === 'f') {
-        dispatch(setSelectedStack(null));
-        dispatch(setSelectedTile(null));
-        dispatch(setIsStackFromBank(false));
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [dispatch, isOpen, inspectMode]);
+  const clearSelection = () => {
+    dispatch(setSelectedStack(null));
+    dispatch(setSelectedTile(null));
+    dispatch(setIsStackFromBank(false));
+  };
+  useShortcut('f', clearSelection, !isOpen && !inspectMode);
+  useShortcut('Escape', clearSelection, !isOpen && !inspectMode);
 
   if (!mapName || imageDimensions.width === 0 || Object.keys(tiles).length === 0) {
     return <div className="text-center text-[#5F4B32] font-bold">Loading map...</div>;
@@ -443,6 +434,7 @@ export default function Map() {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 role="button" tabIndex={0} aria-label={`Zone ${tile.id}`}
+                data-tooltip={`Zone ${tile.id} · Click or Enter/Space: use selected piece · Ctrl/Cmd-click: region rules · Drag: pan · Scroll: zoom`}
                 onClick={(event) => {
                   if (movedDistance.current > 5 || isOpen) return;
                   if (inspect(event, { kind: 'zone', tile })) return;
@@ -456,7 +448,6 @@ export default function Map() {
                   }
                 }}
               >
-                <title>{`Zone ${tile.id} — Ctrl-click or use Inspect mode for rules`}</title>
               </polygon>
             );
           })}
@@ -488,6 +479,7 @@ export default function Map() {
                       key={`piece-${tile.id}-${index}`}
                       role="button" tabIndex={0}
                       aria-label={`${stack.type} pieces in zone ${tile.id}, ${stack.amount} ${stack.isActive ? 'active' : 'declined'}`}
+                      data-tooltip={`${stack.type} · Click or Enter/Space: select/use piece · ${phase === 'Redeployment' ? 'A: return one selected piece' : 'A: abandon selected region before conquest'} · F/Esc: clear · Ctrl/Cmd-click: rules`}
                       onClick={(event) => {
                         if (movedDistance.current > 5 || isOpen) return;
                         if (inspect(event, { kind: 'piece', stack, tileId: tile.id })) return;
@@ -501,7 +493,6 @@ export default function Map() {
                         }
                       }}
                     >
-                      <title>{`${stack.type} in zone ${tile.id} — Ctrl-click or use Inspect mode for rules`}</title>
                       {[...Array(stack.amount)].map((_, i) => {
                         const pieceX = scaledStackX + i * offset * baseSize * offsetStacks / 3.5;
                         const pieceY = scaledStackY + i * offset * baseSize * offsetStacks / 3.5;

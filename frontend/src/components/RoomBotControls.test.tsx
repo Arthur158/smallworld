@@ -85,3 +85,22 @@ test('a playing host can watch even when all seats are taken', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Watch as host' }));
   expect(sendMessageToBackend).toHaveBeenCalledWith('setHostSpectator', { spectator: true });
 });
+
+test('lobby bot shortcuts use the selected model and respect room capacity and typing', () => {
+  const view = render(<RoomBotControls room={room} isHost />);
+  fireEvent.change(screen.getByLabelText('Bot model'), { target: { value: 'trained-v1' } });
+  fireEvent.keyDown(window, { key: 'b' });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('addBot', { modelId: 'trained-v1' });
+  fireEvent.keyDown(window, { key: 'o' });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('setHostSpectator', { spectator: true });
+  jest.clearAllMocks();
+  fireEvent.keyDown(screen.getByLabelText('Bot model'), { key: 'b' });
+  fireEvent.keyDown(window, { key: 'b', ctrlKey: true });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+  view.rerender(<RoomBotControls room={{ ...room, players: ['bot:1', 'bot:2'] }} isHost />);
+  fireEvent.keyDown(window, { key: 'b' }); fireEvent.keyDown(window, { key: 'o' });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+  view.rerender(<RoomBotControls room={room} isHost={false} />);
+  fireEvent.keyDown(window, { key: 'b' }); fireEvent.keyDown(window, { key: 'o' });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});

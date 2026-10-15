@@ -1,3 +1,4 @@
+import { useWiki } from './wiki/WikiContext';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import BotPlaybackControls from './BotPlaybackControls';
@@ -15,7 +16,11 @@ const room: Room = {
   botPlayback: { paused: false, speed: 1 },
 };
 
-beforeEach(() => jest.clearAllMocks());
+jest.mock('./wiki/WikiContext', () => ({ useWiki: jest.fn() }));
+beforeEach(() => {
+  jest.clearAllMocks();
+  (useWiki as jest.Mock).mockReturnValue({ inspectMode: false, isOpen: false });
+});
 
 test('pause and resume follow server state without optimistic playback changes', () => {
   const view = render(<BotPlaybackControls room={room} username="host" phase="Conquest" />);
@@ -87,13 +92,13 @@ test('previous move requires pause and available server history', () => {
   const view = render(<BotPlaybackControls room={{ ...room, botPlayback: { paused: false, speed: 1, canGoBack: true } }} username="host" phase="Conquest" />);
   const previous = screen.getByRole('button', { name: 'Previous move' }) as HTMLButtonElement;
   expect(previous.disabled).toBe(true);
-  expect(previous.title).toBe('Pause the game to go back one move');
+  expect(previous.getAttribute('data-tooltip')).toBe('Pause the game to go back one move. Shortcut: Left arrow.');
   fireEvent.click(previous);
   expect(sendMessageToBackend).not.toHaveBeenCalled();
 
   view.rerender(<BotPlaybackControls room={{ ...room, botPlayback: { paused: true, speed: 1, canGoBack: false } }} username="host" phase="Conquest" />);
   expect(previous.disabled).toBe(true);
-  expect(previous.title).toBe('No earlier moves available');
+  expect(previous.getAttribute('data-tooltip')).toBe('No earlier moves available. Shortcut: Left arrow.');
   fireEvent.click(previous);
   expect(sendMessageToBackend).not.toHaveBeenCalled();
 
@@ -111,5 +116,62 @@ test('servers without rewind metadata keep previous move disabled', () => {
   const previous = screen.getByRole('button', { name: 'Previous move' }) as HTMLButtonElement;
   expect(previous.disabled).toBe(true);
   fireEvent.click(previous);
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});
+
+test('playback shortcuts mirror host pause, history and speed state', () => {
+  const view = render(<BotPlaybackControls room={room} username="host" phase="Conquest" />);
+  fireEvent.keyDown(window, { key: 'ArrowLeft' });
+  fireEvent.keyDown(window, { key: 'ArrowRight' });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+  fireEvent.keyDown(window, { key: ' ' });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('setBotPlayback', { paused: true });
+  view.rerender(<BotPlaybackControls room={{ ...room, botPlayback: { paused: true, speed: 1, canGoBack: true } }} username="host" phase="Conquest" />);
+  fireEvent.keyDown(window, { key: 'ArrowLeft' });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('previousBotMove', {});
+  fireEvent.keyDown(window, { key: 'ArrowRight' });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('stepBot', {});
+  fireEvent.keyDown(window, { key: '-' });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('setBotPlayback', { speed: 0.5 });
+  fireEvent.keyDown(window, { key: '=' });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('setBotPlayback', { speed: 2 });
+  fireEvent.keyDown(window, { key: '+', shiftKey: true });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('setBotPlayback', { speed: 2 });
+  expect(sendMessageToBackend).toHaveBeenCalledTimes(6);
+});
+
+test('speed shortcuts stop at supported limits', () => {
+  const view = render(<BotPlaybackControls room={{ ...room, botPlayback: { paused: true, speed: 0.25 } }} username="host" phase="Conquest" />);
+  fireEvent.keyDown(window, { key: '-' });
+  view.rerender(<BotPlaybackControls room={{ ...room, botPlayback: { paused: true, speed: 3 } }} username="host" phase="Conquest" />);
+  fireEvent.keyDown(window, { key: '=' });
+  fireEvent.keyDown(window, { key: '+', shiftKey: true });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});
+
+test.each(['visitor', 'hidden'] as const)('no playback shortcut can act for %s controls', mode => {
+  render(<BotPlaybackControls room={mode === 'hidden' ? undefined : room} username={mode === 'visitor' ? 'visitor' : 'host'} phase="Conquest" />);
+  for (const key of [' ', 'ArrowLeft', 'ArrowRight', '-', '=']) fireEvent.keyDown(window, { key });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});
+
+test('playback shortcuts leave focused inputs and repeated keys alone', () => {
+  render(<><input aria-label="Chat" /><BotPlaybackControls room={room} username="host" phase="Conquest" /></>);
+  fireEvent.keyDown(screen.getByLabelText('Chat'), { key: ' ' });
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: '-' });
+  fireEvent.keyDown(window, { key: ' ', repeat: true });
+  fireEvent.keyDown(window, { key: '=', ctrlKey: true });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});
+
+test.each([{ inspectMode: true, isOpen: false }, { inspectMode: false, isOpen: true }])('wiki state %p disables clicks and playback shortcuts', state => {
+  (useWiki as jest.Mock).mockReturnValue(state);
+  render(<BotPlaybackControls room={{ ...room, botPlayback: { paused: true, speed: 1, canGoBack: true } }} username="host" phase="Conquest" />);
+  for (const key of [' ', 'ArrowLeft', 'ArrowRight', '-', '=']) fireEvent.keyDown(window, { key });
+  for (const button of screen.getAllByRole('button')) {
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(button);
+  }
+  expect((screen.getByRole('combobox') as HTMLSelectElement).disabled).toBe(true);
   expect(sendMessageToBackend).not.toHaveBeenCalled();
 });

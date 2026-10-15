@@ -73,9 +73,10 @@ func createRoom(client *Client, roomName, username string) {
 	roomsMu.Lock()
 	defer roomsMu.Unlock()
 
-	gameMap, ok := mapMap["underground2players"]
-	if !ok {
-		log.Println("Problem logging map")
+	gameMap, choices, err := rulesPresetSettings("standard")
+	if err != nil {
+		client.sendError(err.Error())
+		return
 	}
 
 	roomID := client.CommandRoomID
@@ -102,18 +103,8 @@ func createRoom(client *Client, roomName, username string) {
 		room.Players[i] = nil
 	}
 
-	room.ExtensionChoices = make([]Extension, len(extensions))
-	for i, extension := range extensions {
-		room.ExtensionChoices[i] = Extension{ExtensionName: extension.Name, IsChecked: true}
-		room.ExtensionChoices[i].RaceChoices = make([]ChoiceEntry, len(extension.Races))
-		for j, race := range extension.Races {
-			room.ExtensionChoices[i].RaceChoices[j] = ChoiceEntry{Choice: race, IsChecked: true}
-		}
-		room.ExtensionChoices[i].TraitChoices = make([]ChoiceEntry, len(extension.Traits))
-		for j, trait := range extension.Traits {
-			room.ExtensionChoices[i].TraitChoices[j] = ChoiceEntry{Choice: trait, IsChecked: true}
-		}
-	}
+	room.ExtensionChoices = choices
+	room.GlobalToggle = false
 
 	room.Players[0] = client
 

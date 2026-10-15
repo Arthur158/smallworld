@@ -190,6 +190,22 @@ func (w *Worker) HandleCommand(ctx context.Context, cmd protocol.Command) error 
 		}
 		return nil
 
+	case "setRulesPreset":
+		room, err := requireHost(client)
+		if err != nil {
+			return err
+		}
+		if room.ID != cmd.RoomID {
+			return errors.New("client not in the requested room")
+		}
+		var data struct {
+			Preset string `json:"preset"`
+		}
+		if err := json.Unmarshal(cmd.Message.Data, &data); err != nil {
+			return errors.New("invalid rules preset data")
+		}
+		return room.setRulesPreset(data.Preset)
+
 	case "changeRoomMap":
 		room, err := requireHost(client)
 		if err != nil {

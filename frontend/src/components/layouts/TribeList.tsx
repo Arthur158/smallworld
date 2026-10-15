@@ -4,12 +4,17 @@ import { RootState } from '../../redux/store';
 import { TribeEntry } from '../../types/Board';
 import { sendMessageToBackend } from '../../services/backendService';
 import { useWiki } from '../wiki/WikiContext';
+import { useShortcut } from '../../hooks/useShortcut';
 
 export default function TribeList() {
-  const { inspect } = useWiki();
+  const { inspect, isOpen, inspectMode } = useWiki();
   const tribes = useSelector((state: RootState) => state.application.availableTribes);
   const selectedStack = useSelector((state: RootState) => state.application.selectedStack);
   const fromBank = useSelector((state: RootState) => state.application.isStackFromBank);
+
+  const { playerIndex, playerNumber, phase, isSpectating, inDisplayRoom } = useSelector((state: RootState) => state.application);
+  const canPickWithShortcut = !isOpen && !inspectMode && !isSpectating && !inDisplayRoom &&
+    playerIndex >= 0 && playerIndex === playerNumber && phase === 'TribeChoice' && !selectedStack;
 
   const handleSelectTribe = (i: number) => {
     if (selectedStack != null && fromBank) {
@@ -18,6 +23,21 @@ export default function TribeList() {
       sendMessageToBackend('tribepick', { pickIndex: i });
     }
   };
+
+  // This component is mounted only while the market is visible. Number keys
+  // choose a tribe; special pieces keep their explicit click-to-target action.
+  const pickWithShortcut = (index: number) => {
+    if (tribes[index]) sendMessageToBackend('tribepick', { pickIndex: index });
+  };
+  useShortcut('1', () => pickWithShortcut(0), canPickWithShortcut);
+  useShortcut('2', () => pickWithShortcut(1), canPickWithShortcut);
+  useShortcut('3', () => pickWithShortcut(2), canPickWithShortcut);
+  useShortcut('4', () => pickWithShortcut(3), canPickWithShortcut);
+  useShortcut('5', () => pickWithShortcut(4), canPickWithShortcut);
+  useShortcut('6', () => pickWithShortcut(5), canPickWithShortcut);
+  useShortcut('7', () => pickWithShortcut(6), canPickWithShortcut);
+  useShortcut('8', () => pickWithShortcut(7), canPickWithShortcut);
+  useShortcut('9', () => pickWithShortcut(8), canPickWithShortcut);
 
   const getTraitImagePath = (trait?: string) =>
     trait && trait.trim() !== ''
@@ -92,8 +112,9 @@ export default function TribeList() {
           {tribes.map((tribe: TribeEntry, i: number) => (
             <li key={i}>
               <button
+                type="button"
                 aria-label={`${tribe.trait} ${tribe.race}`}
-                title={`${tribe.trait} ${tribe.race} — Ctrl-click or use Inspect mode for rules`}
+                data-tooltip={`${tribe.trait} ${tribe.race} · Click or Enter/Space: ${selectedStack && fromBank ? 'apply selected piece' : 'choose tribe'}${canPickWithShortcut && i < 9 ? ` · ${i + 1}: choose` : ''} · Ctrl/Cmd-click: rules`}
                 onClick={(event) => {
                   if (inspect(event, { kind: 'tribe', tribe })) return;
                   handleSelectTribe(i);

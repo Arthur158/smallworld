@@ -5,7 +5,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -391,6 +393,57 @@ func generatedMapSettingsForPlayerCount(playerCount int) MapGeneratorSettings {
 	return settings
 }
 
+// variedGeneratedMapSettings varies water, placement and scenery while keeping
+// the existing border style, per-player total region count, land-biome weights
+// and feature supplies. Fixed final counts are opt-in so AI generator callers
+// retain their existing map distribution and seeded outputs.
+func variedGeneratedMapSettings(playerCount int, seed string) MapGeneratorSettings {
+	settings := generatedMapSettingsForPlayerCount(playerCount)
+	hash := fnv.New64a()
+	_, _ = hash.Write([]byte(seed))
+	rng := rand.New(rand.NewSource(int64(hash.Sum64())))
+	settings["seed"] = seed
+	settings["preserveRegionCount"] = true
+	settings["spread"] = rng.Intn(36)
+	features := settings["featureSettings"].(map[string]any)
+	for _, feature := range []string{"magic", "mine", "cave"} {
+		features[feature].(map[string]any)["spread"] = 5 + rng.Intn(36)
+	}
+	// Percent changes are relative to each player-count preset.
+	vary := func(value any, percent int) int {
+		base := value.(int)
+		return (base*(100-percent+rng.Intn(2*percent+1)) + 50) / 100
+	}
+	water := settings["waterSettings"].(map[string]any)
+	water["centerLakeSize"] = vary(water["centerLakeSize"], 10)
+	water["seaSize"] = vary(water["seaSize"], 15)
+	corners := []string{"NW", "NE", "SW", "SE"}
+	rng.Shuffle(len(corners), func(i, j int) { corners[i], corners[j] = corners[j], corners[i] })
+	seaCount := 1 + rng.Intn(3)
+	selectedCorners := settings["seaCorners"].(map[string]any)
+	for index, corner := range corners {
+		selectedCorners[corner] = index < seaCount
+	}
+	scenery, ok := settings["scenerySettings"].(map[string]any)
+	if !ok {
+		scenery = map[string]any{"forestTreeSize": 100, "mountainObjectSize": 100}
+		settings["scenerySettings"] = scenery
+	}
+	for _, name := range []string{"forestTreeSize", "mountainObjectSize"} {
+		// Match the API's existing maximum for the old 260 mountain preset.
+		base := scenery[name]
+		if name == "mountainObjectSize" && base.(int) > 240 {
+			base = 240
+		}
+		value := vary(base, 8)
+		if name == "mountainObjectSize" && value > 240 {
+			value = 240
+		}
+		scenery[name] = value
+	}
+	return settings
+}
+
 func requestGeneratedMap(settings MapGeneratorSettings) (*mapGeneratorResponse, error) {
 	body, err := json.Marshal(settings)
 	if err != nil {
@@ -499,8 +552,7 @@ func convertGeneratedTiles(resp *mapGeneratorResponse) ([]gamestate.RuntimeTileS
 func GenerateRuntimeMapForPlayerCount(playerCount int) (Map, error) {
 	mapName := "generated-" + uuid.NewString()
 
-	settings := generatedMapSettingsForPlayerCount(playerCount)
-	settings["seed"] = mapName
+	settings := variedGeneratedMapSettings(playerCount, mapName)
 
 	resp, err := requestGeneratedMap(settings)
 	if err != nil {
@@ -512,6 +564,8 @@ func GenerateRuntimeMapForPlayerCount(playerCount int) (Map, error) {
 		return Map{}, err
 	}
 
+	lostTribeTileIDs := generatedLostTribeTileIDs(specs, mapName)
+	markGeneratedLostTribes(specs, lostTribeTileIDs)
 	gamestate.RegisterRuntimeMap(mapName, specs)
 
 	generatedMap := Map{
@@ -522,12 +576,13 @@ func GenerateRuntimeMapForPlayerCount(playerCount int) (Map, error) {
 	}
 
 	StoreGeneratedMapVisuals(GeneratedMapVisuals{
-		MapName:     mapName,
-		ImageBase64: resp.ImageBase64,
-		Graphics:    resp.Metadata.Graphics,
-		Settings:    resp.Settings,
-		ServerTiles: resp.Metadata.Server.Tiles,
-		Offset:      0.808,
+		MapName:          mapName,
+		ImageBase64:      resp.ImageBase64,
+		Graphics:         resp.Metadata.Graphics,
+		Settings:         resp.Settings,
+		ServerTiles:      resp.Metadata.Server.Tiles,
+		LostTribeTileIDs: lostTribeTileIDs,
+		Offset:           0.808,
 	})
 
 	return generatedMap, nil

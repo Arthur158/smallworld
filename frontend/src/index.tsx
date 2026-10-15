@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { Slide, ToastContainer } from 'react-toastify';
 import './index.css';
+import TooltipProvider from './components/help/TooltipProvider';
 import Router from './routes/Router';
 import { WikiProvider } from './components/wiki/WikiContext';
 import { persistor, store } from './redux/store';
@@ -17,7 +18,7 @@ root.render(
     <I18nextProvider i18n={i18n}>
       <PersistGate loading={null} persistor={persistor}>
         <BrowserRouter>
-          <WikiProvider><Router /></WikiProvider>
+          <TooltipProvider><WikiProvider><Router /></WikiProvider></TooltipProvider>
           <ToastContainer
             position="bottom-center"
             autoClose={3000}

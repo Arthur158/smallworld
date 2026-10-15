@@ -2,13 +2,16 @@ import WikiToolbar from '../components/wiki/WikiToolbar';
 // src/pages/LobbyPage.tsx
 
 import React, { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { RootState } from '../redux/store';
 import { useNavigate } from 'react-router-dom';
 import { getAuthConfig, sendMessageToBackend } from '../services/backendService';
 import { reset, clearError } from '../redux/slices/applicationSlice';
 import { Room, SaveGameInfo } from '../types/Board';
 import RoomBotControls, { BotModelSelect } from '../components/RoomBotControls';
+import { useShortcut } from '../hooks/useShortcut';
+
+const mapLabel = (name: string) => name === 'generatedmap' ? 'Generated map · random layout' : name === 'underground2players' ? 'Underground · 2 players' : name;
 
 export default function LobbyPage() {
   const navigate = useNavigate();
@@ -38,27 +41,10 @@ export default function LobbyPage() {
     saveSelectionId: state.application.saveSelectionId,
     mapChoices: state.application.mapChoices,
     playerStatuses: state.application.playerStatuses,
-  }));
+  }), shallowEqual);
 
   const [roomName, setRoomName] = useState('');
   const [activeTab, setActiveTab] = useState<'saves' | 'dlc'>('saves');
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      const activeElement = document.activeElement as HTMLElement;
-      if (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA") {
-        return;
-      }
-      if (event.key.toLowerCase() === "s") {
-        setActiveTab((prev) => (prev === "saves" ? "dlc" : "saves"));
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, []);
 
   let currentRoom: Room | null = null;
   if (rooms) {
@@ -85,24 +71,6 @@ export default function LobbyPage() {
       window.removeEventListener('beforeunload', handlePageRefresh);
     };
   }, [dispatch]);
-
-  // Keyboard shortcut for start game: press 'p'
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) return;
-      if (event.key.toLowerCase() === 'p' && currentRoom?.creator === username) {
-        handleStartGame();
-      }
-      if (event.key.toLowerCase() === 'c' && currentRoom?.creator === username) {
-        dispatch(clearError());
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [currentRoom, username]);
 
   // Create / Join / Start / Leave handlers
   const handleCreateRoom = () => {
@@ -152,7 +120,7 @@ export default function LobbyPage() {
   };
 
   const handleMapChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    if (!currentRoom) return;
+    if (!currentRoom || !event.target.value) return;
     const newMap = event.target.value;
     sendMessageToBackend('changeRoomMap', { roomId: currentRoom.id, newMap });
   };
@@ -183,6 +151,12 @@ export default function LobbyPage() {
   };
 
   const userInRoom = !!currentRoom;
+  const isWaitingHost = !!currentRoom && currentRoom.creator === username && !currentRoom.inProgress;
+  useShortcut('s', () => setActiveTab(previous => previous === 'saves' ? 'dlc' : 'saves'));
+  useShortcut('p', handleStartGame, isWaitingHost);
+  useShortcut('v', handleEnterDisplayRoom, activeTab === 'saves' && !!username.trim());
+  useShortcut('Shift+L', handleLeaveRoom, userInRoom);
+  useShortcut('c', () => dispatch(clearError()), !!error);
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#F5F5DC] font-serif text-[#5F4B32] relative">
@@ -203,7 +177,7 @@ export default function LobbyPage() {
             <div className="mb-6 flex items-center justify-between">
               <span className="text-lg font-semibold text-white">Logged in as: {username}</span>
               <button
-                onClick={handleLogout}
+                type="button" onClick={handleLogout} data-tooltip="Log out of Small World"
                 className="bg-red-600 hover:bg-red-700 text-white py-1 px-4 rounded shadow-md transition-colors"
               >
                 Log Out
@@ -217,9 +191,9 @@ export default function LobbyPage() {
     <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
       <h2 className="text-xl font-bold mb-4 underline">Create a Room</h2>
       <div className="mb-4">
-        <label className="block font-semibold mb-1">Room Name:</label>
+        <label htmlFor="new-room-name" className="block font-semibold mb-1">Room Name:</label>
         <input
-          type="text"
+          id="new-room-name" type="text"
           className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#8B4513]"
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
@@ -227,7 +201,7 @@ export default function LobbyPage() {
       </div>
       <button
         type="button"
-        onClick={handleCreateRoom}
+        onClick={handleCreateRoom} data-tooltip="Create a new room"
         className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 rounded transition-colors shadow-md"
       >
         Create Room
@@ -253,14 +227,14 @@ export default function LobbyPage() {
               <div className="flex space-x-2">
                 <button
                   type="button"
-                  onClick={() => handleSpectateRoom(rm.id)}
+                  onClick={() => handleSpectateRoom(rm.id)} data-tooltip={`Watch ${rm.name} as a spectator`}
                   className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
                 >
                   Spectate
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleJoinRoom(rm.id)}
+                  onClick={() => handleJoinRoom(rm.id)} data-tooltip={`Join ${rm.name} as a player`}
                   className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded transition-colors"
                 >
                   Join
@@ -291,7 +265,7 @@ export default function LobbyPage() {
               <div className="flex space-x-2">
                 <button
                   type="button"
-                  onClick={() => handleSpectateRoom(rm.id)}
+                  onClick={() => handleSpectateRoom(rm.id)} data-tooltip={`Watch ${rm.name} as a spectator`}
                   className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded transition-colors"
                 >
                   Spectate
@@ -310,16 +284,18 @@ export default function LobbyPage() {
               <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
                 <h2 className="text-xl font-bold mb-4 underline">Room: {currentRoom.name}</h2>
                 <div className="mb-4">
-                  <p className="font-semibold">Selected Map: {currentRoom?.mapName}</p>
+                  <p className="font-semibold">Selected Map: {mapLabel(currentRoom.mapName)}</p>
                 </div>
                 {currentRoom.creator === username && mapChoices && mapChoices.length > 0 && (
                   <div className="mb-4">
-                    <label className="font-semibold mr-2">Choose Map:</label>
-                    <select onChange={handleMapChange} className="border p-2 rounded focus:outline-none">
+                    <label htmlFor="lobby-room-map" className="font-semibold mr-2">Choose Map:</label>
+                    <select id="lobby-room-map" value={currentRoom.mapName} onChange={handleMapChange}
+                      data-tooltip="Choose the room's map; generated maps get a fresh layout when the game starts"
+                      className="border p-2 rounded focus:outline-none">
                       <option value="">-- Select a Map --</option>
                       {mapChoices.map((map) => (
                         <option key={map} value={map}>
-                          {map}
+                          {mapLabel(map)}
                         </option>
                       ))}
                     </select>
@@ -355,19 +331,25 @@ export default function LobbyPage() {
                           <div className="flex flex-wrap gap-2">
                             <BotModelSelect room={currentRoom} username={p} />
                             <button
-                              onClick={() => handleMoveUp(p)}
+                              type="button" onClick={() => handleMoveUp(p)}
+                              aria-label={`Move ${currentRoom?.bots?.[p]?.name ?? p} up`}
+                              data-tooltip={`Move ${currentRoom?.bots?.[p]?.name ?? p} up in turn order`}
                               className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded"
                             >
                               ↑
                             </button>
                             <button
-                              onClick={() => handleMoveDown(p)}
+                              type="button" onClick={() => handleMoveDown(p)}
+                              aria-label={`Move ${currentRoom?.bots?.[p]?.name ?? p} down`}
+                              data-tooltip={`Move ${currentRoom?.bots?.[p]?.name ?? p} down in turn order`}
                               className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-1 px-3 rounded"
                             >
                               ↓
                             </button>
                             <button
-                              onClick={() => handleKickPlayer(p)}
+                              type="button" onClick={() => handleKickPlayer(p)}
+                              aria-label={`Remove ${currentRoom?.bots?.[p]?.name ?? p} from room`}
+                              data-tooltip={`Remove ${currentRoom?.bots?.[p]?.name ?? p} from this room`}
                               className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded"
                             >
                               ✕
@@ -382,7 +364,7 @@ export default function LobbyPage() {
                   {currentRoom.creator === username && (
                     <button
                       type="button"
-                      onClick={handleStartGame}
+                      onClick={handleStartGame} aria-keyshortcuts="P" data-tooltip="Start the game with the current map and rules · P"
                       className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 px-4 rounded transition-colors shadow-md"
                     >
                       {currentRoom.players.includes(currentRoom.creator) ? 'Start Game' : 'Start & Watch'}
@@ -390,7 +372,7 @@ export default function LobbyPage() {
                   )}
                   <button
                     type="button"
-                    onClick={handleLeaveRoom}
+                    onClick={handleLeaveRoom} aria-keyshortcuts="Shift+L" data-tooltip="Leave this room · Shift + L"
                     className="bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 px-4 rounded transition-colors shadow-md"
                   >
                     Leave Room
@@ -407,7 +389,8 @@ export default function LobbyPage() {
             <div className="text-2xl font-bold underline">Menu</div>
             <div className="space-x-4">
               <button
-                onClick={() => setActiveTab('saves')}
+                type="button" onClick={() => setActiveTab('saves')} aria-pressed={activeTab === 'saves'}
+                aria-keyshortcuts="S" data-tooltip="Show saved games · S switches tabs"
                 className={`py-1 px-3 rounded ${
                   activeTab === 'saves'
                     ? 'bg-[#8B4513] text-white'
@@ -417,14 +400,15 @@ export default function LobbyPage() {
                 Saves
               </button>
               <button
-                onClick={() => setActiveTab('dlc')}
+                type="button" onClick={() => setActiveTab('dlc')} aria-pressed={activeTab === 'dlc'}
+                aria-keyshortcuts="S" data-tooltip="Choose presets, races and traits · S switches tabs"
                 className={`py-1 px-3 rounded ${
                   activeTab === 'dlc'
                     ? 'bg-[#8B4513] text-white'
                     : 'bg-white text-[#5F4B32] border border-[#8B4513]'
                 }`}
               >
-                Races&Traits
+                Races & Traits
               </button>
             </div>
           </div>
@@ -437,7 +421,7 @@ export default function LobbyPage() {
               <>
                 <button
                   type="button"
-                  onClick={handleEnterDisplayRoom}
+                  onClick={handleEnterDisplayRoom} aria-keyshortcuts="V" data-tooltip="Open the map and saved-game viewer · V"
                   className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 rounded transition-colors shadow-md mb-6"
                 >
                   Enter Display Room
@@ -449,23 +433,26 @@ export default function LobbyPage() {
                         {saveGames.map((gameSave) => (
                           <li
                             key={gameSave.saveId}
-                            className={`relative flex items-center p-4 cursor-pointer bg-white rounded border-2 transition-colors ${
+                            className={`flex items-center gap-2 p-4 bg-white rounded border-2 transition-colors ${
                               gameSave.saveId === saveSelectionId
                                 ? 'border-[#8B4513]'
                                 : 'border-transparent'
                             }`}
-                            onClick={() => handleGameIdClick(gameSave.saveId)}
                           >
-                            <div className="flex-1">
-                              <div className="font-bold">ID: {gameSave.saveId}</div>
-                              <div className="text-sm text-gray-600">{gameSave.summary}</div>
-                            </div>
-                            <button
+                            <button type="button" className="flex-1 min-w-0 text-left"
+                              aria-label={`Load saved game ${gameSave.saveId}`}
+                              data-tooltip="Load this saved game into the room · Enter / Space"
+                              onClick={() => handleGameIdClick(gameSave.saveId)}>
+                              <span className="block font-bold">ID: {gameSave.saveId}</span>
+                              <span className="block text-sm text-gray-600">{gameSave.summary}</span>
+                            </button>
+                            <button type="button" aria-label={`Delete saved game ${gameSave.saveId}`}
+                              data-tooltip="Delete this saved game"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteGame(gameSave.saveId);
                               }}
-                              className="absolute right-4 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded transition-colors"
+                              className="shrink-0 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded transition-colors"
                             >
                               Delete
                             </button>
@@ -485,7 +472,7 @@ export default function LobbyPage() {
             {activeTab === 'dlc' && (
               <>
                 {userInRoom && currentRoom && currentRoom.creator === username ? (
-                  <ExtraChoices />
+                  <ExtraChoices room={currentRoom} saveSelectionId={saveSelectionId} />
                 ) : (
                   <p className="text-gray-600">You are not the owner</p>
                 )}
@@ -497,19 +484,37 @@ export default function LobbyPage() {
 
       {/* Error Banner at the Bottom */}
       {error && (
-        <div className="fixed bottom-0 left-0 w-full bg-red-500 text-white text-center py-2 z-50">
-          {error}
+        <div role="alert" className="fixed bottom-0 left-0 w-full bg-red-500 text-white py-2 px-4 z-50 flex items-center justify-center gap-3">
+          <span>{error}</span>
+          <button type="button" onClick={() => dispatch(clearError())} aria-label="Dismiss error"
+            aria-keyshortcuts="C" data-tooltip="Dismiss this message · C"
+            className="shrink-0 rounded border border-white/70 px-2 py-1 text-sm hover:bg-white/15">
+            Dismiss <kbd className="ml-1 text-xs">C</kbd>
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-function ExtraChoices() {
+function ExtraChoices({ room, saveSelectionId }: { room: Room; saveSelectionId: number }) {
   const { extensionChoices, globalToggle } = useSelector((state: RootState) => ({
     extensionChoices: state.application.extensionChoices,
     globalToggle: state.application.globalToggle,
-  }));
+  }), shallowEqual);
+
+  const matchesPreset = (preset: 'standard' | 'underground') => extensionChoices.length > 0 &&
+    extensionChoices.every(extension => {
+      const underground = ['Underground', 'Powers'].includes(extension.extensionName);
+      const checked = preset === 'underground' ? underground : !underground;
+      return extension.isChecked === checked &&
+        [...extension.raceChoices, ...extension.traitChoices].every(choice => choice.isChecked === checked);
+    });
+  const activePreset = room.mapName === 'generatedmap' && matchesPreset('standard') ? 'standard'
+    : room.mapName === 'underground2players' && matchesPreset('underground') ? 'underground' : null;
+  const applyPreset = (preset: 'standard' | 'underground') => sendMessageToBackend('setRulesPreset', { preset });
+  useShortcut('n', () => applyPreset('standard'), !room.inProgress);
+  useShortcut('u', () => applyPreset('underground'), !room.inProgress);
 
   const handleToggleAll = (checked: boolean) => {
     sendMessageToBackend('toggleAll', { checked });
@@ -548,11 +553,35 @@ function ExtraChoices() {
 
   return (
     <div className="mt-4 p-4 bg-white rounded border border-[#8B4513]">
+      <section aria-label="Game preset" className="mb-5 rounded border border-[#8B4513]/40 bg-[#FDF5E6] p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h3 className="font-semibold">Game preset</h3>
+          <span className="text-xs" role="status">{activePreset === 'standard' ? 'Standard selected' : activePreset === 'underground' ? 'Underground selected' : 'Custom setup'}</span>
+        </div>
+        <div className="flex rounded border border-[#8B4513] overflow-hidden" role="group" aria-label="Choose a game preset">
+          <button type="button" disabled={room.inProgress} aria-pressed={activePreset === 'standard'}
+            aria-keyshortcuts="N" data-tooltip="Select Standard expansions and a generated map · N"
+            onClick={() => applyPreset('standard')}
+            className={`flex-1 px-3 py-2 text-sm disabled:opacity-50 ${activePreset === 'standard' ? 'bg-[#8B4513] text-white' : 'hover:bg-[#EED5B7]'}`}>
+            Standard
+          </button>
+          <button type="button" disabled={room.inProgress} aria-pressed={activePreset === 'underground'}
+            aria-keyshortcuts="U" data-tooltip="Select Underground, relics and places, and the Underground map · U"
+            onClick={() => applyPreset('underground')}
+            className={`flex-1 border-l border-[#8B4513] px-3 py-2 text-sm disabled:opacity-50 ${activePreset === 'underground' ? 'bg-[#8B4513] text-white' : 'hover:bg-[#EED5B7]'}`}>
+            Underground
+          </button>
+        </div>
+        <p className="text-xs leading-relaxed mt-3">Standard uses a random map and all expansions except Underground and Powers. Underground uses its two-player map, races, traits, relics and places.</p>
+        <p className="text-xs mt-2">You can customize the selections below after choosing a preset.</p>
+        {Object.keys(room.bots ?? {}).length > 0 && <p className="text-xs mt-2">These presets include rules bots may not support. Use bot rules before starting a bot game.</p>}
+        {saveSelectionId >= 0 && <p className="text-xs font-semibold mt-2">Choosing a preset clears the selected save and sets up a new game.</p>}
+      </section>
       <div className="mb-4">
-        <label className="flex items-center space-x-2">
+        <label className="flex items-center space-x-2" data-tooltip="Select or exclude every expansion, race and trait · Space toggles the focused checkbox">
           <input
             type="checkbox"
-            checked={globalToggle}
+            checked={globalToggle} data-tooltip="Select or exclude every expansion, race and trait · Space"
             onChange={(e) => handleToggleAll(e.target.checked)}
             className="appearance-none w-5 h-5 border-2 border-[#8B4513] rounded-md checked:bg-[#8B4513] checked:border-[#5F4B32] focus:outline-none focus:ring-2 focus:ring-[#A0522D]"
           />
@@ -563,10 +592,10 @@ function ExtraChoices() {
       <div className="space-y-6">
         {extensionChoices.map((ext, index) => (
           <div key={index} className="p-4 border rounded border-[#8B4513]">
-            <label className="flex items-center space-x-2 mb-4">
+            <label className="flex items-center space-x-2 mb-4" data-tooltip={`Select or exclude all choices in ${ext.extensionName} · Space toggles the focused checkbox`}>
               <input
                 type="checkbox"
-                checked={ext.isChecked}
+                checked={ext.isChecked} data-tooltip={`Select or exclude all choices in ${ext.extensionName} · Space`}
                 onChange={(e) =>
                   handleToggleExtension(ext.extensionName, e.target.checked)
                 }
@@ -579,10 +608,10 @@ function ExtraChoices() {
                 <h4 className="font-bold text-md mb-2">Races</h4>
                 <div className="space-y-2">
                   {ext.raceChoices.map((race, rIdx) => (
-                    <label key={rIdx} className="flex items-center space-x-2">
+                    <label key={rIdx} className="flex items-center space-x-2" data-tooltip={`Select or exclude ${race.choice} · Space toggles the focused checkbox`}>
                       <input
                         type="checkbox"
-                        checked={race.isChecked}
+                        checked={race.isChecked} data-tooltip={`Select or exclude ${race.choice} from this game's races · Space`}
                         onChange={(e) =>
                           handleToggleRace(
                             ext.extensionName,
@@ -601,10 +630,10 @@ function ExtraChoices() {
                 <h4 className="font-bold text-md mb-2">Traits</h4>
                 <div className="space-y-2">
                   {ext.traitChoices.map((trait, tIdx) => (
-                    <label key={tIdx} className="flex items-center space-x-2">
+                    <label key={tIdx} className="flex items-center space-x-2" data-tooltip={`Select or exclude ${trait.choice} · Space toggles the focused checkbox`}>
                       <input
                         type="checkbox"
-                        checked={trait.isChecked}
+                        checked={trait.isChecked} data-tooltip={`Select or exclude ${trait.choice} from this game's traits · Space`}
                         onChange={(e) =>
                           handleToggleTrait(
                             ext.extensionName,

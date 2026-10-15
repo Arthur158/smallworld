@@ -16,6 +16,19 @@ The gateway owns WebSocket connections and authentication/session routing. A roo
 
 A worker-side `Client` is only a logical player route (`Username`, `GatewayID`, `ConnectionID`). It contains no WebSocket.
 
+## Generated-map setup
+
+For new generated maps, the backend places one Lost Tribe token on roughly one
+third of surface land regions. It spreads them by land-graph distance, leaves at
+least two thirds of edge regions open, and favors non-mountain regions when
+distances tie. Water, rivers, chasms, and sky islands receive no Lost Tribes.
+
+Initial region IDs are saved with the generated-map metadata. Runtime maps build
+these neutral defenders before powers are initialized; game saves preserve their
+current state after conquest. Older maps without this metadata and AI training
+inputs keep their existing setup and random streams. The map generator only
+provides terrain and artwork.
+
 ## Redis contract
 
 Gateway -> worker uses Redis Streams:
@@ -161,6 +174,10 @@ Build:
 ```bash
 docker build -f Dockerfile.worker -t your-game-roomworker:dev .
 ```
+
+This builds the base worker without trained models. If you deploy exported bot
+models, apply the model layer after every rebuild using the [bot deployment
+guide](../ai/README.md), passing this image tag as `WORKER_IMAGE`.
 
 Run one worker:
 

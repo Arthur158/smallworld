@@ -1,8 +1,10 @@
-import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useWiki } from '../wiki/WikiContext';
+import React, { useState } from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import GameFinishedPopup from './GameFinishedPopup';
+import ShortcutsDialog from '../help/ShortcutsDialog';
 import { sendMessageToBackend } from '../../services/backendService';
 import applicationReducer, { websocketMessageReceived } from '../../redux/slices/applicationSlice';
 import { Room } from '../../types/Board';
@@ -20,7 +22,7 @@ const room: Room = {
   botPlayback: { paused: false, speed: 1, canGoBack: true },
 };
 
-function renderPopup(overrides: Partial<ApplicationState> = {}) {
+function renderPopup(overrides: Partial<ApplicationState> = {}, extra: React.ReactNode = null) {
   const state: ApplicationState = {
     ...applicationReducer(undefined, { type: 'test/initialState' }),
     phase: 'GameFinished', name: 'host', roomid: room.id,
@@ -29,11 +31,15 @@ function renderPopup(overrides: Partial<ApplicationState> = {}) {
     ...overrides,
   };
   const store = configureStore({ reducer: { application: applicationReducer }, preloadedState: { application: state } });
-  render(<Provider store={store}><GameFinishedPopup /></Provider>);
+  render(<Provider store={store}><GameFinishedPopup />{extra}</Provider>);
   return store;
 }
 
-beforeEach(() => jest.clearAllMocks());
+jest.mock('../wiki/WikiContext', () => ({ useWiki: jest.fn() }));
+beforeEach(() => {
+  jest.clearAllMocks();
+  (useWiki as jest.Mock).mockReturnValue({ inspectMode: false, isOpen: false });
+});
 
 test('the host can rewind a finished bot game without pausing first', () => {
   const store = renderPopup();
@@ -73,4 +79,93 @@ test.each([
 test('the results popup remains hidden before the game finishes', () => {
   renderPopup({ phase: 'Conquest' });
   expect(screen.queryByRole('heading', { name: 'Game Results' })).toBeNull();
+});
+
+test('the results dialog owns rewind and leave shortcuts and keeps focus inside', () => {
+  renderPopup();
+  const previous = screen.getByRole('button', { name: 'Previous move' });
+  const leave = screen.getByRole('button', { name: 'Leave Game' });
+  expect(document.activeElement).toBe(previous);
+  fireEvent.keyDown(previous, { key: 'ArrowLeft' });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('previousBotMove', {});
+  fireEvent.keyDown(previous, { key: 'Tab', shiftKey: true });
+  expect(document.activeElement).toBe(leave);
+  fireEvent.keyDown(leave, { key: 'Tab' });
+  expect(document.activeElement).toBe(previous);
+  fireEvent.keyDown(previous, { key: 'L', shiftKey: true });
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('leaveroom', {});
+  expect(sendMessageToBackend).toHaveBeenCalledTimes(2);
+});
+
+test('results shortcut does not invent a previous action when the button is absent', () => {
+  renderPopup({ name: 'visitor' });
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'ArrowLeft' });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});
+
+test('results ignore repeated, modified and external shortcuts', () => {
+  renderPopup();
+  const dialog = screen.getByRole('dialog');
+  fireEvent.keyDown(dialog, { key: 'ArrowLeft', repeat: true });
+  fireEvent.keyDown(dialog, { key: 'ArrowLeft', altKey: true });
+  fireEvent.keyDown(dialog, { key: 'L', shiftKey: true, ctrlKey: true });
+  fireEvent.keyDown(window, { key: 'ArrowLeft' });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});
+
+test('inspection disables results rewind for both mouse and keyboard', () => {
+  (useWiki as jest.Mock).mockReturnValue({ inspectMode: true, isOpen: false });
+  renderPopup();
+  const previous = screen.getByRole('button', { name: 'Previous move' });
+  expect((previous as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(previous);
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'ArrowLeft' });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});
+
+
+function GuideHarness() {
+  const [open, setOpen] = useState(false);
+  return <><button type="button" onClick={() => setOpen(true)}>Open controls</button>
+    {open && <ShortcutsDialog onClose={() => setOpen(false)} />}</>;
+}
+
+test('finishing under the guide preserves modal focus and blocks background results actions', async () => {
+  const store = renderPopup({ phase: 'Conquest' }, <GuideHarness />);
+  const opener = screen.getByRole('button', { name: 'Open controls' });
+  opener.focus();
+  fireEvent.click(opener);
+  const guide = screen.getByRole('dialog', { name: 'Controls & shortcuts' });
+  expect(document.activeElement).toBe(guide);
+
+  act(() => store.dispatch(websocketMessageReceived(JSON.stringify({ type: 'gamefinished', data: [42, 39] }))));
+  const results = screen.getByRole('dialog', { name: 'Game Results' });
+  const previous = screen.getByRole('button', { name: 'Previous move' });
+  const leave = screen.getByRole('button', { name: 'Leave Game' });
+  expect(document.activeElement).toBe(guide);
+  fireEvent.keyDown(results, { key: 'ArrowLeft' });
+  fireEvent.keyDown(results, { key: 'L', shiftKey: true });
+  fireEvent.click(previous);
+  fireEvent.click(leave);
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+
+  fireEvent.keyDown(guide, { key: 'Escape' });
+  await waitFor(() => expect(document.activeElement).toBe(previous));
+  expect(screen.queryByRole('dialog', { name: 'Controls & shortcuts' })).toBeNull();
+  fireEvent.keyDown(previous, { key: 'ArrowLeft' });
+  expect(sendMessageToBackend).toHaveBeenCalledTimes(1);
+  expect(sendMessageToBackend).toHaveBeenCalledWith('previousBotMove', {});
+});
+
+test('closing another modal preserves its restored results-button focus', async () => {
+  renderPopup({}, <GuideHarness />);
+  const leave = screen.getByRole('button', { name: 'Leave Game' });
+  leave.focus();
+  fireEvent.click(screen.getByRole('button', { name: 'Open controls' }));
+  await act(async () => {});
+  expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Controls & shortcuts' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close shortcuts' }));
+  await act(async () => {});
+  expect(document.activeElement).toBe(leave);
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
 });

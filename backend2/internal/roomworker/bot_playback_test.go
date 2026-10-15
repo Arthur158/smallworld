@@ -185,6 +185,7 @@ func TestBotPlaybackValidationAndDelay(t *testing.T) {
 		}
 	}
 	w.cfg.BotMoveDelay = 100 * time.Millisecond
+	room.botSpeed = 3 // The preceding map iteration has no guaranteed final speed.
 	if got := w.botMoveDelay(room); got != 100*time.Millisecond {
 		t.Fatalf("speed bypassed minimum delay: %v", got)
 	}

@@ -1,5 +1,5 @@
 import WikiToolbar from '../components/wiki/WikiToolbar';
-import { useWiki } from '../components/wiki/WikiContext';
+import { useShortcut } from '../hooks/useShortcut';
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../redux/store';
@@ -8,20 +8,18 @@ import { reset, clearError } from '../redux/slices/applicationSlice';
 
 import TribeList from '../components/layouts/TribeList';
 import Map from '../components/misc/Map';
-import PlayerInfo from '../components/layouts/PlayerInfo';
 import OpponentsListAll from '../components/layouts/OpponentsListAll';
 import TurnInfoBlockDisplay from '../components/layouts/TurnInfoBlockDisplay';
-import Chat from '../components/inputs/Chat';
 
 export default function DisplayPage() {
-  const { isOpen } = useWiki();
   const dispatch: AppDispatch = useDispatch();
+  const error = useSelector((state: RootState) => state.application.error);
   const saveGames = useSelector((state: RootState) => state.application.saveGames);
   const mapChoices = useSelector((state: RootState) => state.application.mapChoices);
   const saveSelectionId = useSelector((state: RootState) => state.application.saveSelectionId);
   const mapName = useSelector((state: RootState) => state.application.mapName);
 
-  const [showTurnInfo, setShowTurnInfo] = useState(false);
+  const [showPlayers, setShowPlayers] = useState(true);
   // Callback when a saved game is clicked
   const handleMapClick = (mapName: string) => {
     sendMessageToBackend('loadmapdisplay', { mapName: mapName });
@@ -35,26 +33,8 @@ export default function DisplayPage() {
     sendMessageToBackend('deletesave', { saveId: gameId });
   };
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (isOpen || event.ctrlKey || event.metaKey || event.altKey) return;
-      const element = event.target as HTMLElement;
-      if (element.closest?.('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
-      switch (event.key) {
-        case 's':
-          setShowTurnInfo((prev) => !prev);
-          break;
-        case 'c':
-          dispatch(clearError());
-          break;
-      }
-    };
-    window.addEventListener('keydown', handleKeyPress);
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [dispatch, isOpen]);
+  useShortcut('s', () => setShowPlayers(previous => !previous));
+  useShortcut('c', () => dispatch(clearError()), !!error);
 
   // Handle page refresh
   useEffect(() => {
@@ -83,16 +63,19 @@ export default function DisplayPage() {
                   {saveGames.map((gameSave) => (
 <li
   key={gameSave.saveId}
-  className={`flex items-start p-4 cursor-pointer bg-white rounded border-2 transition-colors ${
+  className={`flex items-start p-4 bg-white rounded border-2 transition-colors ${
     gameSave.saveId === saveSelectionId ? 'border-[#8B4513]' : 'border-transparent'
   }`}
-  onClick={() => handleGameIdClick(gameSave.saveId)}
 >
-  <div className="flex-1">
-    <div className="font-bold">Game ID: {gameSave.saveId}</div>
-    <div className="text-sm text-gray-600">{gameSave.summary}</div>
-  </div>
-  <button
+  <button type="button" className="flex-1 min-w-0 text-left"
+    aria-label={`Load saved game ${gameSave.saveId}`}
+    data-tooltip="Load this saved game for inspection · Enter / Space"
+    onClick={() => handleGameIdClick(gameSave.saveId)}>
+    <span className="block font-bold">Game ID: {gameSave.saveId}</span>
+    <span className="block text-sm text-gray-600">{gameSave.summary}</span>
+  </button>
+  <button type="button" aria-label={`Delete saved game ${gameSave.saveId}`}
+    data-tooltip="Delete this saved game"
     onClick={(e) => {
       e.stopPropagation();
       handleDeleteGame(gameSave.saveId);
@@ -114,14 +97,16 @@ export default function DisplayPage() {
                   {mapChoices.map((otherMapName) => (
                     <li
                       key={otherMapName} // correct unique key
-                      className={`relative flex items-center p-4 cursor-pointer bg-white rounded border-2 transition-colors ${
+                      className={`relative bg-white rounded border-2 transition-colors ${
                         mapName === otherMapName ? 'border-[#8B4513]' : 'border-transparent'
                       }`}
-                      onClick={() => handleMapClick(otherMapName)}
                     >
-                      <div className="flex-1">
-                        <div className="font-bold">Map name: {otherMapName}</div>
-                      </div>
+                      <button type="button" className="w-full p-4 text-left"
+                        aria-label={`Load map ${otherMapName}`}
+                        data-tooltip="Load this map for inspection · Enter / Space"
+                        onClick={() => handleMapClick(otherMapName)}>
+                        <span className="font-bold">Map name: {otherMapName}</span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -140,13 +125,16 @@ export default function DisplayPage() {
             {/* Chat below (scrollable if large) */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
               <button
-                onClick={() => setShowTurnInfo(!showTurnInfo)}
+                type="button"
+                onClick={() => setShowPlayers(previous => !previous)}
+                aria-keyshortcuts="S"
+                data-tooltip={showPlayers ? 'Show available race and trait choices · S' : 'Show players and their tribes · S'}
                 className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white font-bold py-1 px-2 rounded mt-2 mb-2"
               >
-                {showTurnInfo ? 'Show Tribe List' : 'Show Turn Info'}
+                {showPlayers ? 'Show Tribes' : 'Show Players'}
               </button>
               <div className="flex-1 overflow-auto min-h-0">
-                {showTurnInfo ? <OpponentsListAll /> : <TribeList />}
+                {showPlayers ? <OpponentsListAll /> : <TribeList />}
               </div>
             </div>
           </div>
@@ -160,6 +148,16 @@ export default function DisplayPage() {
           </div>
         </div>
       </div>
+      {error && (
+        <div role="alert" className="fixed bottom-0 left-0 w-full bg-red-500 text-white py-2 px-4 z-50 flex items-center justify-center gap-3">
+          <span>{error}</span>
+          <button type="button" onClick={() => dispatch(clearError())} aria-label="Dismiss error"
+            aria-keyshortcuts="C" data-tooltip="Dismiss this message · C"
+            className="shrink-0 rounded border border-white/70 px-2 py-1 text-sm hover:bg-white/15">
+            Dismiss <kbd className="ml-1 text-xs">C</kbd>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
