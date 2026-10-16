@@ -12,8 +12,11 @@ import RoomBotControls, { BotModelSelect } from '../components/RoomBotControls';
 import { useShortcut } from '../hooks/useShortcut';
 import GeneratedMapEditor from '../components/GeneratedMapEditor';
 import type { GeneratedMapSettings } from '../types/GeneratedMap';
+import { createRandomRoomName } from '../utility/roomNames';
 
-const mapLabel = (name: string) => name === 'generatedmap' ? 'Generated map · random layout' : name === 'underground2players' ? 'Underground · 2 players' : name;
+const mapLabel = (name: string) => name === 'generatedmap' ? 'Generated map · random layout'
+  : name === 'underground2players' ? 'Underground · 2 players'
+  : /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(name) ? 'Generated map' : name;
 
 export default function LobbyPage() {
   const navigate = useNavigate();
@@ -82,9 +85,9 @@ export default function LobbyPage() {
 
   // Create / Join / Start / Leave handlers
   const handleCreateRoom = () => {
-    if (!roomName.trim() || !username.trim()) return;
+    if (!username.trim()) return;
     sendMessageToBackend('createRoom', {
-      roomName,
+      roomName: roomName.trim() ? roomName : createRandomRoomName(),
       maxPlayers: 2,
     });
   };
@@ -162,7 +165,8 @@ export default function LobbyPage() {
   const isWaitingHost = !!currentRoom && currentRoom.creator === username && !currentRoom.inProgress;
   const occupiedPlayers = currentRoom?.players.filter(player => player?.trim()).length ?? 0;
   const canCustomizeMap = isWaitingHost && currentRoom?.mapName === 'generatedmap' && saveSelectionId < 0;
-  const mapSelection = currentRoom?.generatedMapSelection;
+  const mapSelection = currentRoom?.mapName === 'generatedmap' ? currentRoom.generatedMapSelection : undefined;
+  const selectedRegionName = mapSelection?.regionName?.trim();
   const selectedCountChanged = !!mapSelection && mapSelection.playerCount !== Math.max(2, occupiedPlayers);
   const editor = generatedMapEditor?.roomId === currentRoom?.id ? generatedMapEditor : null;
 
@@ -231,6 +235,7 @@ export default function LobbyPage() {
     return () => window.clearTimeout(timeout);
   }, [mapEditorOpen, editor?.requestId, editor?.loading, editor?.selecting, dispatch]);
   useShortcut('m', () => setMapEditorOpen(true), canCustomizeMap);
+  useShortcut('n', handleCreateRoom, !userInRoom && !!username.trim());
   useShortcut('s', () => setActiveTab(previous => previous === 'saves' ? 'dlc' : 'saves'));
   useShortcut('p', handleStartGame, isWaitingHost && !selectedCountChanged);
   useShortcut('v', handleEnterDisplayRoom, activeTab === 'saves' && !!username.trim());
@@ -304,7 +309,7 @@ export default function LobbyPage() {
 {/* Not in room: Create Room and Room List */}
 {!userInRoom && (
   <div className="space-y-8">
-    <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
+    <form onSubmit={event => { event.preventDefault(); handleCreateRoom(); }} className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
       <h2 className="text-xl font-bold mb-4 underline">Create a Room</h2>
       <div className="mb-4">
         <label htmlFor="new-room-name" className="block font-semibold mb-1">Room Name:</label>
@@ -313,16 +318,18 @@ export default function LobbyPage() {
           className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#8B4513]"
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
+          placeholder="Leave blank for a random room name"
+          data-tooltip="Name your room, or leave blank for a random name like The Wobbly Tavern"
         />
       </div>
       <button
-        type="button"
-        onClick={handleCreateRoom} data-tooltip="Create a new room"
+        type="submit" aria-keyshortcuts="N"
+        data-tooltip="Create a room. Leave its name blank for a random name. Shortcut: N, or Enter from the name field."
         className="w-full bg-[#8B4513] hover:bg-[#A0522D] text-white py-2 rounded transition-colors shadow-md"
       >
         Create Room
       </button>
-    </div>
+    </form>
 
     {/* Show Available Rooms ONLY if there are rooms */}
     {rooms?.length > 0 && (
@@ -400,9 +407,9 @@ export default function LobbyPage() {
               <div className="p-6 bg-white rounded-lg shadow-md border border-[#5F4B32]">
                 <h2 className="text-xl font-bold mb-4 underline">Room: {currentRoom.name}</h2>
                 <div className="mb-4">
-                  <p className="font-semibold">Selected Map: {currentRoom.mapName === 'generatedmap' && mapSelection ? 'Generated map · custom preview selected' : mapLabel(currentRoom.mapName)}</p>
+                  <p className="font-semibold">Selected Map: {currentRoom.mapName === 'generatedmap' && mapSelection ? selectedRegionName || 'Generated map · custom preview selected' : mapLabel(currentRoom.mapName)}</p>
                   {currentRoom.mapName === 'generatedmap' && <p className="mt-1 text-sm text-[#78674f]">
-                    {mapSelection ? `${mapSelection.playerCount} players · Seed: ${mapSelection.seed}` : 'A fresh, balanced layout is generated when the game starts.'}
+                    {mapSelection ? `${selectedRegionName ? 'Custom preview selected · ' : ''}${mapSelection.playerCount} players · Seed: ${mapSelection.seed}` : 'A fresh, balanced layout is generated when the game starts.'}
                   </p>}
                   {selectedCountChanged && <p role="status" className="mt-2 text-sm text-amber-800">The player count changed. Open Customize map and generate a new preview, or use automatic generation.</p>}
                   {canCustomizeMap && <button ref={customizeMapButton} type="button" onClick={() => setMapEditorOpen(true)} aria-keyshortcuts="M"
@@ -440,6 +447,8 @@ export default function LobbyPage() {
                         <span className="font-semibold">{idx + 1}: Open seat</span>
                       </div>
                     );
+                    const botSeat = currentRoom?.bots?.[p];
+                    const modelName = currentRoom?.botModels?.find(model => model.id === botSeat?.modelId)?.name ?? 'Bot';
                     return (
                       <div
                         key={p}
@@ -447,7 +456,7 @@ export default function LobbyPage() {
                       >
                         <span className="font-semibold">
                           {idx + 1}: {currentRoom?.bots?.[p]?.name ?? p}
-                          {currentRoom?.bots?.[p] && <span className="text-sm font-normal"> · {currentRoom.botModels?.find(model => model.id === currentRoom?.bots?.[p]?.modelId)?.name ?? "Bot"}</span>}
+                          {botSeat && !botSeat.name.includes(modelName) && <span className="text-sm font-normal"> · {modelName}</span>}
                           {(playerStatuses?.[idx] ?? "") && playerStatuses[idx].trim() !== '' && (
                             <span className="text-sm font-normal"> | {playerStatuses?.[idx] ?? ""}</span>
                           )}

@@ -40,11 +40,11 @@ function open(receive: ReturnType<typeof setup>['receive'], selectedPreviewId?: 
   receive('generatedmapsettings', { roomId: room.id, requestId: request('getGeneratedMapSettings').requestId,
     playerCount: 2, settings, selectedPreviewId });
 }
-function generate(receive: ReturnType<typeof setup>['receive'], previewId = 'preview-one') {
+function generate(receive: ReturnType<typeof setup>['receive'], previewId = 'preview-one', metadata: { regionName?: string; regionNameVersion?: number } = {}) {
   fireEvent.click(screen.getByRole('button', { name: 'Generate preview' }));
   const req = request('previewGeneratedMap');
   receive('generatedmappreview', { roomId: room.id, requestId: req.requestId, previewId, playerCount: 2,
-    settings: req.settings, imageBase64: 'aW1hZ2U=' });
+    settings: req.settings, imageBase64: 'aW1hZ2U=', ...metadata });
 }
 beforeEach(() => {
   jest.clearAllMocks(); send.mockReturnValue(true);
@@ -121,4 +121,71 @@ test('editor blocks lobby shortcuts and player-count changes prevent starting a 
   fireEvent.keyDown(window, { key: 'p' }); expect(request('startGame')).toBeUndefined();
   receive('generatedmapsettings', { roomId: room.id, requestId: request('getGeneratedMapSettings').requestId, playerCount: 2, settings });
   expect(screen.getByRole('dialog')).toBeTruthy();
+});
+
+
+test('continent names flow from preview to acknowledged selection without exposing internal map IDs', () => {
+  const { store, receive } = setup(); open(receive);
+  const previewId = 'a6f578a7-731d-4fbd-835f-5034a8ef0f61';
+  generate(receive, previewId, { regionName: 'The Amber Reach', regionNameVersion: 1 });
+  expect(screen.getByRole('heading', { name: 'Continent: The Amber Reach' })).toBeTruthy();
+  expect(screen.getByRole('img', { name: 'The Amber Reach — generated map preview for 2 players' })).toBeTruthy();
+  expect(store.getState().application.generatedMapEditor?.preview).toMatchObject({
+    id: previewId, regionName: 'The Amber Reach', regionNameVersion: 1,
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Select this map' }));
+  receive('generatedmapselection', { roomId: room.id, previewId, playerCount: 2, seed: settings.seed,
+    regionName: 'The Amber Reach', regionNameVersion: 1 });
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(screen.getByText('Selected Map: The Amber Reach')).toBeTruthy();
+  expect(screen.getByText(`Custom preview selected · 2 players · Seed: ${settings.seed}`)).toBeTruthy();
+  expect(store.getState().application.rooms[0].generatedMapSelection).toEqual({
+    previewId, playerCount: 2, seed: settings.seed, regionName: 'The Amber Reach', regionNameVersion: 1,
+  });
+  expect(screen.queryByText(previewId, { exact: false })).toBeNull();
+  receive('generatedmapselection', { roomId: room.id });
+  expect(screen.getByText('Selected Map: Generated map · random layout')).toBeTruthy();
+  expect(screen.queryByText('Selected Map: The Amber Reach')).toBeNull();
+});
+
+test('reconnected room metadata and the selected preview restore their continent name', () => {
+  const { store, receive } = setup();
+  const selected = { previewId: 'existing-preview', playerCount: 2, seed: settings.seed,
+    regionName: 'Silverfen', regionNameVersion: 2 };
+  receive('roomEntriesUpdate', [{ ...room, generatedMapSelection: selected }]);
+  expect(screen.getByText('Selected Map: Silverfen')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Customize map' }));
+  receive('generatedmapsettings', { roomId: room.id, requestId: request('getGeneratedMapSettings').requestId,
+    playerCount: 2, settings, selectedPreviewId: selected.previewId,
+    preview: { ...selected, settings, imageBase64: 'aW1hZ2U=' } });
+  expect(screen.getByRole('heading', { name: 'Continent: Silverfen' })).toBeTruthy();
+  expect(screen.getByText('Selected for this room')).toBeTruthy();
+  expect(store.getState().application.generatedMapEditor?.preview?.regionNameVersion).toBe(2);
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  receive('roomEntriesUpdate', [{ ...room, mapName: 'map2players', generatedMapSelection: selected }]);
+  expect(screen.getByText('Selected Map: map2players')).toBeTruthy();
+  expect(screen.queryByText('Selected Map: Silverfen')).toBeNull();
+  receive('lobby', {});
+  expect(screen.queryByText('Selected Map: map2players')).toBeNull();
+});
+
+test('older unnamed preview and selection events preserve the generic labels', () => {
+  const { store, receive } = setup(); open(receive);
+  generate(receive, 'older-preview-uuid');
+  expect(screen.getByText('Preview', { exact: true })).toBeTruthy();
+  expect(screen.getByRole('img', { name: 'Generated map preview for 2 players' })).toBeTruthy();
+  expect(screen.queryByRole('heading', { name: /Continent:/ })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Select this map' }));
+  receive('generatedmapselection', { roomId: room.id, previewId: 'older-preview-uuid', playerCount: 2 });
+  expect(screen.getByText('Selected Map: Generated map · custom preview selected')).toBeTruthy();
+  expect(store.getState().application.rooms[0].generatedMapSelection?.regionName).toBeUndefined();
+  expect(screen.queryByText('older-preview-uuid', { exact: false })).toBeNull();
+});
+
+
+test('an older generated map with only an internal UUID uses a generic map label', () => {
+  const internalMapId = 'a6f578a7-731d-4fbd-835f-5034a8ef0f61';
+  setup({ rooms: [{ ...room, mapName: internalMapId }] });
+  expect(screen.getByText('Selected Map: Generated map')).toBeTruthy();
+  expect(screen.queryByText(internalMapId, { exact: false })).toBeNull();
 });

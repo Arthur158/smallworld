@@ -11,6 +11,11 @@ import (
 )
 
 type GameStateCopy struct {
+	BotV2Memory  *gamestate.BotV2Memory    `json:",omitempty"`
+	RealTurnInfo *gamestate.TurnInfo       `json:",omitempty"`
+	QueuedTurns  []gamestate.TurninfoEntry `json:",omitempty"`
+	MarketHooks  []string                  `json:",omitempty"`
+
 	RNGState  uint64 `json:",omitempty"`
 	Players   []PlayerCopy
 	TribeList []TribeEntryCopy
@@ -49,7 +54,7 @@ type PlayerCopy struct {
 }
 
 type TileCopy struct {
- IsSkyIsland bool
+	IsSkyIsland             bool
 	Id                      string
 	AdjacentTiles           []string
 	PieceStacks             []PieceStackCopy
@@ -220,7 +225,7 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 
 		tiles = append(tiles, TileCopy{
 			Id:                      t.Id,
- IsSkyIsland: t.IsSkyIsland,
+			IsSkyIsland:             t.IsSkyIsland,
 			AdjacentTiles:           adjacentIDs,
 			PieceStacks:             pieceStacks,
 			OwningTribe:             owningTribe,
@@ -241,7 +246,12 @@ func transformGameState(state *gamestate.GameState) GameStateCopy {
 		Phase:       state.TurnInfo.Phase.String(),
 	}
 
+	keys := []string{}
+	for key := range state.ModifierAfterPick {
+		keys = append(keys, key)
+	}
 	return GameStateCopy{
+		BotV2Memory: state.BotV2Memory, RealTurnInfo: state.RealTurninfo, QueuedTurns: state.ModifierTurnsAfter, MarketHooks: keys,
 		RNGState:  state.RNGState,
 		Players:   players,
 		TribeList: tribeList,
@@ -275,7 +285,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			for _, traitcp := range pc.ActiveTribe.AdditionalPowers {
 				players[i].ActiveTribe.GiveTrait(gamestate.Trait(traitcp))
 			}
-			activeTribe.State = pc.ActiveTribe.State
+			activeTribe.State = gamestate.NormalizeSavedState(pc.ActiveTribe.State)
 		}
 
 		passiveTribes := make([]*gamestate.Tribe, len(pc.PassiveTribes))
@@ -287,7 +297,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			for _, traitcp := range pt.AdditionalPowers {
 				passiveTribes[j].GiveTrait(gamestate.Trait(traitcp))
 			}
-			passiveTribes[j].State = pt.State
+			passiveTribes[j].State = gamestate.NormalizeSavedState(pt.State)
 		}
 		players[i].PassiveTribes = passiveTribes
 	}
@@ -352,7 +362,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 
 		tile := &gamestate.Tile{
 			Id:                      tc.Id,
- IsSkyIsland: tc.IsSkyIsland || strings.HasSuffix(tc.Id,"i"),
+			IsSkyIsland:             tc.IsSkyIsland || strings.HasSuffix(tc.Id, "i"),
 			PieceStacks:             piecestacks,
 			OwningTribe:             nil,
 			Biome:                   parseBiome(tc.Biome),
@@ -362,7 +372,7 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 			ModifierPoints:          modifierPoints,
 			ModifierAfterConquest:   ModifierAfterConquest,
 			ModifierSpecialDefenses: ModifierSpecialDefenses,
-			State:                   tc.State,
+			State:                   gamestate.NormalizeSavedState(tc.State),
 		}
 		tileList[tc.Id] = tile
 	}
@@ -417,7 +427,8 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		Phase:       parsePhase(copyState.TurnInfo.Phase),
 	}
 
-	return &gamestate.GameState{
+	gs := &gamestate.GameState{
+		BotV2Memory: copyState.BotV2Memory, RealTurninfo: copyState.RealTurnInfo,
 		RNGState:           copyState.RNGState,
 		Players:            players,
 		TribeList:          tribeList,
@@ -425,9 +436,11 @@ func reverseTransformGameState(copyState GameStateCopy) *gamestate.GameState {
 		Powers:             powerList,
 		TurnInfo:           turnInfo,
 		ModifierPoints:     make(map[string]func(int, *gamestate.Player) int),
-		ModifierTurnsAfter: []gamestate.TurninfoEntry{},
+		ModifierTurnsAfter: copyState.QueuedTurns,
 		ModifierAfterPick:  make(map[string]func(int, *gamestate.TribeEntry)),
 	}
+	gs.RestoreMarketHooks(copyState.MarketHooks)
+	return gs
 }
 
 func parseBiome(s string) gamestate.Biome {

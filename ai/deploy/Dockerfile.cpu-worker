@@ -1,0 +1,22 @@
+# Build the current backend2/Dockerfile.worker first, then use its tag here.
+# Build context is the repository root. Existing models in WORKER_IMAGE survive.
+ARG WORKER_IMAGE=smallworld-roomworker:dev
+FROM ${WORKER_IMAGE}
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+RUN python3 -m venv /opt/bot-runtime \
+    && /opt/bot-runtime/bin/pip install --no-cache-dir --index-url https://pypi.org/simple pip==25.2 \
+    && /opt/bot-runtime/bin/pip install --only-binary=:all: --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.8.0 numpy==2.2.6
+COPY --chown=game:game ai/smallworld_ai/ /opt/bot-ai/smallworld_ai/
+COPY --chown=game:game ai/schema-v2.json /opt/bot-ai/schema-v2.json
+ENV BOT_INFERENCE_PYTHON=/opt/bot-runtime/bin/python \
+    PYTHONPATH=/opt/bot-ai \
+    PYTHONDONTWRITEBYTECODE=1 \
+    OMP_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1
+LABEL io.smallworld.bot-inference="pytorch-cpu"
+LABEL io.smallworld.bot-formats="1,2,3,4,5,6,7"
+USER game

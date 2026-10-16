@@ -8,9 +8,13 @@ import (
 
 const graphWidth = 64
 
-func validateGraphLayers(layers []Layer, n int) error {
-	if len(layers) != 3 {
-		return fmt.Errorf("expected three graph layers")
+func validateGraphLayers(layers []Layer, n, version int) error {
+	graphWidth, depth := 64, 3
+	if version >= 3 && version <= 6 {
+		graphWidth, depth = 96, 5
+	}
+	if len(layers) != depth {
+		return fmt.Errorf("invalid graph depth")
 	}
 	for i, l := range layers {
 		width := 2 * graphWidth
@@ -45,6 +49,7 @@ func linearReLU(l Layer, x []float64) []float64 {
 	return y
 }
 func (m *Model) graphEmbeddings(d gamestate.BotDecision) ([][]float64, []float64, error) {
+	graphWidth := m.graphWidth()
 	g := d.Graph
 	if g == nil || len(g.Nodes) < 1 || len(g.Nodes) > 160 {
 		return nil, nil, fmt.Errorf("invalid board graph")
@@ -62,12 +67,19 @@ func (m *Model) graphEmbeddings(d gamestate.BotDecision) ([][]float64, []float64
 		}
 		h[i] = linearReLU(m.GraphLayers[0], node)
 	}
+	// Training uses a binary adjacency matrix; repeated map edges must not
+	// give one neighbor extra weight in the fallback evaluator.
+	seen := make(map[[2]int]bool, len(g.Edges))
 	for _, edge := range g.Edges {
 		i, j := edge[0], edge[1]
 		if i < 0 || j < 0 || i >= len(h) || j >= len(h) {
 			return nil, nil, fmt.Errorf("invalid graph edge")
 		}
-		neighbors[i] = append(neighbors[i], j)
+		key := [2]int{i, j}
+		if !seen[key] {
+			neighbors[i] = append(neighbors[i], j)
+			seen[key] = true
+		}
 	}
 	for _, layer := range m.GraphLayers[1:] {
 		next := make([][]float64, len(h))
@@ -91,6 +103,15 @@ func (m *Model) graphEmbeddings(d gamestate.BotDecision) ([][]float64, []float64
 			pooled[k] += v / float64(len(h))
 		}
 	}
+	if m.FormatVersion >= 3 && m.FormatVersion <= 6 {
+		maximum := make([]float64, graphWidth)
+		for _, node := range h {
+			for k, v := range node {
+				maximum[k] = math.Max(maximum[k], v)
+			}
+		}
+		pooled = append(pooled, maximum...)
+	}
 	return h, pooled, nil
 }
 func (r *Registry) Schema(id string) string {
@@ -98,4 +119,11 @@ func (r *Registry) Schema(id string) string {
 		return r.models[id].Schema
 	}
 	return gamestate.BotSchema
+}
+
+func (m *Model) graphWidth() int {
+	if m.FormatVersion >= 3 && m.FormatVersion <= 6 {
+		return 96
+	}
+	return graphWidth
 }

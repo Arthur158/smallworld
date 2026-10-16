@@ -37,6 +37,7 @@ type TurnInfo struct {
 }
 
 type TurninfoEntry struct {
+    cleanupTile string
     TurnInfo     *TurnInfo
     player       int
     actionBefore func(*GameState)

@@ -1,0 +1,8 @@
+**
+!ai/
+!ai/smallworld_ai/
+!ai/smallworld_ai/*.py
+!ai/schema-v2.json
+!ai/deploy/
+!ai/deploy/Dockerfile.cpu-worker
+**/__pycache__

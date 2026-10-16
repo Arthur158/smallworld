@@ -282,6 +282,7 @@ var TileModifierSpecialDefenses = map[string]func(*Tile, *GameState, *Tribe, str
             gs.Messages = append(gs.Messages, Message{Content: "Skag attack!"})
             gs.ModifierTurnsAfter = append(gs.ModifierTurnsAfter, TurninfoEntry{
                 player:   gs.TurnInfo.PlayerIndex,
+                cleanupTile: tile.Id,
                 TurnInfo: nil,
                 actionBefore: func(gs *GameState) {
                     delete(tile.ModifierDefenses, "Skag Attack")

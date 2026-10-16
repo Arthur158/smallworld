@@ -117,7 +117,8 @@ func (gs *GameState) HandleTribeChoice(chooserIndex int, entryIndex int) error {
 
     chooser := gs.Players[chooserIndex]
 
-    if chooser.CoinPile < entryIndex {
+    // The first market entry is free, even after an effect creates a debt.
+    if entryIndex > 0 && chooser.CoinPile < entryIndex {
         return fmt.Errorf("The player only has %d coins, but they need %d for picking this tribe", chooser.CoinPile, entryIndex)
     }
 

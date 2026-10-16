@@ -43,6 +43,8 @@ export interface ApplicationState {
   saveGames: SaveGameInfo[]
   saveSelectionId: number
   mapName: string | null;
+  mapRegionName: string | null;
+  mapRegionNameVersion: number | null;
   offsetStacks: number
   mapChoices: string[]
   playerStatuses: string[]

@@ -103,6 +103,7 @@ func CreateBaseTribe() *Tribe {
     tribe.alternativeDeclineMap = make(map[string]func(*GameState) bool)
 
     tribe.canGoIntoDeclineMap = make(map[string]func(bool, *GameState) bool)
+    tribe.beforeDeclineMap = make(map[string]func(*GameState))
     tribe.goIntoDeclineMap = make(map[string]func(*GameState))
     tribe.giveInitialStacksMap = make(map[string]func() []PieceStack)
     tribe.countExtrapointsMap = make(map[string]func(*GameState) int)
@@ -167,6 +168,7 @@ func (t *Tribe) DeletePower(s string, gs *GameState) {
     delete(t.prepareRemovalMap, s)
     delete(t.alternativeDeclineMap, s)
     delete(t.canGoIntoDeclineMap, s)
+    delete(t.beforeDeclineMap, s)
     delete(t.goIntoDeclineMap, s)
     delete(t.giveInitialStacksMap, s)
     delete(t.countExtrapointsMap, s)

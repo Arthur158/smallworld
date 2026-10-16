@@ -26,8 +26,9 @@ func BotV2Races() []string  { return slices.Clone(botV2Races) }
 func BotV2Traits() []string { return slices.Clone(botV2Traits) }
 func BotV2Powers() []string { return slices.Clone(botV2Powers) }
 func BotV2Spec() map[string]interface{} {
-	return map[string]interface{}{"schema": BotSchemaV2, "races": botV2Races, "traits": botV2Traits, "powers": botV2Powers, "stacks": botV2Stacks, "states": botV2States, "state_features": BotV2StateWidth(), "action_features": BotV2ActionWidth(), "node_features": BotV2NodeWidth()}
+	return map[string]interface{}{"schema": BotSchemaV2, "training_races": BotTrainingRaces(), "training_traits": BotTrainingTraits(), "action_kinds": botV2Kinds, "races": botV2Races, "traits": botV2Traits, "powers": botV2Powers, "stacks": botV2Stacks, "states": botV2States, "state_features": BotV2StateWidth(), "action_features": BotV2ActionWidth(), "node_features": BotV2NodeWidth()}
 }
+func BotV2GroupFeatures() int { return len(botV2Kinds) + len(botV2Stacks) }
 func BotV2StateWidth() int {
 	return BotStateFeatures + 6*(1+2*len(botV2Races)+3*len(botV2Traits)+len(botV2Stacks)) + 5*(2+len(botV2Races)+len(botV2Traits)) + len(botV2States) + 3*len(botV2Powers) + 9
 }
@@ -267,12 +268,13 @@ func (gs *GameState) BotDecisionV2() (BotDecision, error) {
 		if a.From != "" {
 			from = index[a.From]
 		}
-		d.Candidates = append(d.Candidates, BotCandidate{Action: a, Features: f, Target: target, Source: from})
+		race, traits := gs.botExpertIdentity(p, a)
+		d.Candidates = append(d.Candidates, BotCandidate{Action: a, Features: f, Target: target, Source: from, ExpertRace: race, ExpertTraits: traits})
 	}
 	phase := gs.TurnInfo.Phase
 	if phase == TribeChoice {
 		for i := 0; i < min(5, len(gs.TribeList)); i++ {
-			if p.CoinPile >= i {
+			if i == 0 || p.CoinPile >= i {
 				add(BotAction{Kind: "pick", Entry: i}, i)
 			}
 		}
@@ -295,7 +297,7 @@ func (gs *GameState) BotDecisionV2() (BotDecision, error) {
 		if owned && (phase == DeclineChoice || phase == TileAbandonment) && tile.OwningTribe.canTileBeAbandoned(tile) {
 			add(BotAction{Kind: "abandon", Tile: id, Stack: string(tile.OwningTribe.Race)}, 0)
 		}
-		if phase == Redeployment && owned && !memory.Placed[id] {
+		if phase == Redeployment && owned && (!memory.Placed[id] || (tile.OwningTribe.Race == "Amazons" && stackAmount(p.PieceStacks, "Amazons") < 4)) {
 			for _, s := range tile.PieceStacks {
 				t, err := p.getTribe(s.Type)
 				if err == nil {
@@ -532,4 +534,32 @@ func (gs *GameState) PopulateBotSurfaceMap() {
 			tile.PieceStacks = []PieceStack{{Type: "Lost Tribe", Amount: 1}}
 		}
 	}
+}
+
+// Public controller identity, using the same tribe lookup as action execution.
+// No move scores or tactical rules are included in this metadata.
+func (gs *GameState) botExpertIdentity(p *Player, a BotAction) (string, []string) {
+	if a.Kind == "pick" {
+		entry := gs.TribeList[a.Entry]
+		return string(entry.Race), []string{string(entry.Trait)}
+	}
+	t := p.ActiveTribe
+	if a.Stack != "" {
+		t, _ = p.getTribe(a.Stack)
+	}
+	if a.Kind == "abandon" {
+		t = gs.TileList[a.Tile].OwningTribe
+	}
+	traits := []string{}
+	if t == nil {
+		return "", traits
+	}
+	traits = append(traits, string(t.Trait))
+	for _, trait := range t.AdditionalPowers {
+		if !slices.Contains(traits, string(trait)) {
+			traits = append(traits, string(trait))
+		}
+	}
+	sort.Strings(traits)
+	return string(t.Race), traits
 }

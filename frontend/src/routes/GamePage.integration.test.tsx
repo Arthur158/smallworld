@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
@@ -11,7 +11,7 @@ import TooltipProvider from '../components/help/TooltipProvider';
 import applicationReducer, { websocketMessageReceived } from '../redux/slices/applicationSlice';
 import rootReducer from '../redux/reducer';
 import { persistApplicationPreferences, restoreApplicationPreferences } from '../redux/persistence';
-import { connectWebSocket, getAuthConfig } from '../services/backendService';
+import { connectWebSocket, getAuthConfig, sendMessageToBackend } from '../services/backendService';
 import { ApplicationState } from '../types/redux';
 import { Language } from '../types/misc';
 
@@ -58,10 +58,10 @@ function wrap(store: any, content: React.ReactNode) {
 function broadcast(store: any, type: string, data: unknown) {
   act(() => store.dispatch(websocketMessageReceived(JSON.stringify({ type, data }))));
 }
-async function startGeneratedGame(store: any) {
+async function startGeneratedGame(store: any, metadata: { regionName?: string; regionNameVersion?: number } = {}) {
   broadcast(store, 'smallmapupdate', { mapName, offset: 0.808 });
   broadcast(store, 'generatedmapvisuals', {
-    mapName, imageBase64: 'cG5n', offset: 0.808,
+    mapName, imageBase64: 'cG5n', offset: 0.808, ...metadata,
     graphics: { OffsetStacks: 0.002, Xmult: 1, Ymult: 1, Tiles: [
       { ID: '1', Polygon: { Coords: [0, 0, 200, 0, 200, 200, 0, 200], StackX: 100, StackY: 100 } },
     ] }, serverTiles: [{ id: '1', biome: 'field', attributes: [] }],
@@ -135,4 +135,68 @@ test('persisted preferences never include sessions, snapshots or blob URLs, and 
     expect(restored.generatedMapEditor).toBeNull();
     expect(restored.language).toBe(Language.NL);
   }
+});
+
+
+test('generated visuals show a continent heading and older visuals replace it with no name', async () => {
+  const store = configureStore({ reducer: { application: applicationReducer } });
+  render(wrap(store, <GamePage />));
+  await startGeneratedGame(store, { regionName: 'The Golden Coast', regionNameVersion: 1 });
+  expect(screen.getByRole('heading', { name: 'Continent: The Golden Coast' })).toBeTruthy();
+  expect(store.getState().application.mapName).toBe(mapName);
+  expect(store.getState().application.mapRegionNameVersion).toBe(1);
+  await startGeneratedGame(store);
+  expect(screen.queryByRole('heading', { name: /Continent:/ })).toBeNull();
+  expect(store.getState().application.mapRegionName).toBeNull();
+  expect(store.getState().application.mapRegionNameVersion).toBeNull();
+});
+
+test.each(['lobby', 'unauth', 'leavedisplayroom', 'displayroom', 'roomid'])('%s clears any previous continent name', event => {
+  const old = { ...oldState(), mapRegionName: 'Previous Continent', mapRegionNameVersion: 1 } as unknown as ApplicationState;
+  const next = applicationReducer(old, websocketMessageReceived(JSON.stringify({ type: event, data: { roomid: 'different-room' } })));
+  expect(next.mapRegionName).toBeNull();
+  expect(next.mapRegionNameVersion).toBeNull();
+});
+
+
+test('saving and a same-map spectator refresh keep the continent heading, image and terrain', async () => {
+  const store = configureStore({ reducer: { application: applicationReducer } });
+  render(wrap(store, <GamePage />));
+  broadcast(store, 'roomid', { roomid: 'current-room' });
+  await startGeneratedGame(store, { regionName: 'Celunal', regionNameVersion: 1 });
+  const imageUrl = store.getState().application.mapImageUrl;
+  const terrain = store.getState().application.tiles['1'].terrain;
+  fireEvent.click(screen.getByRole('button', { name: 'Save Game' }));
+  expect(sendMessageToBackend).toHaveBeenLastCalledWith('savegame', {});
+  broadcast(store, 'message', { message: 'Game successfully saved' });
+  broadcast(store, 'loadSaves', { saves: [{ saveId: 5, summary: 'Celunal' }] });
+  // Joining spectators trigger this room-wide refresh; existing players do not
+  // receive generatedmapvisuals again.
+  broadcast(store, 'smallmapupdate', { mapName, offset: 0.808 });
+  broadcast(store, 'roomid', { roomid: 'current-room' });
+  expect(screen.getByRole('heading', { name: 'Continent: Celunal' })).toBeTruthy();
+  expect(store.getState().application.mapRegionNameVersion).toBe(1);
+  expect(store.getState().application.mapImageUrl).toBe(imageUrl);
+  expect(store.getState().application.tiles['1'].terrain).toEqual(terrain);
+  expect(screen.getByRole('button', { name: 'Humans pieces in zone 1, 2 active' })).toBeTruthy();
+});
+
+test('a legacy identity-free image refresh preserves the continent name and region metadata', async () => {
+  const store = configureStore({ reducer: { application: applicationReducer } });
+  render(wrap(store, <GamePage />));
+  await startGeneratedGame(store, { regionName: 'Celunal', regionNameVersion: 1 });
+  await act(async () => broadcast(store, 'mapupdate', { picture: 'cG5n', offset: 0.808 }));
+  expect(screen.getByRole('heading', { name: 'Continent: Celunal' })).toBeTruthy();
+  expect(store.getState().application.tiles['1'].terrain?.biome).toBe('field');
+  expect(screen.getByRole('button', { name: 'Zone 1' })).toBeTruthy();
+});
+
+test.each(['map2players', 'different-generated-map'])('a switch to %s clears the old continent name', async nextMap => {
+  const store = configureStore({ reducer: { application: applicationReducer } });
+  render(wrap(store, <GamePage />));
+  await startGeneratedGame(store, { regionName: 'Celunal', regionNameVersion: 1 });
+  await act(async () => broadcast(store, 'smallmapupdate', { mapName: nextMap, offset: 0.808 }));
+  expect(screen.queryByRole('heading', { name: /Continent:/ })).toBeNull();
+  expect(store.getState().application.mapRegionName).toBeNull();
+  expect(store.getState().application.mapRegionNameVersion).toBeNull();
 });

@@ -9,30 +9,32 @@ import (
 )
 
 type Config struct {
-	BotModelDir    string
-	BotMoveDelay   time.Duration
-	HealthAddr     string
-	WorkerID       uint32
-	WorkerCount    uint32
-	RedisAddr      string
-	RedisURL       string
-	DatabaseURL    string
-	CommandBlock   time.Duration
-	SnapshotTTL    time.Duration
-	DisplayRoomTTL time.Duration
-	ConsumerGroup  string
-	ConsumerName   string
+	BotInferencePython string
+	BotModelDir        string
+	BotMoveDelay       time.Duration
+	HealthAddr         string
+	WorkerID           uint32
+	WorkerCount        uint32
+	RedisAddr          string
+	RedisURL           string
+	DatabaseURL        string
+	CommandBlock       time.Duration
+	SnapshotTTL        time.Duration
+	DisplayRoomTTL     time.Duration
+	ConsumerGroup      string
+	ConsumerName       string
 }
 
 func LoadConfig() (Config, error) {
 	cfg := Config{
-		BotModelDir:  os.Getenv("BOT_MODEL_DIR"),
-		BotMoveDelay: 350 * time.Millisecond,
-		HealthAddr:   envOr("HEALTH_ADDR", ":8081"),
-		RedisAddr:    envOr("REDIS_ADDR", "localhost:6379"),
-		RedisURL:     os.Getenv("REDIS_URL"),
-		DatabaseURL:  os.Getenv("DATABASE_URL"),
-		CommandBlock: 5 * time.Second,
+		BotModelDir:        os.Getenv("BOT_MODEL_DIR"),
+		BotInferencePython: os.Getenv("BOT_INFERENCE_PYTHON"),
+		BotMoveDelay:       350 * time.Millisecond,
+		HealthAddr:         envOr("HEALTH_ADDR", ":8081"),
+		RedisAddr:          envOr("REDIS_ADDR", "localhost:6379"),
+		RedisURL:           os.Getenv("REDIS_URL"),
+		DatabaseURL:        os.Getenv("DATABASE_URL"),
+		CommandBlock:       5 * time.Second,
 		// Normal rooms default to no Redis expiry. The room is explicitly
 		// removed when the last player leaves; this avoids a quiet game
 		// disappearing simply because nobody made a move for a day.

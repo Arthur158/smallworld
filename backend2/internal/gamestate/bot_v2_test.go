@@ -138,3 +138,73 @@ func TestAmazonsCanWithdrawLastTemporaryPiece(t *testing.T) {
 		}
 	}
 }
+
+func TestScavengersDoNotDelegateToThemselves(t *testing.T) {
+	gs := v2TestState(t)
+	p := gs.Players[0]
+	tribe, _ := CreateTribe("Scavengers", "Fortified")
+	tribe.Owner = p
+	p.ActiveTribe = tribe
+	tile := &Tile{Id: "self", OwningTribe: tribe, PieceStacks: []PieceStack{{Type: "Scavengers", Amount: 2, Tribe: tribe}}}
+	if tribe.canBeRedeployedIn(tile, "unavailable", gs) {
+		t.Fatal("accepted an unknown stack")
+	}
+	if _, err := tribe.getStacksOutRedeployment(tile, "unavailable"); err == nil {
+		t.Fatal("withdrew an unknown stack")
+	}
+}
+func TestAmazonsCanReturnPiecesFromPlacedTile(t *testing.T) {
+	gs := v2TestState(t)
+	p := gs.Players[0]
+	tribe, _ := CreateTribe("Amazons", "Alchemist")
+	tribe.Owner = p
+	p.ActiveTribe = tribe
+	p.PieceStacks = []PieceStack{{Type: "Amazons", Amount: 3}}
+	gs.TurnInfo.Phase = Redeployment
+	for id, tile := range gs.TileList {
+		if tile.OwningTribe == nil && tile.Biome != Water {
+			tile.OwningTribe = tribe
+			tile.PieceStacks = []PieceStack{{Type: "Amazons", Amount: 1}}
+			gs.BotV2Memory = &BotV2Memory{Turn: "1:0", Placed: map[string]bool{id: true}}
+			d, err := gs.BotDecisionV2()
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, a := range d.Candidates {
+				if a.Action.Kind == "redeploy_out" && a.Action.Tile == id {
+					return
+				}
+			}
+			t.Fatal("temporary Amazons cannot return from a tile used in redeployment")
+		}
+	}
+	t.Fatal("no fixture tile")
+}
+
+func TestStoutObservationDoesNotConsumeScoringState(t *testing.T) {
+	gs := v2TestState(t)
+	tribe, _ := CreateTribe("Humans", "Stout")
+	tribe.Owner = gs.Players[0]
+	gs.Players[0].ActiveTribe = tribe
+	gs.Players[0].PieceStacks = []PieceStack{}
+	gs.TurnInfo.Phase = Redeployment
+	tribe.State["extrapoints"] = 7
+	tribe.State["pluspoints"] = 11
+	before, _ := json.Marshal(tribe.State)
+	for i := 0; i < 3; i++ {
+		if _, err := gs.BotDecisionV2(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	after, _ := json.Marshal(tribe.State)
+	if string(before) != string(after) {
+		t.Fatalf("Stout observation mutated state: %s -> %s", before, after)
+	}
+	// The real decline action still runs its scoring preparation.
+	if err := gs.HandleDecline(0); err != nil {
+		t.Fatal(err)
+	}
+	if tribe.State["pluspoints"] == 11 {
+		t.Fatal("decline did not capture its score")
+	}
+}

@@ -74,6 +74,7 @@ type Tribe struct {
     countRemovablePiecesMap          map[string]func([]PieceStack, *Tile) []PieceStack
     countRemovableAttackingStacksMap map[string]func([]PieceStack, *Player) []PieceStack
     canGoIntoDeclineMap              map[string]func(bool, *GameState) bool
+    beforeDeclineMap                map[string]func(*GameState)
     goIntoDeclineMap                 map[string]func(*GameState)
     prepareRemovalMap                map[string]func(*GameState) bool
     alternativeDeclineMap            map[string]func(*GameState) bool
@@ -677,6 +678,9 @@ func (t *Tribe) canGoIntoDecline(gs *GameState) bool {
 }
 
 func (t *Tribe) goIntoDecline(gs *GameState) {
+    for _, key := range sortedHookKeys(t.beforeDeclineMap) {
+        if f := t.beforeDeclineMap[key]; f != nil { f(gs) }
+    }
     for _, key := range sortedHookKeys(t.alternativeDeclineMap) {
         f := t.alternativeDeclineMap[key]
         if f == nil { continue }

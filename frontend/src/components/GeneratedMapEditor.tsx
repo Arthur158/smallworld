@@ -77,6 +77,7 @@ export default function GeneratedMapEditor({ defaultSettings, initialSettings, p
   const draftRef = useRef(draftFingerprint);
   draftRef.current = draftFingerprint;
   const previewMatches = !!preview && preview.playerCount === playerCount && fingerprint(preview.settings) === draftFingerprint;
+  const previewName = preview?.regionName?.trim();
   const previewSelected = !!preview && !automatic && selectedPreviewId === preview.id;
   const tileCountValid = Number.isInteger(draft.tileCount) && draft.tileCount >= MIN_TILE_COUNT && draft.tileCount <= MAX_TILE_COUNT;
   const canGenerate = tileCountValid && !loading && !selecting;
@@ -271,9 +272,9 @@ export default function GeneratedMapEditor({ defaultSettings, initialSettings, p
             onClick={() => { pendingDraft.current = null; setDraft(clone(defaultSettings)); }}><FiRefreshCw aria-hidden="true" /> Reset to current defaults</button>
         </aside>
         <main className="map-editor-preview" aria-label="Map preview" aria-busy={loading}>
-          <div className="map-editor-preview-heading"><span>Preview</span><span>{previewMatches ? `${preview!.settings.tileCount} regions · ${preview!.playerCount} players` : 'Your room is unchanged until you select a map'}</span></div>
+          <div className="map-editor-preview-heading">{previewName ? <h3 className="map-editor-continent-name" aria-label={`Continent: ${previewName}`}>{previewName}</h3> : <span>Preview</span>}<span>{previewMatches ? `${preview!.settings.tileCount} regions · ${preview!.playerCount} players` : 'Your room is unchanged until you select a map'}</span></div>
           <div className={`map-editor-canvas ${preview && !previewMatches ? 'map-editor-canvas-stale' : ''}`}>
-            {preview ? <img src={preview.imageUrl} alt={`Generated map preview for ${preview.playerCount} players`} />
+            {preview ? <img src={preview.imageUrl} alt={previewName ? `${previewName} — generated map preview for ${preview.playerCount} players` : `Generated map preview for ${preview.playerCount} players`} />
               : <div className="map-editor-empty"><FiMap aria-hidden="true" /><h3>A world of your own</h3><p>Choose terrain, water and scenery, then generate a preview. The room keeps its current map choice until you select one.</p></div>}
             {loading && <div className="map-editor-loading" role="status"><FiRefreshCw aria-hidden="true" /><span>Generating map…</span></div>}
             {!loading && preview && !previewMatches && <span className="map-editor-stale-label">Earlier preview · settings have changed</span>}

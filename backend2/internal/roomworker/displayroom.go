@@ -68,6 +68,7 @@ func (room *Room) LoadSave(client *Client, id int64) {
 	}
 	ok := room.ChangeMap(mapName)
 	room.sendSmallMapUpdate()
+	room.sendGeneratedMapVisualsToClient(client)
 	newstate, _, err := LoadGameState(id)
 	if err != nil {
 		log.Println("Error loading game", err)
@@ -84,6 +85,7 @@ func (room *Room) LoadSave(client *Client, id int64) {
 func (room *Room) LoadMap(client *Client, mapName string) {
 	ok := room.ChangeMap(mapName)
 	room.sendSmallMapUpdate()
+	room.sendGeneratedMapVisualsToClient(client)
 	newstate, err := gamestate.New([]string{}, mapName, []string{}, []string{}, []string{})
 	if err != nil {
 		log.Println("Error loading game", err)

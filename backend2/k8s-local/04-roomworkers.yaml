@@ -101,6 +101,14 @@ spec:
             - name: MAP_GENERATOR_URL
               value: http://map-generator:3001
 
+          # Large exports load once before health/readiness becomes available.
+          startupProbe:
+            httpGet:
+              path: /livez
+              port: health
+            periodSeconds: 5
+            failureThreshold: 60
+
           readinessProbe:
             httpGet:
               path: /readyz

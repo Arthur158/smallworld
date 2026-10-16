@@ -22,7 +22,9 @@ type mapGeneratorResponse struct {
 	ImageBase64 string          `json:"imageBase64"`
 	Settings    json.RawMessage `json:"settings"`
 	Metadata    struct {
-		Server struct {
+		RegionName        string `json:"regionName,omitempty"`
+		RegionNameVersion int    `json:"regionNameVersion,omitempty"`
+		Server            struct {
 			Tiles []GeneratedServerTile `json:"tiles"`
 		} `json:"server"`
 
@@ -586,13 +588,15 @@ func GenerateRuntimeMapForPlayerCount(playerCount int) (Map, error) {
 	}
 
 	StoreGeneratedMapVisuals(GeneratedMapVisuals{
-		MapName:          mapName,
-		ImageBase64:      resp.ImageBase64,
-		Graphics:         resp.Metadata.Graphics,
-		Settings:         resp.Settings,
-		ServerTiles:      resp.Metadata.Server.Tiles,
-		LostTribeTileIDs: lostTribeTileIDs,
-		Offset:           0.808,
+		MapName:           mapName,
+		RegionName:        resp.Metadata.RegionName,
+		RegionNameVersion: resp.Metadata.RegionNameVersion,
+		ImageBase64:       resp.ImageBase64,
+		Graphics:          resp.Metadata.Graphics,
+		Settings:          resp.Settings,
+		ServerTiles:       resp.Metadata.Server.Tiles,
+		LostTribeTileIDs:  lostTribeTileIDs,
+		Offset:            0.808,
 	})
 
 	return generatedMap, nil

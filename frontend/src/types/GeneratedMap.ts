@@ -26,6 +26,8 @@ export interface GeneratedMapSettings {
 export interface GeneratedMapPreview {
   id: string;
   imageUrl: string;
+  regionName?: string;
+  regionNameVersion?: number;
   settings: GeneratedMapSettings;
   playerCount: number;
 }

@@ -5,6 +5,8 @@ import { Player, TribeEntry, Room, Tile, SaveGameInfo } from '../../types/Board'
 import wikiMapMetadata from '../../data/wikiMapMetadata.json';
 import { mapDatabase, MapData } from '../../data/mapData'; // <-- Import your local map data
 
+const generatedMapNames = new Set<string>();
+
 function base64PngToObjectUrl(base64: string): string {
   const byteString = atob(base64);
   const array = new Uint8Array(byteString.length);
@@ -39,6 +41,18 @@ function applyMapDataToState(state: any, mapName: string, mapData: MapData) {
   });
 
   state.tiles = newTiles;
+}
+
+function regionMetadata(data: { regionName?: unknown; regionNameVersion?: unknown }) {
+  const regionName = typeof data.regionName === 'string' ? data.regionName.trim() || undefined : undefined;
+  const regionNameVersion = regionName && Number.isInteger(data.regionNameVersion) && Number(data.regionNameVersion) > 0
+    ? Number(data.regionNameVersion) : undefined;
+  return { regionName, regionNameVersion };
+}
+
+function clearMapRegionName(state: ApplicationState) {
+  state.mapRegionName = null;
+  state.mapRegionNameVersion = null;
 }
 
 function reconcileSelectedStack(state: ApplicationState) {
@@ -83,6 +97,8 @@ const initialState: ApplicationState = {
   saveGames: [],
   saveSelectionId: -1,
   mapName: null,
+  mapRegionName: null,
+  mapRegionNameVersion: null,
   offsetStacks: 10,
   mapChoices: [],
   playerStatuses: [],
@@ -198,11 +214,26 @@ const applicationSlice = createSlice({
           const preview = type === 'generatedmappreview' ? parsedData : parsedData.preview;
           if (editor.preview?.imageUrl) URL.revokeObjectURL(editor.preview.imageUrl);
           editor.preview = preview ? { id: preview.previewId, imageUrl: base64PngToObjectUrl(preview.imageBase64),
-            settings: preview.settings, playerCount: preview.playerCount } : null;
+            settings: preview.settings, playerCount: preview.playerCount, ...regionMetadata(preview) } : null;
           break;
         }
         case 'generatedmapselection': {
           const editor = state.generatedMapEditor;
+          const preview = editor && editor.roomId === parsedData.roomId && editor.preview?.id === parsedData.previewId ? editor.preview : undefined;
+          for (const room of [...state.rooms, ...state.roomsInProgress]) {
+            if (room.id !== parsedData.roomId || room.mapName !== 'generatedmap') continue;
+            if (!parsedData.previewId) {
+              delete room.generatedMapSelection;
+              continue;
+            }
+            const previous = room.generatedMapSelection?.previewId === parsedData.previewId ? room.generatedMapSelection : undefined;
+            const seed = parsedData.seed ?? preview?.settings.seed ?? previous?.seed;
+            const playerCount = parsedData.playerCount ?? preview?.playerCount ?? previous?.playerCount;
+            if (typeof seed === 'string' && Number.isInteger(playerCount)) {
+              room.generatedMapSelection = { previewId: parsedData.previewId, playerCount, seed,
+                ...regionMetadata({ ...previous, ...preview, ...parsedData }) };
+            }
+          }
           if (editor && editor.roomId === parsedData.roomId) {
             editor.selecting = false;
             editor.error = null;
@@ -235,6 +266,7 @@ const applicationSlice = createSlice({
           break;
         }
         case 'unauth': {
+          clearMapRegionName(state);
           state.gameStarted = false
           state.isAuthenticated = false
           state.roomid = ""
@@ -272,15 +304,18 @@ const applicationSlice = createSlice({
           state.playerIndex = Number(parsedData.index);
           break;
         case 'roomid':
+          if (state.roomid !== parsedData.roomid) clearMapRegionName(state);
           state.roomid = parsedData.roomid;
           break;
         case 'lobby':
+          clearMapRegionName(state);
           state.roomid = ""
           state.gameStarted = false
           state.isSpectating = false
           state.error = null
           break;
         case 'displayroom':
+          clearMapRegionName(state);
           state.inDisplayRoom = true
           state.gameStarted = false
           state.isSpectating = false
@@ -294,6 +329,7 @@ const applicationSlice = createSlice({
           state.error = null
           break;
         case 'leavedisplayroom':
+          clearMapRegionName(state);
           state.gameStarted = false
           state.inDisplayRoom = false
           state.saveSelectionId = -1
@@ -313,6 +349,7 @@ const applicationSlice = createSlice({
         // Game-Related
         // ---------------------------------------------------------------------
         case 'mapupdate': {
+          // Legacy image refreshes have no map identity, so retain its name.
           if (data.picture) {
             const byteString = atob(data.picture);
             const array = new Uint8Array(byteString.length);
@@ -327,6 +364,7 @@ const applicationSlice = createSlice({
             state.mapImageUrl = imgUrl;
           }
           state.offsetMapTiles = parsedData.offset
+          if (!Array.isArray(data.zones)) break;
           const newTiles: Record<string, Tile> = {};
           data.zones.forEach((tileData: any, index: number) => {
             const tileId = String(tileData.id);
@@ -382,8 +420,15 @@ const applicationSlice = createSlice({
         //   break;
         // }
         case 'smallmapupdate': {
+          const nextMapName = parsedData.mapName ?? parsedData.MapName;
+          const sameGeneratedMap = state.mapName === nextMapName && generatedMapNames.has(nextMapName);
           state.offsetMapTiles = parsedData.offset;
-          state.mapName = parsedData.mapName ?? parsedData.MapName;
+          // A spectator joining can refresh this map without resending visuals
+          // to existing players. Preserve its image, name, terrain and stacks.
+          if (sameGeneratedMap) break;
+          clearMapRegionName(state);
+          state.mapImageUrl = null;
+          state.mapName = nextMapName;
 
           const mapKey = state.mapName || '';
           const mapData = mapDatabase[mapKey];
@@ -402,10 +447,14 @@ const applicationSlice = createSlice({
           break;
         }
         case 'generatedmapvisuals': {
+          const { regionName, regionNameVersion } = regionMetadata(parsedData);
+          state.mapRegionName = regionName ?? null;
+          state.mapRegionNameVersion = regionNameVersion ?? null;
           const mapName = parsedData.mapName;
           const graphics = parsedData.graphics as MapData;
 
           // Register this generated map exactly like a builtin map.
+          generatedMapNames.add(mapName);
           mapDatabase[mapName] = graphics;
 
           // Store the generated PNG as an object URL.

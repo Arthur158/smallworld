@@ -35,6 +35,10 @@ for (const fixture of legacy) {
   for (const optIn of [undefined, false]) {
     if (optIn !== undefined) settings.preserveRegionCount = optIn;
     const output = generate(settings);
+    // Region names are additive display metadata, not terrain or decorative
+    // state. Keep the original golden hashes for every pre-existing field.
+    delete output.metadata.regionName;
+    delete output.metadata.regionNameVersion;
     assert.equal(createHash('sha256').update(JSON.stringify(output)).digest('hex'), fixture.hash, `legacy output changed: ${fixture.players}/${fixture.seed}/${optIn}`);
   }
 }

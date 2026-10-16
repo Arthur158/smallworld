@@ -63,6 +63,12 @@ func New(cfg Config) (*Worker, error) {
 		return nil, err
 	}
 
+	if err := registry.EnablePython(cfg.BotInferencePython, cfg.BotModelDir); err != nil {
+		_ = dbStore.Close()
+		_ = rdb.Close()
+		return nil, fmt.Errorf("CPU bot evaluator: %w", err)
+	}
+
 	gamestate.InitTraitMap()
 	gamestate.InitRaceMap()
 
@@ -101,6 +107,9 @@ func newRedisClient(cfg Config) (*redis.Client, error) {
 
 func (w *Worker) Close() error {
 	var first error
+	if err := w.bots.Close(); err != nil {
+		first = err
+	}
 	if err := w.store.Close(); err != nil {
 		first = err
 	}

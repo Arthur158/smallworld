@@ -1,5 +1,6 @@
 """Evaluate a deployed Go policy on held-out seeds with rotating player seats."""
 import argparse
+from collections import Counter
 import json
 import math
 from pathlib import Path
@@ -7,8 +8,10 @@ from pathlib import Path
 from .engine import DEFAULT_ENGINE, Engine, outcome
 
 
-def evaluate(engine, model, opponent, games, seed, players, maps, distribution="standard", excluded_hashes=None):
+def evaluate(engine, model, opponent, games, seed, players, maps, distribution=None, excluded_hashes=None):
+    distribution = distribution or ("surface" if engine.rules == "surface" else "standard")
     results = []
+    actions, rejected, offered = Counter(), Counter(), Counter()
     for i in range(games):
         seat = i % players
         map_seed = seed+i//players
@@ -17,8 +20,16 @@ def evaluate(engine, model, opponent, games, seed, players, maps, distribution="
         if excluded_hashes and engine.map_info.get("hash") in excluded_hashes:
             raise RuntimeError("evaluation map overlaps the training map log")
         while not (response["done"] or response["truncated"]):
-            policy = model if response["decision"]["player"] == seat else opponent
+            learner = response["decision"]["player"] == seat
+            policy = model if learner else opponent
+            if learner:
+                offered.update({a["action"]["kind"]+":"+a["action"].get("stack", "") for a in response["decision"]["candidates"]})
             response = engine.request(op="step", policy=policy)
+            if learner and response.get("action"):
+                action = response["action"]; key = action["kind"]+":"+action.get("stack", "")
+                actions[key] += 1
+                if response.get("rejected"):
+                    rejected[key] += 1
         if response["truncated"]:
             raise RuntimeError(f"evaluation game {i} did not finish")
         scores = response["scores"]
@@ -34,6 +45,7 @@ def evaluate(engine, model, opponent, games, seed, players, maps, distribution="
             "win_rate_95_interval": [center-radius, center+radius],
             "mean_score": sum(r["scores"][r["seat"]] for r in results)/games,
             "mean_score_margin": sum(r["scores"][r["seat"]]-max(s for j,s in enumerate(r["scores"]) if j != r["seat"]) for r in results)/games,
+            "actions_chosen": dict(actions), "actions_rejected": dict(rejected), "action_opportunities": dict(offered),
             "matches": results}
 
 
@@ -48,7 +60,7 @@ def main():
     parser.add_argument("--seed", type=int, default=1_000_000)
     parser.add_argument("--players", type=int, default=2)
     parser.add_argument("--maps", nargs="+", default=["generated"])
-    parser.add_argument("--map-distribution", choices=["standard", "stress", "surface", "surface-stress"], default="standard")
+    parser.add_argument("--map-distribution", choices=["standard", "stress", "surface", "surface-stress"], help="defaults to the selected rules palette")
     parser.add_argument("--exclude-map-log", type=Path, help="reject any exact map hash already recorded during training")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()

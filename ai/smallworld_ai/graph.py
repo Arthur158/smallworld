@@ -53,7 +53,12 @@ class GraphPolicy(nn.Module):
 
     @torch.inference_mode()
     def choose(self, decision):
-        return int(self(*batch_graph([decision], next(self.parameters()).device))[0].logits.argmax(-1).item())
+        batch = batch_graph([decision], next(self.parameters()).device)
+        distribution, _ = self(*batch)
+        return int(self.greedy_actions(distribution, batch).item())
+
+    def greedy_actions(self, distribution, batch):
+        return distribution.logits.argmax(-1)
 
     def warm_start(self, old):
         """Retain the v1 function on the shared prefix; learn added information next."""
@@ -118,8 +123,8 @@ def batch_graph(decisions, device):
 def merge_graph(batches):
     count = sum(b[0].shape[0] for b in batches)
     shapes = [(count,)+tuple(max(b[k].shape[j] for b in batches) for j in range(1, batches[0][k].ndim))
-              for k in range(7)]
-    output = [batches[0][k].new_full(shape, -1 if k == 6 else 0) for k, shape in enumerate(shapes)]
+              for k in range(len(batches[0]))]
+    output = [batches[0][k].new_full(shape, -1 if k in (6, 7) else 0) for k, shape in enumerate(shapes)]
     offset = 0
     for batch in batches:
         for target, source in zip(output, batch):

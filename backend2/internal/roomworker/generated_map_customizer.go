@@ -51,14 +51,24 @@ func (room *Room) generatedMapSelection() *protocol.GeneratedMapSelection {
 		return nil
 	}
 	seed, _ := room.generatedSelected.Settings["seed"].(string)
-	return &protocol.GeneratedMapSelection{PreviewID: room.generatedSelected.PreviewID, PlayerCount: room.generatedSelected.PlayerCount, Seed: seed}
+	return &protocol.GeneratedMapSelection{
+		PreviewID: room.generatedSelected.PreviewID, PlayerCount: room.generatedSelected.PlayerCount, Seed: seed,
+		RegionName: room.generatedSelected.Visuals.RegionName, RegionNameVersion: room.generatedSelected.Visuals.RegionNameVersion,
+	}
 }
 
 func publicGeneratedPreview(preview *generatedMapPreview) map[string]any {
 	if preview == nil {
 		return nil
 	}
-	return map[string]any{"previewId": preview.PreviewID, "playerCount": preview.PlayerCount, "settings": preview.Settings, "imageBase64": preview.Visuals.ImageBase64}
+	data := map[string]any{"previewId": preview.PreviewID, "playerCount": preview.PlayerCount, "settings": preview.Settings, "imageBase64": preview.Visuals.ImageBase64}
+	if preview.Visuals.RegionName != "" {
+		data["regionName"] = preview.Visuals.RegionName
+	}
+	if preview.Visuals.RegionNameVersion != 0 {
+		data["regionNameVersion"] = preview.Visuals.RegionNameVersion
+	}
+	return data
 }
 
 func (room *Room) clearGeneratedMapCustomization() {
@@ -78,6 +88,13 @@ func (room *Room) sendGeneratedMapSelection(client *Client) {
 	if selection := room.generatedMapSelection(); selection != nil {
 		data["previewId"] = selection.PreviewID
 		data["playerCount"] = selection.PlayerCount
+		data["seed"] = selection.Seed
+		if selection.RegionName != "" {
+			data["regionName"] = selection.RegionName
+		}
+		if selection.RegionNameVersion != 0 {
+			data["regionNameVersion"] = selection.RegionNameVersion
+		}
 	}
 	raw, _ := json.Marshal(data)
 	if client != nil {
@@ -324,6 +341,7 @@ func makeGeneratedMapPreview(players int, settings MapGeneratorSettings, respons
 	rawSettings, _ := json.Marshal(settings)
 	return &generatedMapPreview{PreviewID: id, PlayerCount: players, Settings: settings, Visuals: GeneratedMapVisuals{
 		MapName: id, ImageBase64: response.ImageBase64, Graphics: response.Metadata.Graphics, Settings: rawSettings,
+		RegionName: response.Metadata.RegionName, RegionNameVersion: response.Metadata.RegionNameVersion,
 		ServerTiles: response.Metadata.Server.Tiles, LostTribeTileIDs: generatedLostTribeTileIDs(specs, id), Offset: 0.808,
 	}}, nil
 }

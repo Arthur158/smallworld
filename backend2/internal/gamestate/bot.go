@@ -28,10 +28,12 @@ type BotAction struct {
 }
 
 type BotCandidate struct {
-	Action   BotAction `json:"action"`
-	Target   int       `json:"target"`
-	Source   int       `json:"source"`
-	Features []float64 `json:"features"`
+	ExpertRace   string    `json:"expert_race"`
+	ExpertTraits []string  `json:"expert_traits"`
+	Action       BotAction `json:"action"`
+	Target       int       `json:"target"`
+	Source       int       `json:"source"`
+	Features     []float64 `json:"features"`
 }
 
 type BotDecision struct {
@@ -114,7 +116,7 @@ func (gs *GameState) BotDecision() (BotDecision, error) {
 	if gs.TurnInfo.Phase == TribeChoice {
 		// Match the five entries visible to human players in megaUpdate.
 		for i := 0; i < min(5, len(gs.TribeList)); i++ {
-			if p.CoinPile >= i {
+			if i == 0 || p.CoinPile >= i {
 				add(BotAction{Kind: "pick", Entry: i}, i)
 			}
 		}

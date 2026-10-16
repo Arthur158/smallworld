@@ -1,4 +1,5 @@
 import WikiToolbar from '../components/wiki/WikiToolbar';
+import MapHeading from '../components/MapHeading';
 import { useShortcut } from '../hooks/useShortcut';
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
@@ -85,6 +86,7 @@ export default function SpectatorPage() {
         {/* RIGHT SECTION (2/3 width): Map */}
         <div className="w-2/3 h-full p-4 flex flex-col min-h-0">
           <WikiToolbar />
+          <MapHeading />
           <BotPlaybackControls room={currentRoom} username={username} phase={phase} />
           <div className="w-full flex-1 min-h-0 border-4 border-[#8B4513] rounded-lg bg-white">
             <Map />

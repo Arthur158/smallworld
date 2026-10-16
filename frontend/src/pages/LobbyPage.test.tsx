@@ -53,6 +53,54 @@ function checkbox(name: string) {
 
 beforeEach(() => jest.clearAllMocks());
 
+test.each(['', '   '])('creating a room with a blank name (%j) sends a generated place name', (value) => {
+  renderLobby({ roomid: '', rooms: [] });
+  fireEvent.change(screen.getByLabelText('Room Name:'), { target: { value } });
+  fireEvent.click(screen.getByRole('button', { name: 'Create Room' }));
+  expect(sendMessageToBackend).toHaveBeenCalledWith('createRoom', {
+    roomName: expect.stringMatching(/^The \S.+ \S.+$/),
+    maxPlayers: 2,
+  });
+});
+
+test('creating a room preserves a name supplied by the host', () => {
+  renderLobby({ roomid: '', rooms: [] });
+  fireEvent.change(screen.getByLabelText('Room Name:'), { target: { value: ' My cozy room ' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Create Room' }));
+  expect(sendMessageToBackend).toHaveBeenCalledWith('createRoom', { roomName: ' My cozy room ', maxPlayers: 2 });
+});
+
+test('N creates a room outside text fields, while the name field submits its form', () => {
+  renderLobby({ roomid: '', rooms: [] });
+  const input = screen.getByLabelText('Room Name:');
+  fireEvent.keyDown(input, { key: 'n' });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+  fireEvent.keyDown(window, { key: 'n' });
+  expect(sendMessageToBackend).toHaveBeenCalledWith('createRoom', {
+    roomName: expect.stringMatching(/^The \S.+ \S.+$/), maxPlayers: 2,
+  });
+  jest.clearAllMocks();
+  fireEvent.change(input, { target: { value: 'The Shortcut Tavern' } });
+  fireEvent.submit(input.closest('form')!);
+  expect(sendMessageToBackend).toHaveBeenCalledTimes(1);
+  expect(sendMessageToBackend).toHaveBeenCalledWith('createRoom', { roomName: 'The Shortcut Tavern', maxPlayers: 2 });
+  expect(screen.getByRole('button', { name: 'Create Room' }).getAttribute('data-tooltip')).toContain('Enter');
+});
+
+test('a modal blocks the create-room shortcut', () => {
+  renderLobby({ roomid: '', rooms: [] }, <div role="dialog" aria-modal="true">Wiki</div>);
+  fireEvent.keyDown(window, { key: 'n' });
+  expect(sendMessageToBackend).not.toHaveBeenCalled();
+});
+
+test.each([['Talkative Gobble', false], ['Bot 2', true]])('bot name %s only shows a separate model label when needed', (name, showModel) => {
+  renderLobby({ rooms: [{ ...room, players: ['Host', 'bot:1'],
+    bots: { 'bot:1': { name, modelId: 'gobble' } },
+    botModels: [{ id: 'gobble', name: 'Gobble', description: 'Trained model' }],
+  }] });
+  expect(!!screen.queryByText('· Gobble')).toBe(showModel);
+});
+
 test('presets request one atomic change and reflect only the server map and selections', () => {
   const store = renderLobby();
   openChoices();

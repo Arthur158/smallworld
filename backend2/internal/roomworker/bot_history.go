@@ -46,7 +46,7 @@ func (room *Room) restoreBotState(data json.RawMessage) error {
 	if state.TurnInfo == nil || len(state.Players) != len(room.Players) {
 		return errors.New("saved bot playback does not match the room")
 	}
-	if err := state.ValidateBotState(); err != nil {
+	if err := room.validateBotState(state); err != nil {
 		return fmt.Errorf("restore bot playback: %w", err)
 	}
 	for i, player := range state.Players {

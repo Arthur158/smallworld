@@ -161,3 +161,17 @@ test('display load and delete are independent native buttons with helpful toolti
   fireEvent.keyDown(window, { key: 'Backspace' });
   expect(sendMessageToBackend).not.toHaveBeenCalled();
 });
+
+
+test.each([['game', GamePage], ['spectator', SpectatorPage], ['display', DisplayPage]])('%s view shows only a supplied continent name and clears it on a map switch', (_, Page) => {
+  const internalMapId = 'c852ab82-9455-49e1-8afb-829cefc6a904';
+  const { store } = renderPage(Page, { mapName: internalMapId, mapRegionName: 'The Green March', mapRegionNameVersion: 1 });
+  expect(screen.getByRole('heading', { name: 'Continent: The Green March' })).toBeTruthy();
+  expect(screen.queryByText(internalMapId, { exact: false })).toBeNull();
+  act(() => store.dispatch(websocketMessageReceived(JSON.stringify({
+    type: 'smallmapupdate', data: { mapName: 'map2players', offset: 1 },
+  }))));
+  expect(screen.queryByRole('heading', { name: /Continent:/ })).toBeNull();
+  expect(store.getState().application.mapRegionName).toBeNull();
+  expect(store.getState().application.mapRegionNameVersion).toBeNull();
+});

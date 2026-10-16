@@ -56,6 +56,7 @@
 .map-editor-reset:hover { background: #ead9ba; }
 .map-editor-preview { display: flex; flex-direction: column; min-height: 0; min-width: 0; padding: 20px 24px; background: radial-gradient(ellipse at center, #f7efd9, #ede1c6); }
 .map-editor-preview-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; color: #8d7959; margin-bottom: 12px; font: 11px system-ui, sans-serif; }
+.map-editor-preview-heading .map-editor-continent-name { margin: 0; min-width: 0; overflow-wrap: anywhere; color: #5d4328; font: 600 21px Georgia, serif; }
 .map-editor-preview-heading > span:first-child { color: #5d4328; font: 17px Georgia, serif; }
 .map-editor-canvas { display: flex; align-items: center; justify-content: center; position: relative; min-height: 0; flex: 1; overflow: hidden; border: 1px solid #cbb58d; border-radius: 10px; background: #e4d6b7; box-shadow: inset 0 2px 9px #6f573c12; }
 .map-editor-canvas img { width: 100%; height: 100%; object-fit: contain; }

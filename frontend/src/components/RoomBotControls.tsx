@@ -47,7 +47,7 @@ export default function RoomBotControls({ room, isHost }: { room: Room; isHost: 
           : 'Play alongside bots, or watch as host to make room for an all-bot game.'}
       </p>
       <p className="text-sm mb-3">
-        Adding the first bot applies the bot rules preset: 12 races, 12 traits, and no powers.
+        Adding a bot applies compatible rules when needed. The bot preset supports every selected model and excludes powers.
         Bots use the same game rules as the human players in this room.
       </p>
       <div className="flex flex-wrap items-center gap-2">

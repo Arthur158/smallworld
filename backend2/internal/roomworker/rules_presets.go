@@ -1,6 +1,7 @@
 package roomworker
 
 import (
+	"backend/internal/gamestate"
 	"encoding/json"
 	"fmt"
 )
@@ -31,10 +32,10 @@ func rulesPresetSettings(preset string) (Map, []Extension, error) {
 			TraitChoices:  make([]ChoiceEntry, len(extension.Traits)),
 		}
 		for j, race := range extension.Races {
-			choice.RaceChoices[j] = ChoiceEntry{Choice: race, IsChecked: checked}
+			choice.RaceChoices[j] = ChoiceEntry{Choice: race, IsChecked: checked && gamestate.DefaultRaceEnabled(race)}
 		}
 		for j, trait := range extension.Traits {
-			choice.TraitChoices[j] = ChoiceEntry{Choice: trait, IsChecked: checked}
+			choice.TraitChoices[j] = ChoiceEntry{Choice: trait, IsChecked: checked && gamestate.DefaultTraitEnabled(trait)}
 		}
 		choices[i] = choice
 	}

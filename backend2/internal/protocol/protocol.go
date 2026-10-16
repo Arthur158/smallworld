@@ -84,9 +84,11 @@ type BotPlayback struct {
 
 // GeneratedMapSelection identifies the host-selected preview for a waiting room.
 type GeneratedMapSelection struct {
-	PreviewID   string `json:"previewId"`
-	PlayerCount int    `json:"playerCount"`
-	Seed        string `json:"seed"`
+	RegionName        string `json:"regionName,omitempty"`
+	RegionNameVersion int    `json:"regionNameVersion,omitempty"`
+	PreviewID         string `json:"previewId"`
+	PlayerCount       int    `json:"playerCount"`
+	Seed              string `json:"seed"`
 }
 
 // RoomMetadata is the distributed equivalent of the room list that used to be

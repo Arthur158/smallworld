@@ -29,7 +29,8 @@ if ! "$smallworld_python" -m venv "$ai_dir/.venv"; then
   echo 'Python venv support is required (Ubuntu/Debian: install python3-venv).' >&2
   exit 1
 fi
-"$ai_dir/.venv/bin/python" -m pip install 'torch==2.8.0' --index-url "$torch_index"
+"$ai_dir/.venv/bin/python" -m pip install 'pip==25.2'
+"$ai_dir/.venv/bin/python" -m pip install --only-binary=:all: 'torch==2.8.0' --index-url "$torch_index"
 "$ai_dir/.venv/bin/python" -m pip install -e "$ai_dir"
 (cd "$ai_dir/../backend2" && go build -o "$ai_dir/bin/botenv" ./cmd/botenv)
 "$ai_dir/.venv/bin/smallworld-doctor" --device "$mode"

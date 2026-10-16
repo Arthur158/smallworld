@@ -45,12 +45,16 @@ class Policy(nn.Module):
         return int(scores.argmax(dim=-1).item())
 
 
-def batch_decisions(decisions, device):
+def batch_decisions(decisions, device, policy=None):
     if not decisions:
         raise ValueError("empty decision batch")
     if decisions[0]["schema"] == "smallworld-bot-v2":
         from .graph import batch_graph
-        return batch_graph(decisions, device)
+        batch = batch_graph(decisions, device)
+        if getattr(policy, "format_version", 0) == 7:
+            from .specialists import route_batch
+            batch = (*batch, *route_batch(decisions, device, batch[2].shape[1]))
+        return batch
     max_actions = max(len(d["candidates"]) for d in decisions)
     if max_actions == 0:
         raise ValueError("terminal state cannot be sampled")
@@ -75,7 +79,7 @@ def merge_decision_batches(batches):
     """Keep rollout order while padding cached device inputs once for PPO."""
     if not batches:
         raise ValueError("empty rollout")
-    if len(batches[0]) == 7:
+    if len(batches[0]) >= 7:
         from .graph import merge_graph
         return merge_graph(batches)
     count = sum(states.shape[0] for states, _, _ in batches)
@@ -106,7 +110,24 @@ def atomic_torch_save(value, path):
 
 def load_checkpoint(path, device="cpu"):
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-    if checkpoint.get("schema") == "smallworld-bot-v2" and checkpoint.get("format_version") == 2:
+    return policy_from_checkpoint(checkpoint, device), checkpoint
+
+
+def policy_from_checkpoint(checkpoint, device="cpu"):
+    if checkpoint.get("schema") == "smallworld-bot-v2" and checkpoint.get("format_version") == 7:
+        from .specialists import SpecialistPolicy
+        policy = SpecialistPolicy(checkpoint["config"]["hidden"])
+        policy.freeze_backbone(checkpoint["config"].get("freeze_backbone", True))
+    elif checkpoint.get("schema") == "smallworld-bot-v2" and checkpoint.get("format_version") == 6:
+        from .entity import EntityPolicy
+        policy = EntityPolicy(checkpoint["config"]["hidden"])
+    elif checkpoint.get("schema") == "smallworld-bot-v2" and checkpoint.get("format_version") == 5:
+        from .relational import RelationalPolicy
+        policy = RelationalPolicy(checkpoint["config"]["hidden"])
+    elif checkpoint.get("schema") == "smallworld-bot-v2" and checkpoint.get("format_version") in (3, 4):
+        from .hierarchical import HierarchicalPolicy
+        policy = HierarchicalPolicy(checkpoint["config"]["hidden"], joint=checkpoint["format_version"] == 4)
+    elif checkpoint.get("schema") == "smallworld-bot-v2" and checkpoint.get("format_version") == 2:
         from .graph import GraphPolicy
         policy = GraphPolicy(checkpoint["config"]["hidden"])
     elif checkpoint.get("schema") == SCHEMA and checkpoint.get("format_version") == 1:
@@ -115,7 +136,7 @@ def load_checkpoint(path, device="cpu"):
         raise ValueError("checkpoint schema is incompatible")
     policy.load_state_dict(checkpoint["model"], strict=True)
     policy.to(device)
-    return policy, checkpoint
+    return policy
 
 
 def export_policy(policy, path, model_id, name, description="Trained PPO policy"):
@@ -128,13 +149,35 @@ def export_policy(policy, path, model_id, name, description="Trained PPO policy"
         if isinstance(layer, nn.Linear):
             layers.append({"weights": layer.weight.detach().cpu().tolist(),
                            "bias": layer.bias.detach().cpu().tolist()})
-    payload = {"format_version": 2 if policy.schema != SCHEMA else 1, "schema": policy.schema, "id": model_id, "name": name,
+    payload = {"format_version": getattr(policy, "format_version", 2 if policy.schema != SCHEMA else 1), "schema": policy.schema, "id": model_id, "name": name,
                "description": description, "state_features": policy.state_features,
                "action_features": policy.action_features, "layers": layers}
     if policy.schema != SCHEMA:
         from .graph import N
         payload["node_features"] = N
         payload["graph_layers"] = [{"weights": layer.weight.detach().cpu().tolist(), "bias": layer.bias.detach().cpu().tolist()} for layer in policy.graph]
+    if hasattr(policy, "group_actor"):
+        payload["group_layers"] = [{"weights": layer.weight.detach().cpu().tolist(), "bias": layer.bias.detach().cpu().tolist()} for layer in policy.group_actor if isinstance(layer, nn.Linear)]
+    if getattr(policy, 'format_version', 0) in (5, 6, 7):
+        def linear(layer):
+            return {'weights': layer.weight.detach().cpu().tolist(), 'bias': layer.bias.detach().cpu().tolist()}
+        def network(layers):
+            return [linear(layer) for layer in layers if isinstance(layer, nn.Linear)]
+        payload['relational'] = {
+            'state': network(policy.relation_state), 'node': linear(policy.relation_node),
+            'actor': network(policy.relation_actor),
+            'blocks': [{name: linear(getattr(block, name)) for name in ('norm1', 'qkv', 'projection', 'norm2', 'ff1', 'ff2')}
+                       for block in policy.relations]}
+    if getattr(policy, 'format_version', 0) in (6, 7):
+        e = policy.entity
+        payload['entity'] = {name: linear(getattr(e, name)) for name in ('state','tile','player','stack','action')}
+        payload['entity'].update(stack_id=e.stack_id.weight.detach().cpu().tolist(),actor=network(e.actor),
+            blocks=[{name: linear(getattr(b,name)) for name in ('norm1','norm2','qkv','out')} |
+                    {'ff': network(b.ff),'edge_bias':b.edge_bias.detach().cpu().tolist()} for b in e.blocks])
+    if getattr(policy, 'format_version', 0) == 7:
+        from .specialists import RACES, TRAITS
+        payload['specialists'] = {name: tensor.detach().cpu().tolist() for name, tensor in policy.state_dict().items() if name.startswith('specialist_')}
+        payload['specialist_races'], payload['specialist_traits'] = list(RACES), list(TRAITS)
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")

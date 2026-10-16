@@ -715,7 +715,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 		}
 
 		if room.hasBots() {
-			if err := gamestate.ValidateBotChoices(raceKeys, traitKeys, powerKeys); err != nil {
+			if err := room.validateBotChoices(raceKeys, traitKeys, powerKeys); err != nil {
 				client.sendError(err.Error() + ". Click Use bot rules in the lobby.")
 				return
 			}
@@ -746,6 +746,12 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 			client.sendError("Could not start game: " + err.Error())
 			return
 		}
+		if room.hasBots() {
+			if err := room.validateBotState(newstate); err != nil {
+				client.sendError(err.Error())
+				return
+			}
+		}
 		room.Gamestate = *newstate
 	} else {
 		newstate, _, err := LoadGameState(room.saveId)
@@ -762,7 +768,7 @@ func (room *Room) startLobbyGame(client *Client, roomID string) {
 			newstate.Players[i].Name = playerNames[i]
 		}
 		if room.hasBots() {
-			if err := newstate.ValidateBotState(); err != nil {
+			if err := room.validateBotState(newstate); err != nil {
 				client.sendError("Saved game is incompatible with bots: " + err.Error())
 				return
 			}

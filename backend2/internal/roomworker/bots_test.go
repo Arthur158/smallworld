@@ -200,6 +200,8 @@ func TestBotSnapshotRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	botID := room.Players[2].Username
+	// Existing snapshots retain their legacy names without automatic renaming.
+	room.Players[2].BotName = "Bot 3"
 	gs, err := gamestate.NewSeeded([]string{"host", "guest", "Bot 3"}, "map3players", gamestate.BotRaces(), gamestate.BotTraits(), nil, 19)
 	if err != nil {
 		t.Fatal(err)

@@ -733,7 +733,7 @@ var RaceMap = map[Race]RaceValue{
                 return old
             }
             for _, stack := range tile.PieceStacks {
-                if stack.Tribe != nil && stack.Tribe.canBeRedeployedIn(tile, stackType, gs) {
+                if stack.Tribe != nil && stack.Tribe != t && stack.Tribe.canBeRedeployedIn(tile, stackType, gs) {
                     return true
                 }
             }
@@ -741,7 +741,7 @@ var RaceMap = map[Race]RaceValue{
         }
         t.getStacksOutRedeploymentMap["Scavengers"] = func(tile *Tile, stackType string) ([]PieceStack, error) {
             for _, stack := range tile.PieceStacks {
-                if stack.Tribe != nil {
+                if stack.Tribe != nil && stack.Tribe != t {
                     newstacks, err2 := stack.Tribe.getStacksOutRedeployment(tile, stackType)
                     if err2 == nil {
                         return newstacks, err2
@@ -752,7 +752,7 @@ var RaceMap = map[Race]RaceValue{
         }
         t.handleReturnMap["Scavengers"] = func(tile *Tile, gs *GameState, pk int) {
             for _, stack := range tile.PieceStacks {
-                if stack.Tribe != nil {
+                if stack.Tribe != nil && stack.Tribe != t {
                     stack.Tribe.handleReturn(tile, gs, pk)
                     return // Only one other tribe should be present
                 }
@@ -813,6 +813,7 @@ var RaceMap = map[Race]RaceValue{
             if t.IsActive || stackType != "Decline" {
                 return fmt.Errorf("Not for the priestesses")
             }
+            if tile.OwningTribe != t { return fmt.Errorf("Choose a tile owned by these Priestesses") }
             count := 0
             for _, otherTile := range gs.TileList {
                 if tile.Id != otherTile.Id && otherTile.CheckPresence() != None && otherTile.OwningTribe.checkPresence(otherTile, t.Race) {

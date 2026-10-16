@@ -723,8 +723,12 @@ var TraitMap = map[Trait]TraitValue{
         t.State["extrapoints"] = 0
         t.State["pluspoints"] = 0
         t.canGoIntoDeclineMap["Stout"] = func(b bool, gs *GameState) bool {
-            t.State["pluspoints"] = gs.countPoints(t.Owner)
             return b || gs.TurnInfo.Phase == Redeployment
+        }
+        // Capture scoring only when declining. Merely asking which moves are
+        // available must not consume scoring effects or change observations.
+        t.beforeDeclineMap["Stout"] = func(gs *GameState) {
+            t.State["pluspoints"] = gs.countPoints(t.Owner)
         }
         t.goIntoDeclineMap["Stout"] = func(gs *GameState) {
             gs.GetPieceStackForConquest(t.Owner)

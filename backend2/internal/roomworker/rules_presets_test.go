@@ -67,12 +67,12 @@ func TestRulesPresetSelections(t *testing.T) {
 					t.Fatalf("wrong extension selection: %+v", choice)
 				}
 				for j, race := range choice.RaceChoices {
-					if race.Choice != extension.Races[j] || race.IsChecked != want {
+					if race.Choice != extension.Races[j] || race.IsChecked != (want && gamestate.DefaultRaceEnabled(race.Choice)) {
 						t.Fatalf("wrong race selection: %+v", race)
 					}
 				}
 				for j, trait := range choice.TraitChoices {
-					if trait.Choice != extension.Traits[j] || trait.IsChecked != want {
+					if trait.Choice != extension.Traits[j] || trait.IsChecked != (want && gamestate.DefaultTraitEnabled(trait.Choice)) {
 						t.Fatalf("wrong power selection: %+v", trait)
 					}
 				}

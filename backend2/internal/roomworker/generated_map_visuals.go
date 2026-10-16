@@ -45,11 +45,14 @@ type GeneratedServerTile struct {
 }
 
 type GeneratedMapVisuals struct {
-	MapName     string                `json:"mapName"`
-	ImageBase64 string                `json:"imageBase64"`
-	Graphics    json.RawMessage       `json:"graphics"`
-	Settings    json.RawMessage       `json:"settings"`
-	ServerTiles []GeneratedServerTile `json:"serverTiles"`
+	// Display metadata only; MapName remains the runtime and persistence key.
+	RegionName        string                `json:"regionName,omitempty"`
+	RegionNameVersion int                   `json:"regionNameVersion,omitempty"`
+	MapName           string                `json:"mapName"`
+	ImageBase64       string                `json:"imageBase64"`
+	Graphics          json.RawMessage       `json:"graphics"`
+	Settings          json.RawMessage       `json:"settings"`
+	ServerTiles       []GeneratedServerTile `json:"serverTiles"`
 	// Initial neutral setup is separate from generator geometry and saved games.
 	LostTribeTileIDs []string `json:"lostTribeTileIds,omitempty"`
 	Offset           float64  `json:"offset"`
